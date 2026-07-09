@@ -520,17 +520,29 @@ function mapCourse(r) {
   }
   const days = daysFromBooleans(r);
   const { start, end } = parseClassTime(r.class_time);
+  // `courses.code` is just the department prefix (e.g. "DA"), not the full
+  // course id. The real identifier is the offering's own course_id (a
+  // generated column: course_base_id, plus "-<section>" if sectioned), or
+  // course_base_id itself (e.g. "DA321") if that generated column wasn't
+  // selected. Prefer those over catalog.code for anything shown to the user.
+  const fullCode = r.course_id || (r.section ? `${r.course_base_id}-${r.section}` : r.course_base_id) || catalog.code || '';
+  // Some rows store a bare "00:00:00" placeholder in class_time/weekday_time
+  // instead of leaving it blank — treat that as "no schedule" rather than
+  // display a meaningless time.
+  const isPlaceholderTime = (s) => !s || /^0?0:00(:00)?$/.test(String(s).trim());
+  const weekdayTime = isPlaceholderTime(r.weekday_time) ? '' : r.weekday_time;
+  const classTime = isPlaceholderTime(r.class_time) ? '' : r.class_time;
   return {
     id: r.offering_id,
-    code: catalog.code || r.course_base_id || '',
+    code: fullCode,
     section: r.section || null,
     title: catalog.title || (catalogMissing ? '(catalog data unavailable — check RLS)' : '(untitled)'),
     credits: catalog.credits ?? null,
     classification: catalog.classification || '—',
     semester: r.semester_year || [r.semester, r.year].filter(Boolean).join(' '),
     scheduleDays: days,
-    scheduleDisplay: r.weekday_time || (days.length ? `${days.join('/')} ${r.class_time || ''}`.trim() : ''),
-    startTime: start,
+    scheduleDisplay: weekdayTime || (days.length ? `${days.join('/')} ${classTime}`.trim() : ''),
+    startTime: isPlaceholderTime(start) ? '' : start,
     endTime: end,
     status: r.status === 'published' ? 'published' : 'draft',
   };
@@ -542,7 +554,7 @@ async function loadData() {
     const rows = await sbGet(
       TBL_OFFERINGS,
       `professor_email=eq.${encodeURIComponent(PROFESSOR.email)}` +
-      `&select=offering_id,course_base_id,section,semester,year,semester_year,mon,tue,wed,thu,fri,class_time,weekday_time,office_hours,status,courses(code,title,credits,classification)`
+      `&select=offering_id,course_id,course_base_id,section,semester,year,semester_year,mon,tue,wed,thu,fri,class_time,weekday_time,office_hours,status,courses(code,title,credits,classification)`
     );
     courses = rows.map(mapCourse);
     const missing = courses.filter(c => c.title.includes('catalog data unavailable')).length;
@@ -555,6 +567,15 @@ async function loadData() {
   }
 }
 
+// Local device time, not UTC — new Date().getHours() already reflects the
+// viewer's own timezone, so no extra timezone handling is needed here.
+function timeOfDayGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 // ── RENDER: PAGE SHELL ──
 function renderHome() {
   const el = document.getElementById('page-home');
@@ -564,7 +585,7 @@ function renderHome() {
 
   el.innerHTML = `
     <div class="ph-header">
-      <p class="ph-greeting">Good morning, ${esc(firstName)}</p>
+      <p class="ph-greeting">${timeOfDayGreeting()}, ${esc(firstName)}</p>
       <p class="ph-subline">${esc(CURRENT_SEMESTER)} · Week 1 of 16 · ${dateStr}</p>
     </div>
     <div class="kpi-grid" id="kpi-grid"></div>
