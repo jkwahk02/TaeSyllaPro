@@ -126,6 +126,36 @@ button,input{font-family:inherit;}
 .tl-course-row:last-child{border-bottom:none;}
 .tl-more{font-size:15px;color:var(--blue);cursor:pointer;background:none;border:none;padding:0;font-family:inherit;font-weight:500;}
 
+/* COURSE PAGE */
+.cp-back{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--text2);cursor:pointer;background:none;border:none;font-family:inherit;padding:0;margin-bottom:22px;}
+.cp-back:hover{color:var(--blue);}
+.cp-back svg{transform:rotate(180deg);}
+.cp-header{margin-bottom:28px;}
+.cp-title-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;}
+.cp-title{font-size:26px;font-weight:600;color:var(--text);letter-spacing:-0.01em;}
+.cp-meta{font-size:16px;color:var(--text2);}
+.cp-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:28px;overflow-x:auto;}
+.cp-tab{padding:12px 18px;font-size:15px;font-weight:500;color:var(--text3);background:none;border:none;cursor:pointer;font-family:inherit;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .12s;}
+.cp-tab:hover{color:var(--text);}
+.cp-tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+.cp-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:28px 30px;margin-bottom:20px;}
+.cp-card-title{font-size:16px;font-weight:600;color:var(--text);margin-bottom:20px;}
+.cp-field-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px 28px;}
+.cp-field{display:flex;flex-direction:column;gap:5px;}
+.cp-field.full{grid-column:1 / -1;}
+.cp-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);}
+.cp-value{font-size:16px;color:var(--text);line-height:1.5;}
+.cp-value.muted{color:var(--text3);font-style:italic;}
+.cp-comp-list{display:flex;flex-wrap:wrap;gap:8px;}
+.cp-comp-chip{font-size:13px;padding:5px 12px;border-radius:20px;background:var(--violet-l);color:var(--violet);font-weight:500;}
+.cp-table-wrap{overflow-x:auto;}
+.cp-table{width:100%;border-collapse:collapse;min-width:560px;}
+.cp-table th{text-align:left;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);padding:0 14px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.cp-table td{padding:14px;font-size:15px;color:var(--text);border-bottom:1px solid var(--border);vertical-align:top;}
+.cp-table tr:last-child td{border-bottom:none;}
+.cp-empty{padding:48px 20px;text-align:center;color:var(--text3);font-size:15px;}
+.cp-empty-hint{font-size:13px;color:var(--text3);margin-top:8px;}
+
 /* LOGIN WALL */
 #login-wall,#pw-change-wall{position:fixed;inset:0;background:#f7f6f3;z-index:300;display:flex;align-items:center;justify-content:center;}
 .auth-card{background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.1);width:100%;max-width:480px;overflow:hidden;margin:0 16px;}
@@ -271,6 +301,7 @@ button,input{font-family:inherit;}
     <div id="page-home">
       <div class="loading-state" id="loading-state" style="padding:80px 0;text-align:center;color:var(--text3);font-size:16px;">Loading…</div>
     </div>
+    <div id="page-course" style="display:none;"></div>
   </div>
 </div>
 
@@ -328,9 +359,251 @@ function chevronSvg() {
 function clockSvg() {
   return '<svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3.3l2.2 1.3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
 }
-function goToCourse(id, code) {
-  // Replace with real navigation once /courses/:id/edit exists.
-  showToast(`Would open ${code} →`);
+// ── COURSE PAGE (in-page navigation, not a popup) ──
+let currentCourseId = null;
+let courseTab = 'main';
+const CP_TABS = [
+  { key: 'main', label: 'Main' },
+  { key: 'assessment', label: 'Assessment' },
+  { key: 'communication', label: 'Communication' },
+  { key: 'schedule', label: 'Schedule' },
+  { key: 'readings', label: 'Readings' },
+  { key: 'activities', label: 'T-Learning Activities' },
+];
+
+function goToCourse(id) {
+  location.hash = `course/${id}`;
+}
+function backToHome() {
+  location.hash = '';
+}
+window.addEventListener('hashchange', handleRoute);
+function handleRoute() {
+  if (!dataLoaded) return; // loadData() calls handleRoute() again once ready
+  const m = location.hash.match(/^#course\/(.+)$/);
+  if (m) {
+    currentCourseId = m[1];
+    courseTab = 'main';
+    document.getElementById('page-home').style.display = 'none';
+    document.getElementById('page-course').style.display = 'block';
+    renderCoursePage();
+  } else {
+    document.getElementById('page-course').style.display = 'none';
+    document.getElementById('page-home').style.display = 'block';
+  }
+}
+
+function setCourseTab(tab) {
+  courseTab = tab;
+  renderCoursePage();
+}
+
+function cpField(label, value, opts = {}) {
+  const cls = opts.full ? 'cp-field full' : 'cp-field';
+  const val = (value === null || value === undefined || value === '')
+    ? `<span class="cp-value muted">${esc(opts.emptyText || 'Not added yet')}</span>`
+    : `<span class="cp-value">${opts.raw ? value : esc(value)}</span>`;
+  return `<div class="${cls}"><span class="cp-label">${esc(label)}</span>${val}</div>`;
+}
+
+function cpEmptyState(hint) {
+  return `<div class="cp-empty">No data yet.<div class="cp-empty-hint">${esc(hint)}</div></div>`;
+}
+
+function cpTable(columns, rows, emptyHint) {
+  if (!rows.length) return cpEmptyState(emptyHint);
+  return `<div class="cp-table-wrap"><table class="cp-table">
+    <thead><tr>${columns.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r => `<tr>${r.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+// Real Supabase tables backing the 5 non-Main tabs (see supabase-courses-schema.sql).
+// Each is keyed by offering_id, fetched lazily the first time its tab is opened.
+const CP_DETAIL_TABLES = {
+  assessment:     { table: 'course_assessments',   cols: 'id,item,ratio_pct,description' },
+  communication:  { table: 'course_communications', cols: 'id,method,description' },
+  schedule:       { table: 'course_schedule',      cols: 'id,item,topic_title,learning_objectives,unit' },
+  readings:       { table: 'course_readings',            cols: 'id,lesson,category,reading_title,url_link' },
+  activities:     { table: 'course_learning_activities',  cols: 'id,item,category,tlearning_component,learning_activity,time_alloc_min,learning_goal,description,instruction' },
+};
+let courseDetailCache = {}; // { [offeringId]: { [tabKey]: rows | {error} } }
+
+async function loadCourseDetailTab(offeringId, tabKey) {
+  const spec = CP_DETAIL_TABLES[tabKey];
+  if (!spec) return;
+  const cache = (courseDetailCache[offeringId] = courseDetailCache[offeringId] || {});
+  if (cache[tabKey]) return; // already loaded or loading
+  cache[tabKey] = 'loading';
+  try {
+    const rows = await sbGet(spec.table, `offering_id=eq.${offeringId}&select=${spec.cols}&order=id.asc`);
+    cache[tabKey] = rows;
+  } catch (e) {
+    cache[tabKey] = { error: e.message };
+  }
+  if (String(currentCourseId) === String(offeringId) && courseTab === tabKey) renderCoursePage();
+}
+
+function renderCoursePage() {
+  const c = courses.find(x => String(x.id) === String(currentCourseId));
+  const el = document.getElementById('page-course');
+  if (!c) {
+    el.innerHTML = `
+      <button class="cp-back" onclick="backToHome()">${chevronSvg()} Back to courses</button>
+      <div class="cp-empty">Course not found.</div>`;
+    return;
+  }
+
+  let tabContent;
+  if (courseTab === 'main') {
+    tabContent = renderCpMain(c);
+  } else {
+    const cache = courseDetailCache[c.id] || {};
+    const data = cache[courseTab];
+    if (!data || data === 'loading') {
+      tabContent = `<div class="cp-card"><div class="cp-empty">Loading…</div></div>`;
+      loadCourseDetailTab(c.id, courseTab);
+    } else if (data.error) {
+      tabContent = `<div class="cp-card"><div class="cp-empty">Unable to load: ${esc(data.error)}</div></div>`;
+    } else {
+      tabContent = {
+        assessment: renderCpAssessment,
+        communication: renderCpCommunication,
+        schedule: renderCpSchedule,
+        readings: renderCpReadings,
+        activities: renderCpActivities,
+      }[courseTab](data);
+    }
+  }
+
+  el.innerHTML = `
+    <button class="cp-back" onclick="backToHome()">${chevronSvg()} Back to courses</button>
+    <div class="cp-header">
+      <div class="cp-title-row">
+        <span class="chip-code">${esc(c.code)}</span>
+        <span class="badge ${c.status === 'published' ? 'badge-published' : 'badge-draft'}">${c.status === 'published' ? 'Published' : 'Draft'}</span>
+      </div>
+      <p class="cp-title">${esc(c.title)}</p>
+      <p class="cp-meta">${esc(c.semester)} · ${creditsText(c.credits)} · ${esc(c.classification)}</p>
+    </div>
+    <div class="cp-tabs">
+      ${CP_TABS.map(t => `<button class="cp-tab ${courseTab === t.key ? 'active' : ''}" onclick="setCourseTab('${t.key}')">${esc(t.label)}</button>`).join('')}
+    </div>
+    <div id="cp-tab-body">${tabContent}</div>
+  `;
+}
+
+// Design (1) Main — all fields read from course_offerings/courses.
+function renderCpMain(c) {
+  const compChips = c.competencies.length
+    ? `<div class="cp-comp-list">${c.competencies.map(k => `<span class="cp-comp-chip">${esc(k.label)} · ${k.pct}%</span>`).join('')}</div>`
+    : `<div class="cp-value muted">Not specified</div>`;
+  const syllabusVal = c.syllabusLink
+    ? `<a class="cp-value" href="${esc(c.syllabusLink)}" target="_blank" rel="noopener" style="color:var(--blue);">Open syllabus document ↗</a>`
+    : `<span class="cp-value muted">Not added yet</span>`;
+  return `
+    <div class="cp-card">
+      <div class="cp-card-title">Course details</div>
+      <div class="cp-field-grid">
+        ${cpField('Course ID', c.code)}
+        ${cpField('Course Title', c.title)}
+        ${cpField('Semester', c.semester)}
+        ${cpField('Classification', c.classification)}
+        ${cpField('Credits', creditsText(c.credits))}
+        ${cpField('Category', c.category)}
+        ${cpField('Weekdays & Time', c.scheduleDisplay, { emptyText: 'Schedule TBD' })}
+        ${cpField('Professor', c.professor)}
+        ${cpField('Contact Information', PROFESSOR.email)}
+        ${cpField('Office Hours', c.officeHours)}
+      </div>
+    </div>
+    <div class="cp-card">
+      <div class="cp-card-title">Description & objectives</div>
+      <div class="cp-field-grid">
+        ${cpField('Short Description', c.shortDescription, { full: true })}
+        ${cpField('Course Description', c.description, { full: true })}
+        ${cpField('Prerequisite(s)', c.prerequisites, { full: true })}
+        ${cpField('Course Learning Objectives', c.learningObjectives, { full: true })}
+        ${cpField('Required Text', c.requiredText, { full: true })}
+      </div>
+    </div>
+    <div class="cp-card">
+      <div class="cp-card-title">Key competencies</div>
+      ${compChips}
+    </div>
+    <div class="cp-card">
+      <div class="cp-card-title">Syllabus document</div>
+      ${syllabusVal}
+    </div>
+  `;
+}
+
+// Design (2) Assessment — course_assessments: item / ratio_pct / description.
+function renderCpAssessment(rows) {
+  const total = rows.reduce((sum, r) => sum + (Number(r.ratio_pct) || 0), 0);
+  const body = rows.map(r => [esc(r.item), r.ratio_pct != null ? `${r.ratio_pct}%` : '—', esc(r.description || '—')]);
+  const totalNote = rows.length
+    ? `<p style="margin-top:14px;font-size:14px;color:${total === 100 ? 'var(--text3)' : 'var(--red)'};">Total: ${total}%${total === 100 ? '' : ' (should be 100%)'}</p>`
+    : '';
+  return `
+    <div class="cp-card">
+      <div class="cp-card-title">Assessment breakdown</div>
+      ${cpTable(['Item', 'Ratio (%)', 'Description'], body, 'Add rows to course_assessments (offering_id, item, ratio_pct, description) to populate this tab.')}
+      ${totalNote}
+    </div>`;
+}
+
+// Design (3) Communication — course_communications: method / description.
+function renderCpCommunication(rows) {
+  const body = rows.map(r => [esc(r.method), esc(r.description || '—')]);
+  return `
+    <div class="cp-card">
+      <div class="cp-card-title">Communication methods</div>
+      ${cpTable(['Method', 'Description'], body, 'Add rows to course_communications (offering_id, method, description) to populate this tab.')}
+    </div>`;
+}
+
+// Design (4) Schedule — course_schedule: item / topic_title / learning_objectives / unit.
+function renderCpSchedule(rows) {
+  const body = rows.map(r => [esc(r.item || '—'), esc(r.topic_title || '—'), esc(r.learning_objectives || '—'), esc(r.unit || '—')]);
+  return `
+    <div class="cp-card">
+      <div class="cp-card-title">Course schedule</div>
+      ${cpTable(['Item', 'Topic Title', 'Learning Objectives', 'Unit'], body, 'Add rows to course_schedule (offering_id, item, topic_title, learning_objectives, unit) to populate this tab.')}
+    </div>`;
+}
+
+// Design (5) Readings — course_readings: lesson / category / reading_title / url_link.
+function renderCpReadings(rows) {
+  const body = rows.map(r => [
+    esc(r.lesson || '—'),
+    esc(r.category || '—'),
+    esc(r.reading_title || '—'),
+    r.url_link ? `<a href="${esc(r.url_link)}" target="_blank" rel="noopener" style="color:var(--blue);">Open ↗</a>` : '—',
+  ]);
+  return `
+    <div class="cp-card">
+      <div class="cp-card-title">Readings</div>
+      ${cpTable(['Lesson', 'Category', 'Reading Title', 'Link'], body, 'Add rows to course_readings (offering_id, lesson, category, reading_title, url_link) to populate this tab.')}
+    </div>`;
+}
+
+// Design (6) T-Learning Activities — course_learning_activities: item / category /
+// tlearning_component / learning_activity / time_alloc_min / learning_goal.
+function renderCpActivities(rows) {
+  const body = rows.map(r => [
+    esc(r.item || '—'),
+    esc(r.category || '—'),
+    esc(r.tlearning_component || '—'),
+    esc(r.learning_activity || '—'),
+    r.time_alloc_min != null ? `${r.time_alloc_min} min` : '—',
+    esc(r.learning_goal || '—'),
+  ]);
+  return `
+    <div class="cp-card">
+      <div class="cp-card-title">T-Learning activities</div>
+      ${cpTable(['Lesson', 'Category', 'Component', 'Activity', 'Time', 'Goal'], body, 'Add rows to course_learning_activities (offering_id, item, category, tlearning_component, learning_activity, time_alloc_min, learning_goal, description, instruction) to populate this tab.')}
+    </div>`;
 }
 
 // ── SUPABASE HELPERS ──
@@ -501,8 +774,20 @@ function handleSignOut() {
 function daysFromBooleans(r) {
   return [
     ['Mon', r.mon], ['Tue', r.tue], ['Wed', r.wed], ['Thu', r.thu], ['Fri', r.fri],
+    ['Sat', r.sat], ['Sun', r.sun],
   ].filter(([, on]) => on).map(([label]) => label);
 }
+
+// The six Key Competency percentage columns on `courses`, in the order shown
+// on the Design (1) Main worksheet.
+const COMPETENCY_COLS = [
+  ['competency_critical_thinking', 'Critical Thinking'],
+  ['competency_creative_thinking', 'Creative Thinking'],
+  ['competency_self_directed_learning', 'Self-directed Learning'],
+  ['competency_communication', 'Communication and Collaboration'],
+  ['competency_diversity_empathy', 'Diversity and Empathy'],
+  ['competency_global_harmony', 'Global Harmony and Sustainability'],
+];
 
 function parseClassTime(text) {
   if (!text) return { start: '', end: '' };
@@ -540,6 +825,9 @@ function mapCourse(r) {
   const isPlaceholderTime = (s) => !s || /^0?0:00(:00)?$/.test(String(s).trim());
   const weekdayTime = isPlaceholderTime(r.weekday_time) ? '' : r.weekday_time;
   const classTime = isPlaceholderTime(r.class_time) ? '' : r.class_time;
+  const competencies = COMPETENCY_COLS
+    .map(([col, label]) => ({ label, pct: catalog[col] != null ? Number(catalog[col]) : 0 }))
+    .filter(c => c.pct > 0);
   return {
     id: r.offering_id,
     code: fullCode,
@@ -553,6 +841,16 @@ function mapCourse(r) {
     startTime: isPlaceholderTime(start) ? '' : start,
     endTime: end,
     status: r.status === 'published' ? 'published' : 'draft',
+    officeHours: r.office_hours || '',
+    professor: r.professor || PROFESSOR.name,
+    description: catalog.description || '',
+    prerequisites: catalog.prerequisites || '',
+    learningObjectives: catalog.learning_objectives || '',
+    requiredText: catalog.required_text || '',
+    category: catalog.category || '',
+    shortDescription: catalog.short_description || '',
+    syllabusLink: catalog.syllabus_link || '',
+    competencies,
   };
 }
 
@@ -562,13 +860,19 @@ async function loadData() {
     const rows = await sbGet(
       TBL_OFFERINGS,
       `professor_email=eq.${encodeURIComponent(PROFESSOR.email)}` +
-      `&select=offering_id,course_id,course_base_id,section,semester,year,semester_year,mon,tue,wed,thu,fri,class_time,weekday_time,office_hours,status,courses(code,title,credits,classification)`
+      `&select=offering_id,course_id,course_base_id,section,semester,year,semester_year,` +
+      `mon,tue,wed,thu,fri,sat,sun,class_time,weekday_time,office_hours,status,professor,` +
+      `courses(code,title,credits,classification,description,prerequisites,` +
+      `competency_critical_thinking,competency_creative_thinking,competency_self_directed_learning,` +
+      `competency_communication,competency_diversity_empathy,competency_global_harmony,` +
+      `learning_objectives,required_text,category,short_description,syllabus_link)`
     );
     courses = rows.map(mapCourse);
     const missing = courses.filter(c => c.title.includes('catalog data unavailable')).length;
     console.log(`[TaeSylla] Loaded ${courses.length} offering(s) for ${PROFESSOR.email}` + (missing ? ` — ${missing} missing catalog data, see warnings above.` : '.'));
     dataLoaded = true;
     renderHome();
+    handleRoute();
   } catch (e) {
     document.getElementById('page-home').innerHTML =
       `<div style="padding:18px;background:var(--red-l);color:var(--red);border-radius:var(--r-lg);font-size:14px;"><strong>Unable to load courses.</strong> ${esc(e.message)}</div>`;
@@ -705,7 +1009,7 @@ function creditsText(credits) {
 function courseCardHtml(c) {
   const schedule = c.scheduleDisplay || 'Schedule TBD';
   return `
-    <div class="course-card" onclick="goToCourse('${c.id}','${esc(c.code)}')">
+    <div class="course-card" onclick="goToCourse('${c.id}')">
       <div class="cc-top">
         <span class="chip-code">${esc(c.code)}</span>
         <span class="badge ${c.status === 'published' ? 'badge-published' : 'badge-draft'}">${c.status === 'published' ? 'Published' : 'Draft'}</span>
@@ -720,7 +1024,7 @@ function courseCardHtml(c) {
 }
 function courseListRowHtml(c) {
   return `
-    <div class="list-row" onclick="goToCourse('${c.id}','${esc(c.code)}')">
+    <div class="list-row" onclick="goToCourse('${c.id}')">
       <span class="lr-code">${esc(c.code)}</span>
       <span class="lr-title">${esc(c.title)}</span>
       <span class="lr-cred">${creditsText(c.credits)} · ${esc(c.classification)}</span>
