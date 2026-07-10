@@ -166,6 +166,10 @@ button,input{font-family:inherit;}
 .cp-input,.cp-select,.cp-textarea{width:100%;font-size:15px;font-family:inherit;color:var(--text);border:1px solid var(--border-em);border-radius:var(--r);padding:0 13px;height:42px;background:var(--surface);outline:none;}
 .cp-textarea{height:auto;padding:10px 13px;resize:vertical;line-height:1.5;}
 .cp-input:focus,.cp-select:focus,.cp-textarea:focus{border-color:var(--blue-m);}
+.cp-input:disabled,.cp-select:disabled,.cp-textarea:disabled{background:var(--surface2);color:var(--text);opacity:1;border-color:var(--border);cursor:default;-webkit-text-fill-color:var(--text);appearance:none;}
+.cp-check-row input:disabled{opacity:1;}
+.cp-day-btn:disabled,.cp-chip-btn:disabled{cursor:default;opacity:1;}
+.cp-day-btn:disabled:not(.active),.cp-chip-btn:disabled:not(.active){color:var(--text3);}
 .cp-check-row{display:flex;align-items:center;gap:9px;height:42px;font-size:15px;color:var(--text);}
 .cp-check-row input{width:17px;height:17px;}
 .cp-day-row{display:flex;gap:7px;flex-wrap:wrap;}
@@ -500,7 +504,8 @@ function renderCoursePage() {
 
   let tabContent;
   if (courseTab === 'main') {
-    tabContent = editMode ? renderCpMainEdit(c) : renderCpMain(c);
+    if (!periodsCache[c.id]) loadPeriodsIfNeeded(c.id); // fire-and-forget, re-renders on arrival
+    tabContent = renderCpMainShared(c, editMode);
   } else {
     const cache = courseDetailCache[c.id] || {};
     const data = cache[courseTab];
@@ -543,10 +548,11 @@ function renderCoursePage() {
 }
 
 // ── COURSE PAGE — EDIT MODE ──
-async function enterEditMode() {
-  const c = courses.find(x => String(x.id) === String(currentCourseId));
-  if (!c) return;
-  editDraft = {
+// Builds the same-shaped draft object for both view mode (read-only display)
+// and edit mode (mutable), so the two render with identical markup and only
+// the disabled/interactive state differs — no layout jump when toggling.
+function deriveMainDraft(c) {
+  return {
     title: c.title,
     classification: c.classification === '—' ? 'Elective' : c.classification,
     credits: c.credits,
@@ -561,12 +567,19 @@ async function enterEditMode() {
     learningObjectives: c.learningObjectives,
     requiredText: c.requiredText,
     newCurriculum: c.newCurriculum,
+    syllabusLink: c.syllabusLink,
     competencies: c.competenciesRaw.map(x => ({ ...x })),
   };
+}
+
+async function enterEditMode() {
+  const c = courses.find(x => String(x.id) === String(currentCourseId));
+  if (!c) return;
+  editDraft = deriveMainDraft(c);
+  await loadPeriodsIfNeeded(c.id);
+  editPeriods = (periodsCache[c.id] || []).map(p => JSON.parse(JSON.stringify(p)));
   editMode = true;
   renderCoursePage();
-  await ensurePeriodsLoaded(c.id);
-  renderPeriodsEditor();
 }
 
 function cancelEdit() {
@@ -574,22 +587,20 @@ function cancelEdit() {
   renderCoursePage();
 }
 
-async function ensurePeriodsLoaded(offeringId) {
-  if (periodsCache[offeringId]) {
-    editPeriods = periodsCache[offeringId].map(p => JSON.parse(JSON.stringify(p)));
-    return;
-  }
+// Populates periodsCache[offeringId] (used directly for read-only display)
+// and re-renders the page once loaded, same lazy-load pattern as the other
+// tabs. Safe to call repeatedly — a no-op once cached.
+async function loadPeriodsIfNeeded(offeringId) {
+  if (periodsCache[offeringId]) return periodsCache[offeringId];
   try {
     const rows = await sbGet('course_schedule_periods', `offering_id=eq.${offeringId}&select=*&order=id.asc`);
     if (rows.length) {
-      const mapped = rows.map(r => ({
+      periodsCache[offeringId] = rows.map(r => ({
         id: r.id, campusNote: r.campus_note || '', validFrom: r.valid_from || '', validTo: r.valid_to || '',
         days: { mon: !!r.mon, tue: !!r.tue, wed: !!r.wed, thu: !!r.thu, fri: !!r.fri, sat: !!r.sat, sun: !!r.sun },
         startTime: (r.start_time || '09:00:00').slice(0, 5), durationMin: r.duration_min || 75,
         timezone: r.timezone || 'America/Los_Angeles', extraZones: r.extra_timezones || [],
       }));
-      periodsCache[offeringId] = mapped;
-      editPeriods = mapped.map(p => JSON.parse(JSON.stringify(p)));
     } else {
       // No saved periods yet — seed "Period 1" from this offering's existing
       // legacy single-schedule fields (mon..sun / class_time) so nothing is lost.
@@ -599,12 +610,17 @@ async function ensurePeriodsLoaded(offeringId) {
         FULL_DAY_ORDER.forEach(d => { seed.days[d.toLowerCase().slice(0, 3)] = c.scheduleDays.includes(d); });
         if (c.startTime) seed.startTime = c.startTime;
       }
-      editPeriods = [seed];
+      periodsCache[offeringId] = [seed];
     }
   } catch (e) {
-    editPeriods = [newSchedulePeriod()];
+    periodsCache[offeringId] = [];
     showToast('Could not load schedule periods: ' + e.message);
   }
+  if (String(currentCourseId) === String(offeringId) && courseTab === 'main') {
+    if (editMode) editPeriods = periodsCache[offeringId].map(p => JSON.parse(JSON.stringify(p)));
+    renderCoursePage();
+  }
+  return periodsCache[offeringId];
 }
 
 async function saveCourseEdits() {
@@ -660,14 +676,20 @@ function setCompetencyPct(i, val) {
 }
 
 // ── Schedule periods editor ──
-function periodCardHtml(p, i) {
+// `editing` toggles between disabled/plain-text inputs (view) and live,
+// mutable ones (edit) using the exact same markup, so Edit/Save never
+// reflows the layout — only the Edit/Save button and field interactivity change.
+function periodCardHtml(p, i, editing, total) {
+  const dis = editing ? '' : 'disabled';
   const dayBtns = FULL_DAY_ORDER.map((d) => {
     const key = d.toLowerCase().slice(0, 3);
-    return `<button type="button" class="cp-day-btn ${p.days[key] ? 'active' : ''}" onclick="togglePeriodDay(${i},'${key}')">${d.slice(0, 2)}</button>`;
+    const click = editing ? ` onclick="togglePeriodDay(${i},'${key}')"` : '';
+    return `<button type="button" class="cp-day-btn ${p.days[key] ? 'active' : ''}" ${dis}${click}>${d.slice(0, 2)}</button>`;
   }).join('');
-  const durBtns = DURATION_OPTIONS.map((m) =>
-    `<button type="button" class="cp-chip-btn ${p.durationMin === m ? 'active' : ''}" onclick="setPeriodDuration(${i},${m})">${m}m</button>`
-  ).join('');
+  const durBtns = DURATION_OPTIONS.map((m) => {
+    const click = editing ? ` onclick="setPeriodDuration(${i},${m})"` : '';
+    return `<button type="button" class="cp-chip-btn ${p.durationMin === m ? 'active' : ''}" ${dis}${click}>${m}m</button>`;
+  }).join('');
   const tzOptions = TIMEZONE_OPTIONS.map((t) =>
     `<option value="${t.iana}" ${p.timezone === t.iana ? 'selected' : ''}>${t.label}</option>`
   ).join('');
@@ -693,36 +715,42 @@ function periodCardHtml(p, i) {
         return `${r.weekday} ${r.startTime}–${r.endTime}${shift}`;
       }).join(', ');
     }
-    return `<div class="cp-tz-row"><span>${esc(tzLabel(tz))}</span><span style="color:var(--text2);">${esc(line)}</span><button class="rm" onclick="removeExtraZone(${i},${zi})" aria-label="Remove time zone">×</button></div>`;
+    const rmBtn = editing ? `<button class="rm" onclick="removeExtraZone(${i},${zi})" aria-label="Remove time zone">×</button>` : '';
+    return `<div class="cp-tz-row"><span>${esc(tzLabel(tz))}</span><span style="color:var(--text2);">${esc(line)}</span>${rmBtn}</div>`;
   }).join('');
 
   const availableExtra = TIMEZONE_OPTIONS.filter((t) => t.iana !== p.timezone && !p.extraZones.includes(t.iana));
-  const addZoneSelect = p.extraZones.length >= 3 ? '' : `
+  const addZoneSelect = (!editing || p.extraZones.length >= 3) ? '' : `
     <select class="cp-select" style="max-width:260px;" onchange="if(this.value){addExtraZone(${i},this.value);}">
       <option value="">+ Add time zone (${p.extraZones.length} of 3)</option>
       ${availableExtra.map((t) => `<option value="${t.iana}">${t.label}</option>`).join('')}
     </select>`;
 
+  const campusInput = editing
+    ? `<input class="cp-input" style="max-width:170px;" placeholder="Location note" value="${esc(p.campusNote)}" oninput="editPeriods[${i}].campusNote=this.value"/>`
+    : `<input class="cp-input" style="max-width:170px;" value="${esc(p.campusNote)}" disabled/>`;
+  const removeBtn = (editing && total > 1) ? `<button class="cp-period-remove" onclick="removePeriod(${i})">Remove</button>` : '';
+
   return `
     <div class="cp-period-card">
       <div class="cp-period-hd">
         <span class="cp-period-badge">Period ${i + 1}</span>
-        <input class="cp-input" style="max-width:170px;" placeholder="Location note" value="${esc(p.campusNote)}" oninput="editPeriods[${i}].campusNote=this.value"/>
+        ${campusInput}
         <div style="flex:1;">
           <span class="cp-label" style="display:block;margin-bottom:6px;">Valid dates</span>
           <div class="cp-date-range">
-            <input type="date" class="cp-input" value="${p.validFrom}" onchange="setPeriodField(${i},'validFrom',this.value)"/>
+            <input type="date" class="cp-input" value="${p.validFrom}" ${dis} ${editing ? `onchange="setPeriodField(${i},'validFrom',this.value)"` : ''}/>
             ${chevronSvg()}
-            <input type="date" class="cp-input" value="${p.validTo}" onchange="setPeriodField(${i},'validTo',this.value)"/>
+            <input type="date" class="cp-input" value="${p.validTo}" ${dis} ${editing ? `onchange="setPeriodField(${i},'validTo',this.value)"` : ''}/>
           </div>
         </div>
-        ${editPeriods.length > 1 ? `<button class="cp-period-remove" onclick="removePeriod(${i})">Remove</button>` : ''}
+        ${removeBtn}
       </div>
       <span class="cp-label" style="display:block;margin-bottom:8px;">Class days</span>
       <div class="cp-day-row" style="margin-bottom:20px;">${dayBtns}</div>
       <div style="display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:20px;margin-bottom:16px;">
-        <div><span class="cp-label" style="display:block;margin-bottom:6px;">Start time</span><input type="time" class="cp-input" value="${p.startTime}" onchange="setPeriodField(${i},'startTime',this.value)"/></div>
-        <div><span class="cp-label" style="display:block;margin-bottom:6px;">Time zone</span><select class="cp-select" onchange="setPeriodField(${i},'timezone',this.value)">${tzOptions}</select></div>
+        <div><span class="cp-label" style="display:block;margin-bottom:6px;">Start time</span><input type="time" class="cp-input" value="${p.startTime}" ${dis} ${editing ? `onchange="setPeriodField(${i},'startTime',this.value)"` : ''}/></div>
+        <div><span class="cp-label" style="display:block;margin-bottom:6px;">Time zone</span><select class="cp-select" ${dis} ${editing ? `onchange="setPeriodField(${i},'timezone',this.value)"` : ''}>${tzOptions}</select></div>
         <div><span class="cp-label" style="display:block;margin-bottom:6px;">Duration</span><div style="display:flex;gap:6px;">${durBtns}</div></div>
       </div>
       <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:12px;">
@@ -736,13 +764,14 @@ function periodCardHtml(p, i) {
       </div>
     </div>`;
 }
-function periodsEditorInnerHtml() {
-  return `${editPeriods.map((p, i) => periodCardHtml(p, i)).join('')}
-    <div class="cp-add-period"><button onclick="addPeriod()">+ Add another period</button></div>`;
+function periodsBlockHtml(periods, editing) {
+  const cards = periods.map((p, i) => periodCardHtml(p, i, editing, periods.length)).join('');
+  const addBtn = editing ? `<div class="cp-add-period"><button onclick="addPeriod()">+ Add another period</button></div>` : '';
+  return cards + addBtn;
 }
 function renderPeriodsEditor() {
   const el = document.getElementById('periods-editor-inner');
-  if (el) el.innerHTML = periodsEditorInnerHtml();
+  if (el) el.innerHTML = periodsBlockHtml(editPeriods, true);
 }
 function togglePeriodDay(i, key) { editPeriods[i].days[key] = !editPeriods[i].days[key]; renderPeriodsEditor(); }
 function setPeriodDuration(i, mins) { editPeriods[i].durationMin = mins; renderPeriodsEditor(); }
@@ -752,68 +781,39 @@ function removeExtraZone(i, zi) { editPeriods[i].extraZones.splice(zi, 1); rende
 function addPeriod() { editPeriods.push(newSchedulePeriod()); renderPeriodsEditor(); }
 function removePeriod(i) { editPeriods.splice(i, 1); renderPeriodsEditor(); }
 
-// Design (1) Main — all fields read from course_offerings/courses.
-function renderCpMain(c) {
-  const compChips = c.competencies.length
-    ? `<div class="cp-comp-list">${c.competencies.map(k => `<span class="cp-comp-chip">${esc(k.label)} · ${k.pct}%</span>`).join('')}</div>`
-    : `<div class="cp-value muted">Not specified</div>`;
-  const syllabusVal = c.syllabusLink
-    ? `<a class="cp-value" href="${esc(c.syllabusLink)}" target="_blank" rel="noopener" style="color:var(--blue);">Open syllabus document ↗</a>`
-    : `<span class="cp-value muted">Not added yet</span>`;
-  return `
-    <div class="cp-card">
-      <div class="cp-card-title">Course details</div>
-      <div class="cp-field-grid">
-        ${cpField('Course ID', c.code)}
-        ${cpField('Course Title', c.title)}
-        ${cpField('Semester', c.semester)}
-        ${cpField('Classification', c.classification)}
-        ${cpField('Credits', creditsText(c.credits))}
-        ${cpField('Category', c.category)}
-        ${cpField('Weekdays & Time', c.scheduleDisplay, { emptyText: 'Schedule TBD' })}
-        ${cpField('Professor', c.professor)}
-        ${cpField('Contact Information', PROFESSOR.email)}
-        ${cpField('Office Hours', c.officeHours)}
-      </div>
-    </div>
-    <div class="cp-card">
-      <div class="cp-card-title">Description & objectives</div>
-      <div class="cp-field-grid">
-        ${cpField('Short Description', c.shortDescription, { full: true })}
-        ${cpField('Course Description', c.description, { full: true })}
-        ${cpField('Prerequisite(s)', c.prerequisites, { full: true })}
-        ${cpField('Course Learning Objectives', c.learningObjectives, { full: true })}
-        ${cpField('Required Text', c.requiredText, { full: true })}
-      </div>
-    </div>
-    <div class="cp-card">
-      <div class="cp-card-title">Key competencies</div>
-      ${compChips}
-    </div>
-    <div class="cp-card">
-      <div class="cp-card-title">Syllabus document</div>
-      ${syllabusVal}
-    </div>
-  `;
-}
+// Design (1) Main — one render path for both view and edit. `editing=false`
+// renders the identical markup with every control `disabled`, so toggling
+// Edit/Save never shifts the layout. Course ID and Semester stay locked even
+// while editing: changing either one on the real spreadsheet creates a new
+// course/syllabus rather than editing this one, so they're not safe to PATCH.
+function renderCpMainShared(c, editing) {
+  const d = editing ? editDraft : deriveMainDraft(c);
+  const dis = editing ? '' : 'disabled';
+  const oi = (expr) => (editing ? `oninput="${expr}"` : '');
+  const oc = (expr) => (editing ? `onchange="${expr}"` : '');
 
-// Design (1) Main — edit mode. Course ID and Semester are locked: changing
-// either one on the real spreadsheet creates a new course/syllabus rather
-// than editing this one, so they're not safe to PATCH from here.
-function renderCpMainEdit(c) {
-  const d = editDraft;
   const catMap = CURRICULUM_CATEGORIES[d.program];
   const catOptions = CATEGORY_KEYS.map((k) =>
     `<option value="${k}" ${d.category === k ? 'selected' : ''}>${esc(catMap ? catMap[k] : k)}</option>`
   ).join('');
+
   const compRows = d.competencies.map((comp, i) => `
     <div class="cp-comp-row">
       <span class="cp-comp-name">${esc(comp.label)}</span>
-      <input type="number" min="0" max="100" class="cp-input cp-comp-input" value="${comp.pct}" oninput="setCompetencyPct(${i}, this.value)"/>
+      <input type="number" min="0" max="100" class="cp-input cp-comp-input" value="${comp.pct}" ${dis} ${oi(`setCompetencyPct(${i}, this.value)`)}/>
       <div class="cp-comp-bar-wrap"><div class="cp-comp-bar" id="comp-bar-${i}" style="width:${comp.pct}%;"></div></div>
       <span class="cp-comp-pct" id="comp-pct-${i}">${comp.pct}%</span>
     </div>`).join('');
   const compTotal = d.competencies.reduce((s, x) => s + Number(x.pct), 0);
+
+  const periods = editing ? editPeriods : periodsCache[c.id];
+  const periodsHtmlBlock = !periods
+    ? '<div class="cp-empty">Loading…</div>'
+    : `<div id="periods-editor-inner">${periodsBlockHtml(periods, editing)}</div>`;
+
+  const syllabusVal = d.syllabusLink
+    ? `<a class="cp-value" href="${esc(d.syllabusLink)}" target="_blank" rel="noopener" style="color:var(--blue);">Open syllabus document ↗</a>`
+    : `<span class="cp-value muted">Not added yet</span>`;
 
   return `
     <div class="cp-card">
@@ -821,39 +821,39 @@ function renderCpMainEdit(c) {
       <div class="cp-field-grid">
         <div class="cp-field"><span class="cp-label">Course ID</span><input class="cp-input" value="${esc(c.code)}" disabled/></div>
         <div class="cp-field"><span class="cp-label">Semester</span><input class="cp-input" value="${esc(c.semester)}" disabled/></div>
-        <div class="cp-field full"><span class="cp-label">Course title</span><input class="cp-input" value="${esc(d.title)}" oninput="editDraft.title=this.value"/></div>
+        <div class="cp-field full"><span class="cp-label">Course title</span><input class="cp-input" value="${esc(d.title)}" ${dis} ${oi('editDraft.title=this.value')}/></div>
         <div class="cp-field"><span class="cp-label">Classification</span>
-          <select class="cp-select" onchange="editDraft.classification=this.value">
+          <select class="cp-select" ${dis} ${oc('editDraft.classification=this.value')}>
             ${CLASSIFICATION_OPTIONS.map((o) => `<option ${d.classification === o ? 'selected' : ''}>${o}</option>`).join('')}
           </select>
         </div>
         <div class="cp-field">
           <span class="cp-label">Credits</span>
           <div style="display:flex;gap:16px;align-items:center;">
-            <input type="number" class="cp-input" style="max-width:90px;" value="${d.credits ?? ''}" oninput="editDraft.credits=this.value?Number(this.value):null"/>
-            <label class="cp-check-row"><input type="checkbox" ${d.newCurriculum ? 'checked' : ''} onchange="editDraft.newCurriculum=this.checked"/>Active in curriculum</label>
+            <input type="number" class="cp-input" style="max-width:90px;" value="${d.credits ?? ''}" ${dis} ${oi('editDraft.credits=this.value?Number(this.value):null')}/>
+            <label class="cp-check-row"><input type="checkbox" ${d.newCurriculum ? 'checked' : ''} ${dis} ${oc('editDraft.newCurriculum=this.checked')}/>Active in curriculum</label>
           </div>
         </div>
         <div class="cp-field"><span class="cp-label">Program</span>
-          <select class="cp-select" onchange="editDraft.program=this.value;renderCoursePage()">
+          <select class="cp-select" ${dis} ${editing ? `onchange="editDraft.program=this.value;renderCoursePage()"` : ''}>
             ${PROGRAM_OPTIONS.map((o) => `<option ${d.program === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
           </select>
         </div>
-        <div class="cp-field"><span class="cp-label">Category</span><select class="cp-select" onchange="editDraft.category=this.value">${catOptions}</select></div>
-        <div class="cp-field"><span class="cp-label">Professor</span><input class="cp-input" value="${esc(d.professor)}" oninput="editDraft.professor=this.value"/></div>
+        <div class="cp-field"><span class="cp-label">Category</span><select class="cp-select" ${dis} ${oc('editDraft.category=this.value')}>${catOptions}</select></div>
+        <div class="cp-field"><span class="cp-label">Professor</span><input class="cp-input" value="${esc(d.professor)}" ${dis} ${oi('editDraft.professor=this.value')}/></div>
         <div class="cp-field"><span class="cp-label">Contact Information</span><input class="cp-input" value="${esc(d.contactEmail)}" disabled/></div>
-        <div class="cp-field"><span class="cp-label">Office Hours</span><input class="cp-input" value="${esc(d.officeHours)}" oninput="editDraft.officeHours=this.value"/></div>
+        <div class="cp-field"><span class="cp-label">Office Hours</span><input class="cp-input" value="${esc(d.officeHours)}" ${dis} ${oi('editDraft.officeHours=this.value')}/></div>
       </div>
     </div>
 
     <div class="cp-card">
       <div class="cp-card-title">Description & objectives</div>
       <div class="cp-field-grid">
-        <div class="cp-field full"><span class="cp-label">Course Description</span><textarea class="cp-textarea" rows="2" oninput="editDraft.description=this.value">${esc(d.description)}</textarea></div>
-        <div class="cp-field full"><span class="cp-label">Why This Course?</span><textarea class="cp-textarea" rows="2" oninput="editDraft.shortDescription=this.value">${esc(d.shortDescription)}</textarea></div>
-        <div class="cp-field full"><span class="cp-label">Prerequisite(s)</span><input class="cp-input" value="${esc(d.prerequisites)}" oninput="editDraft.prerequisites=this.value"/></div>
-        <div class="cp-field full"><span class="cp-label">Course Learning Objectives</span><textarea class="cp-textarea" rows="2" oninput="editDraft.learningObjectives=this.value">${esc(d.learningObjectives)}</textarea></div>
-        <div class="cp-field full"><span class="cp-label">Required Text</span><input class="cp-input" value="${esc(d.requiredText)}" oninput="editDraft.requiredText=this.value"/></div>
+        <div class="cp-field full"><span class="cp-label">Course Description</span><textarea class="cp-textarea" rows="2" ${dis} ${oi('editDraft.description=this.value')}>${esc(d.description)}</textarea></div>
+        <div class="cp-field full"><span class="cp-label">Why This Course?</span><textarea class="cp-textarea" rows="2" ${dis} ${oi('editDraft.shortDescription=this.value')}>${esc(d.shortDescription)}</textarea></div>
+        <div class="cp-field full"><span class="cp-label">Prerequisite(s)</span><input class="cp-input" value="${esc(d.prerequisites)}" ${dis} ${oi('editDraft.prerequisites=this.value')}/></div>
+        <div class="cp-field full"><span class="cp-label">Course Learning Objectives</span><textarea class="cp-textarea" rows="2" ${dis} ${oi('editDraft.learningObjectives=this.value')}>${esc(d.learningObjectives)}</textarea></div>
+        <div class="cp-field full"><span class="cp-label">Required Text</span><input class="cp-input" value="${esc(d.requiredText)}" ${dis} ${oi('editDraft.requiredText=this.value')}/></div>
       </div>
     </div>
 
@@ -865,7 +865,12 @@ function renderCpMainEdit(c) {
 
     <div class="cp-card">
       <div class="cp-card-title">Schedule periods</div>
-      <div id="periods-editor-inner">${editPeriods.length ? periodsEditorInnerHtml() : '<div class="cp-empty">Loading…</div>'}</div>
+      ${periodsHtmlBlock}
+    </div>
+
+    <div class="cp-card">
+      <div class="cp-card-title">Syllabus document</div>
+      ${syllabusVal}
     </div>
   `;
 }
