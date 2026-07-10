@@ -93,13 +93,13 @@ button,input{font-family:inherit;}
 
 /* LIST */
 .list-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;}
-.list-row{display:flex;align-items:center;gap:16px;padding:16px 22px;border-bottom:1px solid var(--border);cursor:pointer;}
+.list-row{display:flex;align-items:center;gap:18px;padding:18px 22px;border-bottom:1px solid var(--border);cursor:pointer;}
 .list-row:last-child{border-bottom:none;}
 .list-row:hover{background:var(--surface2);}
-.lr-code{font-family:'DM Mono',monospace;font-size:14px;color:var(--text3);width:76px;flex-shrink:0;}
-.lr-title{font-size:16px;color:var(--text2);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.lr-cred{font-size:14px;color:var(--text3);flex-shrink:0;}
-.lr-status{font-size:14px;color:var(--text3);width:84px;text-align:right;flex-shrink:0;}
+.lr-code{font-family:'DM Mono',monospace;font-size:16px;font-weight:500;color:var(--text3);width:88px;flex-shrink:0;}
+.lr-title{font-size:19px;font-weight:500;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lr-cred{font-size:15px;color:var(--text3);flex-shrink:0;}
+.lr-status{font-size:15px;color:var(--text3);width:90px;text-align:right;flex-shrink:0;}
 .empty-row{padding:26px 22px;font-size:15px;color:var(--text3);font-style:italic;}
 
 /* TIMETABLE */
@@ -302,7 +302,7 @@ let supabaseUser = null;
 let PROFESSOR = { name: '', email: '', school: '', isChair: false };
 let courses = [];
 let dataLoaded = false;
-let viewMode = { thisSemester: 'grid', upcoming: 'list' };
+let viewMode = { thisSemester: 'grid', upcoming: 'list', history: 'list' };
 let historyExpanded = false;
 let loginAttempts = 0, loginLocked = false;
 
@@ -633,6 +633,7 @@ function renderHome() {
           <span class="sec-dot" style="background:var(--text3);"></span>
           <span class="sec-label" style="color:var(--text2);">Course history</span>
         </div>
+        <div class="view-toggle" id="toggle-history"></div>
       </div>
       <div id="history-body"></div>
     </div>
@@ -641,6 +642,7 @@ function renderHome() {
   renderKpis();
   renderViewToggle('thisSemester', 'toggle-this-semester');
   renderViewToggle('upcoming', 'toggle-upcoming');
+  renderViewToggle('history', 'toggle-history');
   renderThisSemester();
   renderTimetable();
   renderUpcoming();
@@ -687,8 +689,11 @@ function renderViewToggle(key, containerId) {
 }
 function setViewMode(key, mode) {
   viewMode[key] = mode;
-  renderViewToggle(key, key === 'thisSemester' ? 'toggle-this-semester' : 'toggle-upcoming');
-  if (key === 'thisSemester') renderThisSemester(); else renderUpcoming();
+  const toggleId = key === 'thisSemester' ? 'toggle-this-semester' : key === 'upcoming' ? 'toggle-upcoming' : 'toggle-history';
+  renderViewToggle(key, toggleId);
+  if (key === 'thisSemester') renderThisSemester();
+  else if (key === 'upcoming') renderUpcoming();
+  else renderHistory();
 }
 
 // ── RENDER: course card / row helpers ──
@@ -831,16 +836,10 @@ function renderHistory() {
 
   let rows = visibleGroups.map(([semester, list], idx) => {
     const isLast = idx === visibleGroups.length - 1 && !hiddenGroups.length;
-    const courseRows = list
-      .sort((a, b) => a.code.localeCompare(b.code))
-      .map(c => `
-        <div class="tl-course-row" onclick="goToCourse('${c.id}','${esc(c.code)}')">
-          <span class="lr-code">${esc(c.code)}</span>
-          <span class="lr-title">${esc(c.title)}</span>
-          <span class="lr-cred">${creditsText(c.credits)} · ${esc(c.classification)}</span>
-          <span class="lr-status">${c.status === 'published' ? 'Published' : 'Draft'}</span>
-          <span class="chev">${chevronSvg()}</span>
-        </div>`).join('');
+    const sorted = [...list].sort((a, b) => a.code.localeCompare(b.code));
+    const body = viewMode.history === 'grid'
+      ? `<div class="course-grid">${sorted.map(courseCardHtml).join('')}</div>`
+      : `<div class="list-card">${sorted.map(courseListRowHtml).join('')}</div>`;
     return `
       <div class="tl-row">
         <div class="tl-spine">
@@ -849,7 +848,7 @@ function renderHistory() {
         </div>
         <div class="tl-body">
           <p class="tl-sem">${esc(semester)} <span class="n">· ${list.length} course${list.length > 1 ? 's' : ''}</span></p>
-          ${courseRows}
+          ${body}
         </div>
       </div>`;
   }).join('');
