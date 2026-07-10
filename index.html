@@ -156,6 +156,43 @@ button,input{font-family:inherit;}
 .cp-empty{padding:48px 20px;text-align:center;color:var(--text3);font-size:15px;}
 .cp-empty-hint{font-size:13px;color:var(--text3);margin-top:8px;}
 
+/* COURSE PAGE — EDIT MODE */
+.cp-actions{margin-left:auto;display:flex;gap:10px;flex-shrink:0;}
+.btn{height:40px;padding:0 18px;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border-em);background:var(--surface);color:var(--text);display:inline-flex;align-items:center;gap:7px;}
+.btn:hover{background:var(--surface2);}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue);}
+.btn-primary:hover{background:var(--blue-b);}
+.btn-primary:disabled{opacity:.55;cursor:default;}
+.cp-input,.cp-select,.cp-textarea{width:100%;font-size:15px;font-family:inherit;color:var(--text);border:1px solid var(--border-em);border-radius:var(--r);padding:0 13px;height:42px;background:var(--surface);outline:none;}
+.cp-textarea{height:auto;padding:10px 13px;resize:vertical;line-height:1.5;}
+.cp-input:focus,.cp-select:focus,.cp-textarea:focus{border-color:var(--blue-m);}
+.cp-check-row{display:flex;align-items:center;gap:9px;height:42px;font-size:15px;color:var(--text);}
+.cp-check-row input{width:17px;height:17px;}
+.cp-day-row{display:flex;gap:7px;flex-wrap:wrap;}
+.cp-day-btn{width:46px;height:38px;border-radius:var(--r);border:1px solid var(--border-em);background:var(--surface);color:var(--text2);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+.cp-day-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+.cp-chip-btn{padding:0 14px;height:38px;border-radius:var(--r);border:1px solid var(--border-em);background:var(--surface);color:var(--text2);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;}
+.cp-chip-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+.cp-comp-row{display:flex;align-items:center;gap:16px;padding:12px 0;border-bottom:1px solid var(--border);}
+.cp-comp-row:last-of-type{border-bottom:none;}
+.cp-comp-name{flex:1;font-size:15px;color:var(--text);}
+.cp-comp-input{width:70px;text-align:center;flex-shrink:0;}
+.cp-comp-bar-wrap{flex:1;max-width:220px;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;flex-shrink:0;}
+.cp-comp-bar{height:100%;background:var(--blue);}
+.cp-comp-pct{width:44px;font-size:14px;color:var(--text3);text-align:right;flex-shrink:0;}
+.cp-comp-total{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border-em);padding-top:14px;margin-top:6px;font-weight:600;font-size:15px;}
+.cp-period-card{border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;margin-bottom:16px;}
+.cp-period-hd{display:flex;align-items:flex-end;gap:20px;margin-bottom:20px;}
+.cp-period-badge{background:var(--blue);color:#fff;font-size:12px;font-weight:600;padding:5px 11px;border-radius:12px;height:fit-content;flex-shrink:0;}
+.cp-date-range{display:flex;align-items:center;gap:10px;}
+.cp-date-range input{width:auto;}
+.cp-tz-row{display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border-radius:var(--r);padding:9px 13px;font-size:14px;margin-bottom:6px;}
+.cp-tz-row .rm{border:none;background:none;cursor:pointer;color:var(--text3);width:24px;height:24px;flex-shrink:0;}
+.cp-add-period{border:1.5px dashed var(--border-em);border-radius:var(--r-lg);padding:14px;text-align:center;}
+.cp-add-period button,.cp-edit-add-tz{border:none;background:none;color:var(--blue);font-weight:600;cursor:pointer;font-family:inherit;font-size:14px;}
+.cp-period-remove{border:none;background:none;color:var(--text3);cursor:pointer;font-size:13px;font-family:inherit;margin-left:auto;}
+.cp-period-remove:hover{color:var(--red);}
+
 /* LOGIN WALL */
 #login-wall,#pw-change-wall{position:fixed;inset:0;background:#f7f6f3;z-index:300;display:flex;align-items:center;justify-content:center;}
 .auth-card{background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.1);width:100%;max-width:480px;overflow:hidden;margin:0 16px;}
@@ -362,6 +399,10 @@ function clockSvg() {
 // ── COURSE PAGE (in-page navigation, not a popup) ──
 let currentCourseId = null;
 let courseTab = 'main';
+let editMode = false;
+let editDraft = null;
+let editPeriods = [];
+let periodsCache = {}; // { [offeringId]: mapped period rows already saved in the DB }
 const CP_TABS = [
   { key: 'main', label: 'Main' },
   { key: 'assessment', label: 'Assessment' },
@@ -375,6 +416,7 @@ function goToCourse(id) {
   location.hash = `course/${id}`;
 }
 function backToHome() {
+  editMode = false; editDraft = null; editPeriods = [];
   location.hash = '';
 }
 window.addEventListener('hashchange', handleRoute);
@@ -384,6 +426,7 @@ function handleRoute() {
   if (m) {
     currentCourseId = m[1];
     courseTab = 'main';
+    editMode = false; editDraft = null; editPeriods = [];
     document.getElementById('page-home').style.display = 'none';
     document.getElementById('page-course').style.display = 'block';
     renderCoursePage();
@@ -395,6 +438,7 @@ function handleRoute() {
 
 function setCourseTab(tab) {
   courseTab = tab;
+  editMode = false; editDraft = null; editPeriods = [];
   renderCoursePage();
 }
 
@@ -456,7 +500,7 @@ function renderCoursePage() {
 
   let tabContent;
   if (courseTab === 'main') {
-    tabContent = renderCpMain(c);
+    tabContent = editMode ? renderCpMainEdit(c) : renderCpMain(c);
   } else {
     const cache = courseDetailCache[c.id] || {};
     const data = cache[courseTab];
@@ -476,12 +520,17 @@ function renderCoursePage() {
     }
   }
 
+  const actions = editMode
+    ? `<button class="btn" onclick="cancelEdit()">Cancel</button><button class="btn btn-primary" id="cp-save-btn" onclick="saveCourseEdits()"><i></i>Save changes</button>`
+    : (courseTab === 'main' ? `<button class="btn" onclick="enterEditMode()">Edit</button>` : '');
+
   el.innerHTML = `
     <button class="cp-back" onclick="backToHome()">${chevronSvg()} Back to courses</button>
     <div class="cp-header">
       <div class="cp-title-row">
         <span class="chip-code">${esc(c.code)}</span>
         <span class="badge ${c.status === 'published' ? 'badge-published' : 'badge-draft'}">${c.status === 'published' ? 'Published' : 'Draft'}</span>
+        <div class="cp-actions">${actions}</div>
       </div>
       <p class="cp-title">${esc(c.title)}</p>
       <p class="cp-meta">${esc(c.semester)} · ${creditsText(c.credits)} · ${esc(c.classification)}</p>
@@ -492,6 +541,216 @@ function renderCoursePage() {
     <div id="cp-tab-body">${tabContent}</div>
   `;
 }
+
+// ── COURSE PAGE — EDIT MODE ──
+async function enterEditMode() {
+  const c = courses.find(x => String(x.id) === String(currentCourseId));
+  if (!c) return;
+  editDraft = {
+    title: c.title,
+    classification: c.classification === '—' ? 'Elective' : c.classification,
+    credits: c.credits,
+    program: c.program || PROGRAM_OPTIONS[3],
+    category: c.category || CATEGORY_KEYS[0],
+    professor: c.professor,
+    contactEmail: PROFESSOR.email,
+    officeHours: c.officeHours,
+    description: c.description,
+    shortDescription: c.shortDescription,
+    prerequisites: c.prerequisites,
+    learningObjectives: c.learningObjectives,
+    requiredText: c.requiredText,
+    newCurriculum: c.newCurriculum,
+    competencies: c.competenciesRaw.map(x => ({ ...x })),
+  };
+  editMode = true;
+  renderCoursePage();
+  await ensurePeriodsLoaded(c.id);
+  renderPeriodsEditor();
+}
+
+function cancelEdit() {
+  editMode = false; editDraft = null; editPeriods = [];
+  renderCoursePage();
+}
+
+async function ensurePeriodsLoaded(offeringId) {
+  if (periodsCache[offeringId]) {
+    editPeriods = periodsCache[offeringId].map(p => JSON.parse(JSON.stringify(p)));
+    return;
+  }
+  try {
+    const rows = await sbGet('course_schedule_periods', `offering_id=eq.${offeringId}&select=*&order=id.asc`);
+    if (rows.length) {
+      const mapped = rows.map(r => ({
+        id: r.id, campusNote: r.campus_note || '', validFrom: r.valid_from || '', validTo: r.valid_to || '',
+        days: { mon: !!r.mon, tue: !!r.tue, wed: !!r.wed, thu: !!r.thu, fri: !!r.fri, sat: !!r.sat, sun: !!r.sun },
+        startTime: (r.start_time || '09:00:00').slice(0, 5), durationMin: r.duration_min || 75,
+        timezone: r.timezone || 'America/Los_Angeles', extraZones: r.extra_timezones || [],
+      }));
+      periodsCache[offeringId] = mapped;
+      editPeriods = mapped.map(p => JSON.parse(JSON.stringify(p)));
+    } else {
+      // No saved periods yet — seed "Period 1" from this offering's existing
+      // legacy single-schedule fields (mon..sun / class_time) so nothing is lost.
+      const c = courses.find(x => x.id === offeringId);
+      const seed = newSchedulePeriod();
+      if (c) {
+        FULL_DAY_ORDER.forEach(d => { seed.days[d.toLowerCase().slice(0, 3)] = c.scheduleDays.includes(d); });
+        if (c.startTime) seed.startTime = c.startTime;
+      }
+      editPeriods = [seed];
+    }
+  } catch (e) {
+    editPeriods = [newSchedulePeriod()];
+    showToast('Could not load schedule periods: ' + e.message);
+  }
+}
+
+async function saveCourseEdits() {
+  const c = courses.find(x => String(x.id) === String(currentCourseId));
+  if (!c || !editDraft) return;
+  const btn = document.getElementById('cp-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  try {
+    const d = editDraft;
+    const coursePatch = {
+      title: d.title, classification: d.classification, credits: d.credits,
+      program: d.program, category: d.category,
+      description: d.description, short_description: d.shortDescription,
+      prerequisites: d.prerequisites, learning_objectives: d.learningObjectives,
+      required_text: d.requiredText, new_curriculum: d.newCurriculum,
+    };
+    d.competencies.forEach((comp) => { coursePatch[comp.col] = comp.pct; });
+    await sbPatch('courses', `course_id=eq.${encodeURIComponent(c.courseBaseId)}`, coursePatch);
+    await sbPatch(TBL_OFFERINGS, `offering_id=eq.${c.id}`, { professor: d.professor, office_hours: d.officeHours });
+
+    await sbDelete('course_schedule_periods', `offering_id=eq.${c.id}`);
+    if (editPeriods.length) {
+      const rows = editPeriods.map((p) => ({
+        offering_id: c.id, campus_note: p.campusNote || null,
+        valid_from: p.validFrom || null, valid_to: p.validTo || null,
+        mon: p.days.mon, tue: p.days.tue, wed: p.days.wed, thu: p.days.thu,
+        fri: p.days.fri, sat: p.days.sat, sun: p.days.sun,
+        start_time: p.startTime, duration_min: p.durationMin,
+        timezone: p.timezone, extra_timezones: p.extraZones,
+      }));
+      await sbInsert('course_schedule_periods', rows);
+    }
+    delete periodsCache[c.id];
+    editMode = false; editDraft = null; editPeriods = [];
+    showToast('Changes saved');
+    await loadData(); // refreshes `courses` from the DB and re-renders via handleRoute()
+  } catch (e) {
+    showToast('Save failed: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Save changes'; }
+  }
+}
+
+function setCompetencyPct(i, val) {
+  const v = Math.max(0, Math.min(100, Number(val) || 0));
+  editDraft.competencies[i].pct = v;
+  const bar = document.getElementById('comp-bar-' + i);
+  const pct = document.getElementById('comp-pct-' + i);
+  if (bar) bar.style.width = v + '%';
+  if (pct) pct.textContent = v + '%';
+  const total = editDraft.competencies.reduce((s, x) => s + Number(x.pct), 0);
+  const totalEl = document.getElementById('comp-total');
+  if (totalEl) { totalEl.textContent = total + '%'; totalEl.style.color = total === 100 ? 'var(--blue)' : 'var(--red)'; }
+}
+
+// ── Schedule periods editor ──
+function periodCardHtml(p, i) {
+  const dayBtns = FULL_DAY_ORDER.map((d) => {
+    const key = d.toLowerCase().slice(0, 3);
+    return `<button type="button" class="cp-day-btn ${p.days[key] ? 'active' : ''}" onclick="togglePeriodDay(${i},'${key}')">${d.slice(0, 2)}</button>`;
+  }).join('');
+  const durBtns = DURATION_OPTIONS.map((m) =>
+    `<button type="button" class="cp-chip-btn ${p.durationMin === m ? 'active' : ''}" onclick="setPeriodDuration(${i},${m})">${m}m</button>`
+  ).join('');
+  const tzOptions = TIMEZONE_OPTIONS.map((t) =>
+    `<option value="${t.iana}" ${p.timezone === t.iana ? 'selected' : ''}>${t.label}</option>`
+  ).join('');
+  const activeDays = FULL_DAY_ORDER.filter((d) => p.days[d.toLowerCase().slice(0, 3)]);
+
+  let preview;
+  if (activeDays.length && p.startTime) {
+    const parts = activeDays.map((d) => {
+      const r = convertDayToZone(d, p.startTime, p.durationMin, p.validFrom, p.timezone, p.timezone);
+      return `${r.weekday} ${r.startTime}–${r.endTime}`;
+    });
+    preview = `<p style="font-size:15px;color:var(--text);margin:0;">${esc(parts.join(', '))} ${esc(tzLabel(p.timezone))}</p>`;
+  } else {
+    preview = `<p style="font-size:14px;color:var(--text3);font-style:italic;margin:0;">Select class days and a start time to preview.</p>`;
+  }
+
+  const extraRows = p.extraZones.map((tz, zi) => {
+    let line = '';
+    if (activeDays.length && p.startTime) {
+      line = activeDays.map((d) => {
+        const r = convertDayToZone(d, p.startTime, p.durationMin, p.validFrom, p.timezone, tz);
+        const shift = r.dayShift > 0 ? ' (+1 day)' : r.dayShift < 0 ? ' (-1 day)' : '';
+        return `${r.weekday} ${r.startTime}–${r.endTime}${shift}`;
+      }).join(', ');
+    }
+    return `<div class="cp-tz-row"><span>${esc(tzLabel(tz))}</span><span style="color:var(--text2);">${esc(line)}</span><button class="rm" onclick="removeExtraZone(${i},${zi})" aria-label="Remove time zone">×</button></div>`;
+  }).join('');
+
+  const availableExtra = TIMEZONE_OPTIONS.filter((t) => t.iana !== p.timezone && !p.extraZones.includes(t.iana));
+  const addZoneSelect = p.extraZones.length >= 3 ? '' : `
+    <select class="cp-select" style="max-width:260px;" onchange="if(this.value){addExtraZone(${i},this.value);}">
+      <option value="">+ Add time zone (${p.extraZones.length} of 3)</option>
+      ${availableExtra.map((t) => `<option value="${t.iana}">${t.label}</option>`).join('')}
+    </select>`;
+
+  return `
+    <div class="cp-period-card">
+      <div class="cp-period-hd">
+        <span class="cp-period-badge">Period ${i + 1}</span>
+        <input class="cp-input" style="max-width:170px;" placeholder="Location note" value="${esc(p.campusNote)}" oninput="editPeriods[${i}].campusNote=this.value"/>
+        <div style="flex:1;">
+          <span class="cp-label" style="display:block;margin-bottom:6px;">Valid dates</span>
+          <div class="cp-date-range">
+            <input type="date" class="cp-input" value="${p.validFrom}" onchange="setPeriodField(${i},'validFrom',this.value)"/>
+            ${chevronSvg()}
+            <input type="date" class="cp-input" value="${p.validTo}" onchange="setPeriodField(${i},'validTo',this.value)"/>
+          </div>
+        </div>
+        ${editPeriods.length > 1 ? `<button class="cp-period-remove" onclick="removePeriod(${i})">Remove</button>` : ''}
+      </div>
+      <span class="cp-label" style="display:block;margin-bottom:8px;">Class days</span>
+      <div class="cp-day-row" style="margin-bottom:20px;">${dayBtns}</div>
+      <div style="display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:20px;margin-bottom:16px;">
+        <div><span class="cp-label" style="display:block;margin-bottom:6px;">Start time</span><input type="time" class="cp-input" value="${p.startTime}" onchange="setPeriodField(${i},'startTime',this.value)"/></div>
+        <div><span class="cp-label" style="display:block;margin-bottom:6px;">Time zone</span><select class="cp-select" onchange="setPeriodField(${i},'timezone',this.value)">${tzOptions}</select></div>
+        <div><span class="cp-label" style="display:block;margin-bottom:6px;">Duration</span><div style="display:flex;gap:6px;">${durBtns}</div></div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:12px;">
+        <p class="cp-label" style="margin-bottom:6px;">Class time in your time zone</p>
+        ${preview}
+      </div>
+      <div>
+        <p class="cp-label" style="margin-bottom:8px;">Class time in other selected time zones</p>
+        ${extraRows}
+        ${addZoneSelect}
+      </div>
+    </div>`;
+}
+function periodsEditorInnerHtml() {
+  return `${editPeriods.map((p, i) => periodCardHtml(p, i)).join('')}
+    <div class="cp-add-period"><button onclick="addPeriod()">+ Add another period</button></div>`;
+}
+function renderPeriodsEditor() {
+  const el = document.getElementById('periods-editor-inner');
+  if (el) el.innerHTML = periodsEditorInnerHtml();
+}
+function togglePeriodDay(i, key) { editPeriods[i].days[key] = !editPeriods[i].days[key]; renderPeriodsEditor(); }
+function setPeriodDuration(i, mins) { editPeriods[i].durationMin = mins; renderPeriodsEditor(); }
+function setPeriodField(i, field, value) { editPeriods[i][field] = value; renderPeriodsEditor(); }
+function addExtraZone(i, iana) { if (editPeriods[i].extraZones.length < 3) editPeriods[i].extraZones.push(iana); renderPeriodsEditor(); }
+function removeExtraZone(i, zi) { editPeriods[i].extraZones.splice(zi, 1); renderPeriodsEditor(); }
+function addPeriod() { editPeriods.push(newSchedulePeriod()); renderPeriodsEditor(); }
+function removePeriod(i) { editPeriods.splice(i, 1); renderPeriodsEditor(); }
 
 // Design (1) Main — all fields read from course_offerings/courses.
 function renderCpMain(c) {
@@ -534,6 +793,79 @@ function renderCpMain(c) {
     <div class="cp-card">
       <div class="cp-card-title">Syllabus document</div>
       ${syllabusVal}
+    </div>
+  `;
+}
+
+// Design (1) Main — edit mode. Course ID and Semester are locked: changing
+// either one on the real spreadsheet creates a new course/syllabus rather
+// than editing this one, so they're not safe to PATCH from here.
+function renderCpMainEdit(c) {
+  const d = editDraft;
+  const catMap = CURRICULUM_CATEGORIES[d.program];
+  const catOptions = CATEGORY_KEYS.map((k) =>
+    `<option value="${k}" ${d.category === k ? 'selected' : ''}>${esc(catMap ? catMap[k] : k)}</option>`
+  ).join('');
+  const compRows = d.competencies.map((comp, i) => `
+    <div class="cp-comp-row">
+      <span class="cp-comp-name">${esc(comp.label)}</span>
+      <input type="number" min="0" max="100" class="cp-input cp-comp-input" value="${comp.pct}" oninput="setCompetencyPct(${i}, this.value)"/>
+      <div class="cp-comp-bar-wrap"><div class="cp-comp-bar" id="comp-bar-${i}" style="width:${comp.pct}%;"></div></div>
+      <span class="cp-comp-pct" id="comp-pct-${i}">${comp.pct}%</span>
+    </div>`).join('');
+  const compTotal = d.competencies.reduce((s, x) => s + Number(x.pct), 0);
+
+  return `
+    <div class="cp-card">
+      <div class="cp-card-title">Course details</div>
+      <div class="cp-field-grid">
+        <div class="cp-field"><span class="cp-label">Course ID</span><input class="cp-input" value="${esc(c.code)}" disabled/></div>
+        <div class="cp-field"><span class="cp-label">Semester</span><input class="cp-input" value="${esc(c.semester)}" disabled/></div>
+        <div class="cp-field full"><span class="cp-label">Course title</span><input class="cp-input" value="${esc(d.title)}" oninput="editDraft.title=this.value"/></div>
+        <div class="cp-field"><span class="cp-label">Classification</span>
+          <select class="cp-select" onchange="editDraft.classification=this.value">
+            ${CLASSIFICATION_OPTIONS.map((o) => `<option ${d.classification === o ? 'selected' : ''}>${o}</option>`).join('')}
+          </select>
+        </div>
+        <div class="cp-field">
+          <span class="cp-label">Credits</span>
+          <div style="display:flex;gap:16px;align-items:center;">
+            <input type="number" class="cp-input" style="max-width:90px;" value="${d.credits ?? ''}" oninput="editDraft.credits=this.value?Number(this.value):null"/>
+            <label class="cp-check-row"><input type="checkbox" ${d.newCurriculum ? 'checked' : ''} onchange="editDraft.newCurriculum=this.checked"/>Active in curriculum</label>
+          </div>
+        </div>
+        <div class="cp-field"><span class="cp-label">Program</span>
+          <select class="cp-select" onchange="editDraft.program=this.value;renderCoursePage()">
+            ${PROGRAM_OPTIONS.map((o) => `<option ${d.program === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="cp-field"><span class="cp-label">Category</span><select class="cp-select" onchange="editDraft.category=this.value">${catOptions}</select></div>
+        <div class="cp-field"><span class="cp-label">Professor</span><input class="cp-input" value="${esc(d.professor)}" oninput="editDraft.professor=this.value"/></div>
+        <div class="cp-field"><span class="cp-label">Contact Information</span><input class="cp-input" value="${esc(d.contactEmail)}" disabled/></div>
+        <div class="cp-field"><span class="cp-label">Office Hours</span><input class="cp-input" value="${esc(d.officeHours)}" oninput="editDraft.officeHours=this.value"/></div>
+      </div>
+    </div>
+
+    <div class="cp-card">
+      <div class="cp-card-title">Description & objectives</div>
+      <div class="cp-field-grid">
+        <div class="cp-field full"><span class="cp-label">Course Description</span><textarea class="cp-textarea" rows="2" oninput="editDraft.description=this.value">${esc(d.description)}</textarea></div>
+        <div class="cp-field full"><span class="cp-label">Why This Course?</span><textarea class="cp-textarea" rows="2" oninput="editDraft.shortDescription=this.value">${esc(d.shortDescription)}</textarea></div>
+        <div class="cp-field full"><span class="cp-label">Prerequisite(s)</span><input class="cp-input" value="${esc(d.prerequisites)}" oninput="editDraft.prerequisites=this.value"/></div>
+        <div class="cp-field full"><span class="cp-label">Course Learning Objectives</span><textarea class="cp-textarea" rows="2" oninput="editDraft.learningObjectives=this.value">${esc(d.learningObjectives)}</textarea></div>
+        <div class="cp-field full"><span class="cp-label">Required Text</span><input class="cp-input" value="${esc(d.requiredText)}" oninput="editDraft.requiredText=this.value"/></div>
+      </div>
+    </div>
+
+    <div class="cp-card">
+      <div class="cp-card-title">6 key competencies</div>
+      ${compRows}
+      <div class="cp-comp-total"><span>Total</span><span id="comp-total" style="color:${compTotal === 100 ? 'var(--blue)' : 'var(--red)'};">${compTotal}%</span></div>
+    </div>
+
+    <div class="cp-card">
+      <div class="cp-card-title">Schedule periods</div>
+      <div id="periods-editor-inner">${editPeriods.length ? periodsEditorInnerHtml() : '<div class="cp-empty">Loading…</div>'}</div>
     </div>
   `;
 }
@@ -626,6 +958,21 @@ async function sbGet(table, params = '') {
   }
   return r.json();
 }
+async function sbWrite(method, table, params, body) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params ? '?' + params : ''}`, {
+    method, headers: sbHeaders(), body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  if (r.status === 401) { showToast('Session expired. Please sign in again.'); handleSignOut(); throw new Error('Session expired'); }
+  if (!r.ok) {
+    const errBody = await r.json().catch(() => ({}));
+    throw new Error(errBody.message || errBody.hint || `HTTP ${r.status}`);
+  }
+  const text = await r.text();
+  return text ? JSON.parse(text) : null;
+}
+function sbPatch(table, params, body) { return sbWrite('PATCH', table, params, body); }
+function sbInsert(table, body) { return sbWrite('POST', table, '', body); }
+function sbDelete(table, params) { return sbWrite('DELETE', table, params); }
 
 // ── AUTH ──
 async function handleWallLogin() {
@@ -789,6 +1136,130 @@ const COMPETENCY_COLS = [
   ['competency_global_harmony', 'Global Harmony and Sustainability'],
 ];
 
+// ── Dropdown option lists, sourced from Tae.Sylla — Release 1.8's
+// "Dropdown Options" and "Curriculum Category" worksheets. These are
+// reference/admin lists (rarely change) so they're embedded here rather
+// than fetched from a table, matching how DAY_ORDER/COURSE_COLORS work.
+const PROGRAM_OPTIONS = [
+  'Innovation Foundations', 'Humanities and Social Sciences', 'Natural Sciences',
+  'Data Science and Artificial Intelligence', 'Business Innovation',
+  'Cross-disciplinary', 'AI Graduate Program', 'AI Academy Program',
+];
+const CLASSIFICATION_OPTIONS = ['Required', 'Elective'];
+const CATEGORY_KEYS = ['Fundamentals', 'Advanced', 'Interdisciplinary'];
+// program -> { Fundamentals|Advanced|Interdisciplinary: description }
+const CURRICULUM_CATEGORIES = {
+  'Humanities and Social Sciences': {
+    Fundamentals: 'Fundamentals — Exploring Humans and Society',
+    Advanced: 'Advanced — Deepening Knowledge and Critical Insight',
+    Interdisciplinary: 'Interdisciplinary — Connecting Ideas Across Fields',
+  },
+  'Data Science and Artificial Intelligence': {
+    Fundamentals: 'Fundamentals — Exploring Data and AI Domain',
+    Advanced: 'Advanced — Expanding Data and AI Mastery',
+    Interdisciplinary: 'Interdisciplinary — Bridging Data Science and AI Across Domains',
+  },
+  'Business Innovation': {
+    Fundamentals: 'Fundamentals — Building the Foundation for Business Innovation',
+    Advanced: 'Advanced — Driving Business Innovation through Strategic Leadership',
+    Interdisciplinary: 'Interdisciplinary — Connecting Innovation Across Industries and Disciplines',
+  },
+  'Natural Sciences': {
+    Fundamentals: 'Fundamentals — Curiosity: Foundational Insights',
+    Advanced: 'Advanced — Progress: Expanding Frontiers',
+    Interdisciplinary: 'Interdisciplinary — Understanding: Science in Society',
+  },
+  'AI Graduate Program': {
+    Fundamentals: 'Fundamentals — Tasting and Understanding X+AI',
+    Advanced: 'Advanced — Advancing and Practicing X+AI',
+    Interdisciplinary: 'Interdisciplinary — Managing X+AI',
+  },
+};
+// Timezone dropdown — IANA zone + short label, exactly as listed in
+// Dropdown Options. Using real IANA zones (not fixed offsets) means DST is
+// handled correctly by the browser's Intl API.
+const TIMEZONE_OPTIONS = [
+  { iana: 'America/Los_Angeles', label: 'Pacific Time' },
+  { iana: 'America/New_York', label: 'Eastern Time' },
+  { iana: 'America/Chicago', label: 'Central Time' },
+  { iana: 'Asia/Seoul', label: 'Korea Time' },
+  { iana: 'Europe/London', label: 'London Time' },
+  { iana: 'Asia/Shanghai', label: 'China Time' },
+];
+const DURATION_OPTIONS = [50, 75, 100, 120];
+const FULL_DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+// ── Timezone conversion (real IANA zones via Intl, DST-aware) ──
+// Treat (y,mo,d,h,mi) as wall-clock time in `timeZone` and return the true
+// UTC instant (ms). Works by seeing what a naive "as if UTC" instant reads
+// as in `timeZone`, then correcting by the difference — a standard trick
+// for zone math without a tz database library.
+function zonedWallTimeToUtcMs(y, mo, d, h, mi, timeZone) {
+  const naiveUTC = Date.UTC(y, mo - 1, d, h, mi);
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone, hourCycle: 'h23',
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
+  });
+  const parts = dtf.formatToParts(new Date(naiveUTC));
+  const get = (t) => parseInt(parts.find(p => p.type === t).value, 10);
+  const asIfZoneWereUTC = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
+  return naiveUTC - (asIfZoneWereUTC - naiveUTC);
+}
+function utcMsInZone(utcMs, timeZone) {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone, hourCycle: 'h23', weekday: 'short',
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+  });
+  const parts = dtf.formatToParts(new Date(utcMs));
+  const get = (t) => parts.find(p => p.type === t).value;
+  return { weekday: get('weekday'), y: +get('year'), mo: +get('month'), d: +get('day'), h: +get('hour'), mi: +get('minute') };
+}
+// Given a period's own valid_from date as the seasonal anchor (so DST is
+// correct for that semester), find the calendar date for `dayAbbr` in the
+// same week as validFrom.
+function refDateForDay(validFromStr, dayAbbr) {
+  const anchor = validFromStr ? new Date(validFromStr + 'T00:00:00Z') : new Date();
+  const anchorDow = (anchor.getUTCDay() + 6) % 7; // Mon=0..Sun=6
+  const targetDow = FULL_DAY_ORDER.indexOf(dayAbbr);
+  const shifted = new Date(anchor.getTime() + (targetDow - anchorDow) * 86400000);
+  return [shifted.getUTCFullYear(), shifted.getUTCMonth() + 1, shifted.getUTCDate()];
+}
+function addMinutes(h, mi, mins) {
+  const total = h * 60 + mi + mins;
+  return [Math.floor(((total % 1440) + 1440) % 1440 / 60), ((total % 60) + 60) % 60];
+}
+function tzLabel(iana) {
+  const opt = TIMEZONE_OPTIONS.find(t => t.iana === iana);
+  return opt ? opt.label : iana;
+}
+// Convert one day's class time from `fromTz` to `toTz`, returning the
+// resulting weekday label(s) and time range, with a day-shift note if the
+// converted day differs from the source day.
+function convertDayToZone(dayAbbr, startTime, durationMin, validFrom, fromTz, toTz) {
+  const [h, mi] = startTime.split(':').map(Number);
+  const [y, mo, d] = refDateForDay(validFrom, dayAbbr);
+  const startUtc = zonedWallTimeToUtcMs(y, mo, d, h, mi, fromTz);
+  const [eh, emi] = addMinutes(h, mi, durationMin);
+  const endUtc = startUtc + durationMin * 60000;
+  const startInTo = utcMsInZone(startUtc, toTz);
+  const endInTo = utcMsInZone(endUtc, toTz);
+  const dayShift = Math.round((Date.UTC(startInTo.y, startInTo.mo - 1, startInTo.d) - Date.UTC(y, mo - 1, d)) / 86400000);
+  const pad = (n) => String(n).padStart(2, '0');
+  return {
+    weekday: startInTo.weekday,
+    startTime: `${pad(startInTo.h)}:${pad(startInTo.mi)}`,
+    endTime: `${pad(endInTo.h)}:${pad(endInTo.mi)}`,
+    dayShift,
+  };
+}
+function newSchedulePeriod() {
+  return {
+    id: null, campusNote: '', validFrom: '', validTo: '',
+    days: { mon: false, tue: false, wed: false, thu: false, fri: false, sat: false, sun: false },
+    startTime: '09:00', durationMin: 75, timezone: 'America/Los_Angeles', extraZones: [],
+  };
+}
+
 function parseClassTime(text) {
   if (!text) return { start: '', end: '' };
   const m = String(text).match(/(\d{1,2}):(\d{2})\s*(am|pm)?\s*(?:-|–|~|to)\s*(\d{1,2}):(\d{2})\s*(am|pm)?/i);
@@ -825,11 +1296,13 @@ function mapCourse(r) {
   const isPlaceholderTime = (s) => !s || /^0?0:00(:00)?$/.test(String(s).trim());
   const weekdayTime = isPlaceholderTime(r.weekday_time) ? '' : r.weekday_time;
   const classTime = isPlaceholderTime(r.class_time) ? '' : r.class_time;
-  const competencies = COMPETENCY_COLS
-    .map(([col, label]) => ({ label, pct: catalog[col] != null ? Number(catalog[col]) : 0 }))
-    .filter(c => c.pct > 0);
+  const competenciesRaw = COMPETENCY_COLS.map(([col, label]) => ({
+    col, label, pct: catalog[col] != null ? Number(catalog[col]) : 0,
+  }));
+  const competencies = competenciesRaw.filter(c => c.pct > 0);
   return {
     id: r.offering_id,
+    courseBaseId: r.course_base_id,
     code: fullCode,
     section: r.section || null,
     title: catalog.title || (catalogMissing ? '(catalog data unavailable — check RLS)' : '(untitled)'),
@@ -843,6 +1316,7 @@ function mapCourse(r) {
     status: r.status === 'published' ? 'published' : 'draft',
     officeHours: r.office_hours || '',
     professor: r.professor || PROFESSOR.name,
+    program: catalog.program || '',
     description: catalog.description || '',
     prerequisites: catalog.prerequisites || '',
     learningObjectives: catalog.learning_objectives || '',
@@ -850,7 +1324,9 @@ function mapCourse(r) {
     category: catalog.category || '',
     shortDescription: catalog.short_description || '',
     syllabusLink: catalog.syllabus_link || '',
+    newCurriculum: catalog.new_curriculum !== false,
     competencies,
+    competenciesRaw,
   };
 }
 
@@ -862,10 +1338,10 @@ async function loadData() {
       `professor_email=eq.${encodeURIComponent(PROFESSOR.email)}` +
       `&select=offering_id,course_id,course_base_id,section,semester,year,semester_year,` +
       `mon,tue,wed,thu,fri,sat,sun,class_time,weekday_time,office_hours,status,professor,` +
-      `courses(code,title,credits,classification,description,prerequisites,` +
+      `courses(code,title,credits,classification,description,prerequisites,program,` +
       `competency_critical_thinking,competency_creative_thinking,competency_self_directed_learning,` +
       `competency_communication,competency_diversity_empathy,competency_global_harmony,` +
-      `learning_objectives,required_text,category,short_description,syllabus_link)`
+      `learning_objectives,required_text,category,short_description,syllabus_link,new_curriculum)`
     );
     courses = rows.map(mapCourse);
     const missing = courses.filter(c => c.title.includes('catalog data unavailable')).length;
