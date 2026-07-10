@@ -78,8 +78,8 @@ button,input{font-family:inherit;}
 
 /* COURSE GRID / CARDS */
 .course-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;}
-.course-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px;cursor:pointer;transition:border-color .12s;}
-.course-card:hover{border-color:var(--border-em);}
+.course-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px;cursor:pointer;transition:border-color .12s,box-shadow .12s,transform .12s;}
+.course-card:hover{border-color:var(--blue-b);box-shadow:0 4px 16px rgba(0,0,0,0.07);transform:translateY(-2px);}
 .cc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .chip-code{font-family:'DM Mono',monospace;font-size:14px;background:var(--blue-l);color:var(--blue);padding:4px 10px;border-radius:5px;}
 .badge{font-size:13px;padding:4px 12px;border-radius:12px;font-weight:600;}
@@ -134,7 +134,7 @@ button,input{font-family:inherit;}
 .cp-title-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;}
 .cp-title{font-size:26px;font-weight:600;color:var(--text);letter-spacing:-0.01em;}
 .cp-meta{font-size:16px;color:var(--text2);}
-.cp-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:28px;overflow-x:auto;}
+.cp-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:28px;overflow-x:auto;overflow-y:hidden;}
 .cp-tab{padding:12px 18px;font-size:15px;font-weight:500;color:var(--text3);background:none;border:none;cursor:pointer;font-family:inherit;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .12s;}
 .cp-tab:hover{color:var(--text);}
 .cp-tab.active{color:var(--blue);border-bottom-color:var(--blue);}
@@ -156,6 +156,18 @@ button,input{font-family:inherit;}
 .cp-empty{padding:48px 20px;text-align:center;color:var(--text3);font-size:15px;}
 .cp-empty-hint{font-size:13px;color:var(--text3);margin-top:8px;}
 
+/* SPREADSHEET-STYLE EDITABLE GRID (Assessment/Communication/Schedule/Readings/Activities) */
+.grid-table{table-layout:auto;}
+.grid-table th{padding:0 4px 12px;}
+.grid-table td{padding:0;border-right:1px solid var(--border);}
+.grid-table td:last-child{border-right:none;}
+.grid-input{width:100%;min-width:110px;height:42px;border:1px solid transparent;background:transparent;font-size:14px;font-family:inherit;color:var(--text);padding:9px 12px;outline:none;border-radius:0;}
+.grid-input:focus{border-color:var(--blue-m);background:var(--surface);box-shadow:0 0 0 1px var(--blue-m);}
+.grid-input:disabled{background:transparent;color:var(--text);opacity:1;-webkit-text-fill-color:var(--text);cursor:default;appearance:none;}
+.grid-table tr:hover td{background:var(--surface2);}
+.grid-table tr:hover .grid-input:focus{background:var(--surface);}
+.grid-remove-cell{width:1%;white-space:nowrap;border-right:none;}
+
 /* COURSE PAGE — EDIT MODE */
 .cp-actions{margin-left:auto;display:flex;gap:10px;flex-shrink:0;}
 .btn{height:40px;padding:0 18px;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border-em);background:var(--surface);color:var(--text);display:inline-flex;align-items:center;gap:7px;}
@@ -164,7 +176,7 @@ button,input{font-family:inherit;}
 .btn-primary:hover{background:var(--blue-b);}
 .btn-primary:disabled{opacity:.55;cursor:default;}
 .cp-input,.cp-select,.cp-textarea{width:100%;font-size:15px;font-family:inherit;color:var(--text);border:1px solid var(--border-em);border-radius:var(--r);padding:0 13px;height:42px;background:var(--surface);outline:none;}
-.cp-textarea{height:auto;padding:10px 13px;resize:vertical;line-height:1.5;}
+.cp-textarea{height:auto;min-height:42px;padding:10px 13px;resize:none;line-height:1.5;overflow:hidden;}
 .cp-input:focus,.cp-select:focus,.cp-textarea:focus{border-color:var(--blue-m);}
 .cp-input:disabled,.cp-select:disabled,.cp-textarea:disabled{background:var(--surface2);color:var(--text);opacity:1;border-color:var(--border);cursor:default;-webkit-text-fill-color:var(--text);appearance:none;}
 .cp-check-row input:disabled{opacity:1;}
@@ -172,8 +184,8 @@ button,input{font-family:inherit;}
 .cp-day-btn:disabled:not(.active),.cp-chip-btn:disabled:not(.active){color:var(--text3);}
 .cp-check-row{display:flex;align-items:center;gap:9px;height:42px;font-size:15px;color:var(--text);}
 .cp-check-row input{width:17px;height:17px;}
-.cp-day-row{display:flex;gap:7px;flex-wrap:wrap;}
-.cp-day-btn{width:46px;height:38px;border-radius:var(--r);border:1px solid var(--border-em);background:var(--surface);color:var(--text2);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+.cp-day-row{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;}
+.cp-day-btn{width:100%;height:52px;border-radius:var(--r);border:1px solid var(--border-em);background:var(--surface);color:var(--text2);font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;}
 .cp-day-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
 .cp-chip-btn{padding:0 14px;height:38px;border-radius:var(--r);border:1px solid var(--border-em);background:var(--surface);color:var(--text2);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;}
 .cp-chip-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
@@ -189,7 +201,8 @@ button,input{font-family:inherit;}
 .cp-period-hd{display:flex;align-items:flex-end;gap:20px;margin-bottom:20px;}
 .cp-period-badge{background:var(--blue);color:#fff;font-size:12px;font-weight:600;padding:5px 11px;border-radius:12px;height:fit-content;flex-shrink:0;}
 .cp-date-range{display:flex;align-items:center;gap:10px;}
-.cp-date-range input{width:auto;}
+.cp-date-range input{flex:1;min-width:150px;}
+.cp-date-caption{font-size:12px;color:var(--text3);margin-top:5px;}
 .cp-tz-row{display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border-radius:var(--r);padding:9px 13px;font-size:14px;margin-bottom:6px;}
 .cp-tz-row .rm{border:none;background:none;cursor:pointer;color:var(--text3);width:24px;height:24px;flex-shrink:0;}
 .cp-add-period{border:1.5px dashed var(--border-em);border-radius:var(--r-lg);padding:14px;text-align:center;}
@@ -406,6 +419,7 @@ let courseTab = 'main';
 let editMode = false;
 let editDraft = null;
 let editPeriods = [];
+let editRows = []; // editable rows for whichever detail tab (assessment/communication/schedule/readings/activities) is open
 let periodsCache = {}; // { [offeringId]: mapped period rows already saved in the DB }
 const CP_TABS = [
   { key: 'main', label: 'Main' },
@@ -420,7 +434,7 @@ function goToCourse(id) {
   location.hash = `course/${id}`;
 }
 function backToHome() {
-  editMode = false; editDraft = null; editPeriods = [];
+  editMode = false; editDraft = null; editPeriods = []; editRows = [];
   location.hash = '';
 }
 window.addEventListener('hashchange', handleRoute);
@@ -430,7 +444,7 @@ function handleRoute() {
   if (m) {
     currentCourseId = m[1];
     courseTab = 'main';
-    editMode = false; editDraft = null; editPeriods = [];
+    editMode = false; editDraft = null; editPeriods = []; editRows = [];
     document.getElementById('page-home').style.display = 'none';
     document.getElementById('page-course').style.display = 'block';
     renderCoursePage();
@@ -442,7 +456,7 @@ function handleRoute() {
 
 function setCourseTab(tab) {
   courseTab = tab;
-  editMode = false; editDraft = null; editPeriods = [];
+  editMode = false; editDraft = null; editPeriods = []; editRows = [];
   renderCoursePage();
 }
 
@@ -468,20 +482,75 @@ function cpTable(columns, rows, emptyHint) {
 
 // Real Supabase tables backing the 5 non-Main tabs (see supabase-courses-schema.sql).
 // Each is keyed by offering_id, fetched lazily the first time its tab is opened.
+// `columns` drives the spreadsheet-style editable grid: header labels, field
+// names, and cell type (used for numeric parsing on save).
 const CP_DETAIL_TABLES = {
-  assessment:     { table: 'course_assessments',   cols: 'id,item,ratio_pct,description' },
-  communication:  { table: 'course_communications', cols: 'id,method,description' },
-  schedule:       { table: 'course_schedule',      cols: 'id,item,topic_title,learning_objectives,unit' },
-  readings:       { table: 'course_readings',            cols: 'id,lesson,category,reading_title,url_link' },
-  activities:     { table: 'course_learning_activities',  cols: 'id,item,category,tlearning_component,learning_activity,time_alloc_min,learning_goal,description,instruction' },
+  assessment: {
+    table: 'course_assessments', cols: 'id,item,ratio_pct,description',
+    hint: 'Add rows to course_assessments (offering_id, item, ratio_pct, description) to populate this tab.',
+    columns: [
+      { field: 'item', label: 'Item', type: 'text' },
+      { field: 'ratio_pct', label: 'Ratio (%)', type: 'number' },
+      { field: 'description', label: 'Description', type: 'text' },
+    ],
+  },
+  communication: {
+    table: 'course_communications', cols: 'id,method,description',
+    hint: 'Add rows to course_communications (offering_id, method, description) to populate this tab.',
+    columns: [
+      { field: 'method', label: 'Method', type: 'text' },
+      { field: 'description', label: 'Description', type: 'text' },
+    ],
+  },
+  schedule: {
+    table: 'course_schedule', cols: 'id,item,topic_title,learning_objectives,unit',
+    hint: 'Add rows to course_schedule (offering_id, item, topic_title, learning_objectives, unit) to populate this tab.',
+    columns: [
+      { field: 'item', label: 'Item', type: 'text' },
+      { field: 'topic_title', label: 'Topic Title', type: 'text' },
+      { field: 'learning_objectives', label: 'Learning Objectives', type: 'text' },
+      { field: 'unit', label: 'Unit', type: 'text' },
+    ],
+  },
+  readings: {
+    table: 'course_readings', cols: 'id,lesson,category,reading_title,url_link',
+    hint: 'Add rows to course_readings (offering_id, lesson, category, reading_title, url_link) to populate this tab.',
+    columns: [
+      { field: 'lesson', label: 'Lesson', type: 'text' },
+      { field: 'category', label: 'Category', type: 'text' },
+      { field: 'reading_title', label: 'Reading Title', type: 'text' },
+      { field: 'url_link', label: 'Link', type: 'text' },
+    ],
+  },
+  activities: {
+    table: 'course_learning_activities',
+    cols: 'id,item,category,tlearning_component,learning_activity,time_alloc_min,learning_goal,description,instruction',
+    hint: 'Add rows to course_learning_activities (offering_id, item, category, tlearning_component, learning_activity, time_alloc_min, learning_goal, description, instruction) to populate this tab.',
+    columns: [
+      { field: 'item', label: 'Item', type: 'text' },
+      { field: 'category', label: 'Category', type: 'text' },
+      { field: 'tlearning_component', label: 'Component', type: 'text' },
+      { field: 'learning_activity', label: 'Activity', type: 'text' },
+      { field: 'time_alloc_min', label: 'Time (min)', type: 'number' },
+      { field: 'learning_goal', label: 'Goal', type: 'text' },
+      { field: 'description', label: 'Description', type: 'text' },
+      { field: 'instruction', label: 'Instruction', type: 'text' },
+    ],
+  },
 };
 let courseDetailCache = {}; // { [offeringId]: { [tabKey]: rows | {error} } }
 
+// Returns the loaded rows (awaitable), so enterEditMode() can build editRows
+// from whatever is already cached without duplicating the fetch logic.
 async function loadCourseDetailTab(offeringId, tabKey) {
   const spec = CP_DETAIL_TABLES[tabKey];
-  if (!spec) return;
+  if (!spec) return [];
   const cache = (courseDetailCache[offeringId] = courseDetailCache[offeringId] || {});
-  if (cache[tabKey]) return; // already loaded or loading
+  if (cache[tabKey] === 'loading') {
+    while (courseDetailCache[offeringId][tabKey] === 'loading') await new Promise(r => setTimeout(r, 40));
+    return courseDetailCache[offeringId][tabKey];
+  }
+  if (cache[tabKey]) return cache[tabKey]; // already loaded (rows array or {error})
   cache[tabKey] = 'loading';
   try {
     const rows = await sbGet(spec.table, `offering_id=eq.${offeringId}&select=${spec.cols}&order=id.asc`);
@@ -490,6 +559,7 @@ async function loadCourseDetailTab(offeringId, tabKey) {
     cache[tabKey] = { error: e.message };
   }
   if (String(currentCourseId) === String(offeringId) && courseTab === tabKey) renderCoursePage();
+  return cache[tabKey];
 }
 
 function renderCoursePage() {
@@ -506,6 +576,8 @@ function renderCoursePage() {
   if (courseTab === 'main') {
     if (!periodsCache[c.id]) loadPeriodsIfNeeded(c.id); // fire-and-forget, re-renders on arrival
     tabContent = renderCpMainShared(c, editMode);
+  } else if (editMode) {
+    tabContent = renderDetailTabShared(courseTab, editRows, true);
   } else {
     const cache = courseDetailCache[c.id] || {};
     const data = cache[courseTab];
@@ -515,19 +587,13 @@ function renderCoursePage() {
     } else if (data.error) {
       tabContent = `<div class="cp-card"><div class="cp-empty">Unable to load: ${esc(data.error)}</div></div>`;
     } else {
-      tabContent = {
-        assessment: renderCpAssessment,
-        communication: renderCpCommunication,
-        schedule: renderCpSchedule,
-        readings: renderCpReadings,
-        activities: renderCpActivities,
-      }[courseTab](data);
+      tabContent = renderDetailTabShared(courseTab, data, false);
     }
   }
 
   const actions = editMode
     ? `<button class="btn" onclick="cancelEdit()">Cancel</button><button class="btn btn-primary" id="cp-save-btn" onclick="saveCourseEdits()"><i></i>Save changes</button>`
-    : (courseTab === 'main' ? `<button class="btn" onclick="enterEditMode()">Edit</button>` : '');
+    : `<button class="btn" onclick="enterEditMode()">Edit</button>`;
 
   el.innerHTML = `
     <button class="cp-back" onclick="backToHome()">${chevronSvg()} Back to courses</button>
@@ -545,6 +611,14 @@ function renderCoursePage() {
     </div>
     <div id="cp-tab-body">${tabContent}</div>
   `;
+  document.querySelectorAll('#cp-tab-body textarea.cp-textarea').forEach(autoGrowTextarea);
+}
+
+// Grows a textarea to fit its content (view mode included, so long saved
+// text is never clipped or scrollable inside the box).
+function autoGrowTextarea(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
 }
 
 // ── COURSE PAGE — EDIT MODE ──
@@ -575,15 +649,21 @@ function deriveMainDraft(c) {
 async function enterEditMode() {
   const c = courses.find(x => String(x.id) === String(currentCourseId));
   if (!c) return;
-  editDraft = deriveMainDraft(c);
-  await loadPeriodsIfNeeded(c.id);
-  editPeriods = (periodsCache[c.id] || []).map(p => JSON.parse(JSON.stringify(p)));
+  if (courseTab === 'main') {
+    editDraft = deriveMainDraft(c);
+    await loadPeriodsIfNeeded(c.id);
+    editPeriods = (periodsCache[c.id] || []).map(p => JSON.parse(JSON.stringify(p)));
+  } else {
+    const rows = await loadCourseDetailTab(c.id, courseTab);
+    editRows = JSON.parse(JSON.stringify(Array.isArray(rows) ? rows : []));
+    if (!editRows.length) editRows = [emptyGridRow(courseTab)];
+  }
   editMode = true;
   renderCoursePage();
 }
 
 function cancelEdit() {
-  editMode = false; editDraft = null; editPeriods = [];
+  editMode = false; editDraft = null; editPeriods = []; editRows = [];
   renderCoursePage();
 }
 
@@ -623,7 +703,13 @@ async function loadPeriodsIfNeeded(offeringId) {
   return periodsCache[offeringId];
 }
 
+// Dispatches Save to the right handler for whichever tab is open.
 async function saveCourseEdits() {
+  if (courseTab === 'main') return saveMainEdits();
+  return saveDetailTab();
+}
+
+async function saveMainEdits() {
   const c = courses.find(x => String(x.id) === String(currentCourseId));
   if (!c || !editDraft) return;
   const btn = document.getElementById('cp-save-btn');
@@ -637,7 +723,7 @@ async function saveCourseEdits() {
       prerequisites: d.prerequisites, learning_objectives: d.learningObjectives,
       required_text: d.requiredText, new_curriculum: d.newCurriculum,
     };
-    d.competencies.forEach((comp) => { coursePatch[comp.col] = comp.pct; });
+    d.competencies.forEach((comp) => { coursePatch[comp.col] = Number(comp.pct) / 100; });
     await sbPatch('courses', `course_id=eq.${encodeURIComponent(c.courseBaseId)}`, coursePatch);
     await sbPatch(TBL_OFFERINGS, `offering_id=eq.${c.id}`, { professor: d.professor, office_hours: d.officeHours });
 
@@ -657,6 +743,41 @@ async function saveCourseEdits() {
     editMode = false; editDraft = null; editPeriods = [];
     showToast('Changes saved');
     await loadData(); // refreshes `courses` from the DB and re-renders via handleRoute()
+  } catch (e) {
+    showToast('Save failed: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Save changes'; }
+  }
+}
+
+// Assessment/Communication/Schedule/Readings/T-Learning Activities — same
+// bulk delete-then-insert pattern already used for schedule_periods above.
+// Blank rows (every field empty) are dropped rather than saved.
+async function saveDetailTab() {
+  const c = courses.find(x => String(x.id) === String(currentCourseId));
+  const spec = CP_DETAIL_TABLES[courseTab];
+  if (!c || !spec) return;
+  const btn = document.getElementById('cp-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  try {
+    const rows = editRows
+      .filter(r => spec.columns.some(col => String(r[col.field] ?? '').trim() !== ''))
+      .map(r => {
+        const out = { offering_id: c.id };
+        spec.columns.forEach(col => {
+          const raw = r[col.field];
+          out[col.field] = (raw === '' || raw === null || raw === undefined)
+            ? null
+            : (col.type === 'number' ? Number(raw) : raw);
+        });
+        return out;
+      });
+    await sbDelete(spec.table, `offering_id=eq.${c.id}`);
+    if (rows.length) await sbInsert(spec.table, rows);
+    if (courseDetailCache[c.id]) delete courseDetailCache[c.id][courseTab];
+    editMode = false; editRows = [];
+    showToast('Changes saved');
+    renderCoursePage();
+    loadCourseDetailTab(c.id, courseTab);
   } catch (e) {
     showToast('Save failed: ' + e.message);
     if (btn) { btn.disabled = false; btn.textContent = 'Save changes'; }
@@ -691,7 +812,7 @@ function periodCardHtml(p, i, editing, total) {
     return `<button type="button" class="cp-chip-btn ${p.durationMin === m ? 'active' : ''}" ${dis}${click}>${m}m</button>`;
   }).join('');
   const tzOptions = TIMEZONE_OPTIONS.map((t) =>
-    `<option value="${t.iana}" ${p.timezone === t.iana ? 'selected' : ''}>${t.label}</option>`
+    `<option value="${t.iana}" ${p.timezone === t.iana ? 'selected' : ''}>${esc(tzOptionLabel(t))}</option>`
   ).join('');
   const activeDays = FULL_DAY_ORDER.filter((d) => p.days[d.toLowerCase().slice(0, 3)]);
 
@@ -721,14 +842,14 @@ function periodCardHtml(p, i, editing, total) {
 
   const availableExtra = TIMEZONE_OPTIONS.filter((t) => t.iana !== p.timezone && !p.extraZones.includes(t.iana));
   const addZoneSelect = (!editing || p.extraZones.length >= 3) ? '' : `
-    <select class="cp-select" style="max-width:260px;" onchange="if(this.value){addExtraZone(${i},this.value);}">
+    <select class="cp-select" style="max-width:340px;" onchange="if(this.value){addExtraZone(${i},this.value);}">
       <option value="">+ Add time zone (${p.extraZones.length} of 3)</option>
-      ${availableExtra.map((t) => `<option value="${t.iana}">${t.label}</option>`).join('')}
+      ${availableExtra.map((t) => `<option value="${t.iana}">${esc(tzOptionLabel(t))}</option>`).join('')}
     </select>`;
 
   const campusInput = editing
-    ? `<input class="cp-input" style="max-width:170px;" placeholder="Location note" value="${esc(p.campusNote)}" oninput="editPeriods[${i}].campusNote=this.value"/>`
-    : `<input class="cp-input" style="max-width:170px;" value="${esc(p.campusNote)}" disabled/>`;
+    ? `<input class="cp-input" style="max-width:200px;" placeholder="Location note" value="${esc(p.campusNote)}" oninput="editPeriods[${i}].campusNote=this.value"/>`
+    : `<input class="cp-input" style="max-width:200px;" value="${esc(p.campusNote)}" disabled/>`;
   const removeBtn = (editing && total > 1) ? `<button class="cp-period-remove" onclick="removePeriod(${i})">Remove</button>` : '';
 
   return `
@@ -736,19 +857,20 @@ function periodCardHtml(p, i, editing, total) {
       <div class="cp-period-hd">
         <span class="cp-period-badge">Period ${i + 1}</span>
         ${campusInput}
-        <div style="flex:1;">
+        <div style="flex:1;min-width:220px;">
           <span class="cp-label" style="display:block;margin-bottom:6px;">Valid dates</span>
           <div class="cp-date-range">
             <input type="date" class="cp-input" value="${p.validFrom}" ${dis} ${editing ? `onchange="setPeriodField(${i},'validFrom',this.value)"` : ''}/>
             ${chevronSvg()}
             <input type="date" class="cp-input" value="${p.validTo}" ${dis} ${editing ? `onchange="setPeriodField(${i},'validTo',this.value)"` : ''}/>
           </div>
+          <div class="cp-date-caption">${esc(formatMMDDYYYY(p.validFrom) || '—')} → ${esc(formatMMDDYYYY(p.validTo) || '—')} (mm/dd/yyyy)</div>
         </div>
         ${removeBtn}
       </div>
       <span class="cp-label" style="display:block;margin-bottom:8px;">Class days</span>
       <div class="cp-day-row" style="margin-bottom:20px;">${dayBtns}</div>
-      <div style="display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:20px;margin-bottom:16px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-bottom:16px;">
         <div><span class="cp-label" style="display:block;margin-bottom:6px;">Start time</span><input type="time" class="cp-input" value="${p.startTime}" ${dis} ${editing ? `onchange="setPeriodField(${i},'startTime',this.value)"` : ''}/></div>
         <div><span class="cp-label" style="display:block;margin-bottom:6px;">Time zone</span><select class="cp-select" ${dis} ${editing ? `onchange="setPeriodField(${i},'timezone',this.value)"` : ''}>${tzOptions}</select></div>
         <div><span class="cp-label" style="display:block;margin-bottom:6px;">Duration</span><div style="display:flex;gap:6px;">${durBtns}</div></div>
@@ -818,28 +940,29 @@ function renderCpMainShared(c, editing) {
   return `
     <div class="cp-card">
       <div class="cp-card-title">Course details</div>
-      <div class="cp-field-grid">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
         <div class="cp-field"><span class="cp-label">Course ID</span><input class="cp-input" value="${esc(c.code)}" disabled/></div>
         <div class="cp-field"><span class="cp-label">Semester</span><input class="cp-input" value="${esc(c.semester)}" disabled/></div>
-        <div class="cp-field full"><span class="cp-label">Course title</span><input class="cp-input" value="${esc(d.title)}" ${dis} ${oi('editDraft.title=this.value')}/></div>
+      </div>
+      <div class="cp-field" style="margin-bottom:20px;"><span class="cp-label">Course title</span><input class="cp-input" value="${esc(d.title)}" ${dis} ${oi('editDraft.title=this.value')}/></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:20px;margin-bottom:20px;">
         <div class="cp-field"><span class="cp-label">Classification</span>
           <select class="cp-select" ${dis} ${oc('editDraft.classification=this.value')}>
             ${CLASSIFICATION_OPTIONS.map((o) => `<option ${d.classification === o ? 'selected' : ''}>${o}</option>`).join('')}
           </select>
         </div>
-        <div class="cp-field">
-          <span class="cp-label">Credits</span>
-          <div style="display:flex;gap:16px;align-items:center;">
-            <input type="number" class="cp-input" style="max-width:90px;" value="${d.credits ?? ''}" ${dis} ${oi('editDraft.credits=this.value?Number(this.value):null')}/>
-            <label class="cp-check-row"><input type="checkbox" ${d.newCurriculum ? 'checked' : ''} ${dis} ${oc('editDraft.newCurriculum=this.checked')}/>Active in curriculum</label>
-          </div>
-        </div>
+        <div class="cp-field"><span class="cp-label">Credits</span><input type="number" class="cp-input" value="${d.credits ?? ''}" ${dis} ${oi('editDraft.credits=this.value?Number(this.value):null')}/></div>
+        <div class="cp-field"><span class="cp-label">&nbsp;</span><label class="cp-check-row"><input type="checkbox" ${d.newCurriculum ? 'checked' : ''} ${dis} ${oc('editDraft.newCurriculum=this.checked')}/>Active in curriculum</label></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:20px;margin-bottom:20px;">
         <div class="cp-field"><span class="cp-label">Program</span>
           <select class="cp-select" ${dis} ${editing ? `onchange="editDraft.program=this.value;renderCoursePage()"` : ''}>
             ${PROGRAM_OPTIONS.map((o) => `<option ${d.program === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
           </select>
         </div>
         <div class="cp-field"><span class="cp-label">Category</span><select class="cp-select" ${dis} ${oc('editDraft.category=this.value')}>${catOptions}</select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;">
         <div class="cp-field"><span class="cp-label">Professor</span><input class="cp-input" value="${esc(d.professor)}" ${dis} ${oi('editDraft.professor=this.value')}/></div>
         <div class="cp-field"><span class="cp-label">Contact Information</span><input class="cp-input" value="${esc(d.contactEmail)}" disabled/></div>
         <div class="cp-field"><span class="cp-label">Office Hours</span><input class="cp-input" value="${esc(d.officeHours)}" ${dis} ${oi('editDraft.officeHours=this.value')}/></div>
@@ -849,11 +972,11 @@ function renderCpMainShared(c, editing) {
     <div class="cp-card">
       <div class="cp-card-title">Description & objectives</div>
       <div class="cp-field-grid">
-        <div class="cp-field full"><span class="cp-label">Course Description</span><textarea class="cp-textarea" rows="2" ${dis} ${oi('editDraft.description=this.value')}>${esc(d.description)}</textarea></div>
-        <div class="cp-field full"><span class="cp-label">Why This Course?</span><textarea class="cp-textarea" rows="2" ${dis} ${oi('editDraft.shortDescription=this.value')}>${esc(d.shortDescription)}</textarea></div>
-        <div class="cp-field full"><span class="cp-label">Prerequisite(s)</span><input class="cp-input" value="${esc(d.prerequisites)}" ${dis} ${oi('editDraft.prerequisites=this.value')}/></div>
-        <div class="cp-field full"><span class="cp-label">Course Learning Objectives</span><textarea class="cp-textarea" rows="2" ${dis} ${oi('editDraft.learningObjectives=this.value')}>${esc(d.learningObjectives)}</textarea></div>
-        <div class="cp-field full"><span class="cp-label">Required Text</span><input class="cp-input" value="${esc(d.requiredText)}" ${dis} ${oi('editDraft.requiredText=this.value')}/></div>
+        <div class="cp-field full"><span class="cp-label">Course Description</span><textarea class="cp-textarea" rows="1" ${dis} ${oi('editDraft.description=this.value;autoGrowTextarea(this)')}>${esc(d.description)}</textarea></div>
+        <div class="cp-field full"><span class="cp-label">Why This Course?</span><textarea class="cp-textarea" rows="1" ${dis} ${oi('editDraft.shortDescription=this.value;autoGrowTextarea(this)')}>${esc(d.shortDescription)}</textarea></div>
+        <div class="cp-field full"><span class="cp-label">Prerequisite(s)</span><textarea class="cp-textarea" rows="1" ${dis} ${oi('editDraft.prerequisites=this.value;autoGrowTextarea(this)')}>${esc(d.prerequisites)}</textarea></div>
+        <div class="cp-field full"><span class="cp-label">Course Learning Objectives</span><textarea class="cp-textarea" rows="1" ${dis} ${oi('editDraft.learningObjectives=this.value;autoGrowTextarea(this)')}>${esc(d.learningObjectives)}</textarea></div>
+        <div class="cp-field full"><span class="cp-label">Required Text</span><textarea class="cp-textarea" rows="1" ${dis} ${oi('editDraft.requiredText=this.value;autoGrowTextarea(this)')}>${esc(d.requiredText)}</textarea></div>
       </div>
     </div>
 
@@ -864,7 +987,7 @@ function renderCpMainShared(c, editing) {
     </div>
 
     <div class="cp-card">
-      <div class="cp-card-title">Schedule periods</div>
+      <div class="cp-card-title">Class meeting times</div>
       ${periodsHtmlBlock}
     </div>
 
@@ -875,72 +998,88 @@ function renderCpMainShared(c, editing) {
   `;
 }
 
-// Design (2) Assessment — course_assessments: item / ratio_pct / description.
-function renderCpAssessment(rows) {
-  const total = rows.reduce((sum, r) => sum + (Number(r.ratio_pct) || 0), 0);
-  const body = rows.map(r => [esc(r.item), r.ratio_pct != null ? `${r.ratio_pct}%` : '—', esc(r.description || '—')]);
-  const totalNote = rows.length
-    ? `<p style="margin-top:14px;font-size:14px;color:${total === 100 ? 'var(--text3)' : 'var(--red)'};">Total: ${total}%${total === 100 ? '' : ' (should be 100%)'}</p>`
-    : '';
+// Design (2)–(6) — Assessment/Communication/Schedule/Readings/T-Learning
+// Activities. One shared spreadsheet-style grid renderer for all five tabs:
+// always shown as a table of cell inputs (disabled in view mode, live in
+// edit mode) so pasting a block copied from Excel "just works" the same way
+// typing does, and view/edit never reflow relative to each other.
+const CP_TAB_TITLES = {
+  assessment: 'Assessment breakdown', communication: 'Communication methods',
+  schedule: 'Course schedule', readings: 'Readings', activities: 'T-Learning activities',
+};
+function emptyGridRow(tabKey) {
+  const row = {};
+  CP_DETAIL_TABLES[tabKey].columns.forEach(col => { row[col.field] = ''; });
+  return row;
+}
+function detailGridHtml(tabKey, rows, editing) {
+  const spec = CP_DETAIL_TABLES[tabKey];
+  const dis = editing ? '' : 'disabled';
+  const cols = spec.columns;
+  if (!rows.length && !editing) return cpEmptyState(spec.hint);
+  const bodyRows = rows.map((r, ri) => `
+    <tr>
+      ${cols.map((col, ci) => `
+        <td>
+          <input class="grid-input" type="${col.type === 'number' ? 'number' : 'text'}"
+            value="${esc(r[col.field] ?? '')}" ${dis}
+            oninput="setGridCell(${ri},${ci},this.value)"
+            onpaste="handleGridPaste(event,${ri},${ci})"/>
+        </td>`).join('')}
+      ${editing ? `<td class="grid-remove-cell"><button class="cp-period-remove" onclick="removeGridRow(${ri})">Remove</button></td>` : ''}
+    </tr>`).join('');
+  const addRow = editing ? `<div class="cp-add-period" style="margin-top:14px;"><button onclick="addGridRow()">+ Add row</button></div>` : '';
+  return `
+    <div class="cp-table-wrap"><table class="cp-table grid-table">
+      <thead><tr>${cols.map(c => `<th>${esc(c.label)}</th>`).join('')}${editing ? '<th></th>' : ''}</tr></thead>
+      <tbody>${bodyRows}</tbody>
+    </table></div>
+    ${addRow}`;
+}
+function renderDetailTabShared(tabKey, rows, editing) {
+  let footer = '';
+  if (tabKey === 'assessment' && rows.length) {
+    const total = rows.reduce((sum, r) => sum + (Number(r.ratio_pct) || 0), 0);
+    footer = `<p style="margin-top:14px;font-size:14px;color:${total === 100 ? 'var(--text3)' : 'var(--red)'};">Total: ${total}%${total === 100 ? '' : ' (should be 100%)'}</p>`;
+  }
   return `
     <div class="cp-card">
-      <div class="cp-card-title">Assessment breakdown</div>
-      ${cpTable(['Item', 'Ratio (%)', 'Description'], body, 'Add rows to course_assessments (offering_id, item, ratio_pct, description) to populate this tab.')}
-      ${totalNote}
+      <div class="cp-card-title">${esc(CP_TAB_TITLES[tabKey])}</div>
+      <div id="grid-editor-inner">${detailGridHtml(tabKey, rows, editing)}</div>
+      ${footer}
     </div>`;
 }
-
-// Design (3) Communication — course_communications: method / description.
-function renderCpCommunication(rows) {
-  const body = rows.map(r => [esc(r.method), esc(r.description || '—')]);
-  return `
-    <div class="cp-card">
-      <div class="cp-card-title">Communication methods</div>
-      ${cpTable(['Method', 'Description'], body, 'Add rows to course_communications (offering_id, method, description) to populate this tab.')}
-    </div>`;
+function renderGridEditor() {
+  const el = document.getElementById('grid-editor-inner');
+  if (el) el.innerHTML = detailGridHtml(courseTab, editRows, true);
 }
-
-// Design (4) Schedule — course_schedule: item / topic_title / learning_objectives / unit.
-function renderCpSchedule(rows) {
-  const body = rows.map(r => [esc(r.item || '—'), esc(r.topic_title || '—'), esc(r.learning_objectives || '—'), esc(r.unit || '—')]);
-  return `
-    <div class="cp-card">
-      <div class="cp-card-title">Course schedule</div>
-      ${cpTable(['Item', 'Topic Title', 'Learning Objectives', 'Unit'], body, 'Add rows to course_schedule (offering_id, item, topic_title, learning_objectives, unit) to populate this tab.')}
-    </div>`;
+function setGridCell(ri, ci, val) {
+  const field = CP_DETAIL_TABLES[courseTab].columns[ci].field;
+  editRows[ri][field] = val;
 }
-
-// Design (5) Readings — course_readings: lesson / category / reading_title / url_link.
-function renderCpReadings(rows) {
-  const body = rows.map(r => [
-    esc(r.lesson || '—'),
-    esc(r.category || '—'),
-    esc(r.reading_title || '—'),
-    r.url_link ? `<a href="${esc(r.url_link)}" target="_blank" rel="noopener" style="color:var(--blue);">Open ↗</a>` : '—',
-  ]);
-  return `
-    <div class="cp-card">
-      <div class="cp-card-title">Readings</div>
-      ${cpTable(['Lesson', 'Category', 'Reading Title', 'Link'], body, 'Add rows to course_readings (offering_id, lesson, category, reading_title, url_link) to populate this tab.')}
-    </div>`;
-}
-
-// Design (6) T-Learning Activities — course_learning_activities: item / category /
-// tlearning_component / learning_activity / time_alloc_min / learning_goal.
-function renderCpActivities(rows) {
-  const body = rows.map(r => [
-    esc(r.item || '—'),
-    esc(r.category || '—'),
-    esc(r.tlearning_component || '—'),
-    esc(r.learning_activity || '—'),
-    r.time_alloc_min != null ? `${r.time_alloc_min} min` : '—',
-    esc(r.learning_goal || '—'),
-  ]);
-  return `
-    <div class="cp-card">
-      <div class="cp-card-title">T-Learning activities</div>
-      ${cpTable(['Lesson', 'Category', 'Component', 'Activity', 'Time', 'Goal'], body, 'Add rows to course_learning_activities (offering_id, item, category, tlearning_component, learning_activity, time_alloc_min, learning_goal, description, instruction) to populate this tab.')}
-    </div>`;
+function addGridRow() { editRows.push(emptyGridRow(courseTab)); renderGridEditor(); }
+function removeGridRow(ri) { editRows.splice(ri, 1); renderGridEditor(); }
+// Pastes a block of cells copied from Excel/Sheets (tab-separated columns,
+// newline-separated rows) starting at the cell that was pasted into,
+// growing the grid with new rows as needed. A single-cell paste (no tabs or
+// newlines) is left to the browser's default paste behavior.
+function handleGridPaste(e, ri, ci) {
+  const text = (e.clipboardData || window.clipboardData).getData('text');
+  if (!text.includes('\t') && !text.includes('\n')) return;
+  e.preventDefault();
+  const cols = CP_DETAIL_TABLES[courseTab].columns;
+  const lines = text.replace(/\r/g, '').split('\n');
+  if (lines.length && lines[lines.length - 1] === '') lines.pop();
+  lines.forEach((line, rOff) => {
+    const vals = line.split('\t');
+    const targetRi = ri + rOff;
+    while (editRows.length <= targetRi) editRows.push(emptyGridRow(courseTab));
+    vals.forEach((val, cOff) => {
+      const targetCi = ci + cOff;
+      if (targetCi < cols.length) editRows[targetRi][cols[targetCi].field] = val;
+    });
+  });
+  renderGridEditor();
 }
 
 // ── SUPABASE HELPERS ──
@@ -1184,13 +1323,14 @@ const CURRICULUM_CATEGORIES = {
 // Dropdown Options. Using real IANA zones (not fixed offsets) means DST is
 // handled correctly by the browser's Intl API.
 const TIMEZONE_OPTIONS = [
-  { iana: 'America/Los_Angeles', label: 'Pacific Time' },
-  { iana: 'America/New_York', label: 'Eastern Time' },
-  { iana: 'America/Chicago', label: 'Central Time' },
-  { iana: 'Asia/Seoul', label: 'Korea Time' },
-  { iana: 'Europe/London', label: 'London Time' },
-  { iana: 'Asia/Shanghai', label: 'China Time' },
+  { iana: 'America/Los_Angeles', label: 'Pacific Time', gmt: 'GMT-8/-7' },
+  { iana: 'America/New_York', label: 'Eastern Time', gmt: 'GMT-5/-4' },
+  { iana: 'America/Chicago', label: 'Central Time', gmt: 'GMT-6/-5' },
+  { iana: 'Asia/Seoul', label: 'Korea Time', gmt: 'GMT+9' },
+  { iana: 'Europe/London', label: 'London Time', gmt: 'GMT+0/+1' },
+  { iana: 'Asia/Shanghai', label: 'China Time', gmt: 'GMT+8' },
 ];
+function tzOptionLabel(t) { return `${t.label} (${t.gmt})`; }
 const DURATION_OPTIONS = [50, 75, 100, 120];
 const FULL_DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -1235,7 +1375,17 @@ function addMinutes(h, mi, mins) {
 }
 function tzLabel(iana) {
   const opt = TIMEZONE_OPTIONS.find(t => t.iana === iana);
-  return opt ? opt.label : iana;
+  return opt ? tzOptionLabel(opt) : iana;
+}
+// mm/dd/yyyy display, independent of the browser/OS locale that native
+// <input type="date"> pickers render in (that format can't be forced via
+// HTML/CSS since the input's displayed format follows the user's system
+// settings — this caption guarantees a consistent mm/dd/yyyy reading).
+function formatMMDDYYYY(isoDate) {
+  if (!isoDate) return '';
+  const [y, m, d] = isoDate.split('-');
+  if (!y || !m || !d) return '';
+  return `${m}/${d}/${y}`;
 }
 // Convert one day's class time from `fromTz` to `toTz`, returning the
 // resulting weekday label(s) and time range, with a day-shift note if the
@@ -1261,7 +1411,7 @@ function newSchedulePeriod() {
   return {
     id: null, campusNote: '', validFrom: '', validTo: '',
     days: { mon: false, tue: false, wed: false, thu: false, fri: false, sat: false, sun: false },
-    startTime: '09:00', durationMin: 75, timezone: 'America/Los_Angeles', extraZones: [],
+    startTime: '09:00', durationMin: 100, timezone: 'America/Los_Angeles', extraZones: [],
   };
 }
 
@@ -1301,8 +1451,11 @@ function mapCourse(r) {
   const isPlaceholderTime = (s) => !s || /^0?0:00(:00)?$/.test(String(s).trim());
   const weekdayTime = isPlaceholderTime(r.weekday_time) ? '' : r.weekday_time;
   const classTime = isPlaceholderTime(r.class_time) ? '' : r.class_time;
+  // `courses.competency_*` stores a 0–1 fraction (e.g. 0.1 = 10%), not a
+  // whole percentage — convert to a 0–100 display value here, and back to a
+  // fraction on save (see saveMainEdits).
   const competenciesRaw = COMPETENCY_COLS.map(([col, label]) => ({
-    col, label, pct: catalog[col] != null ? Number(catalog[col]) : 0,
+    col, label, pct: catalog[col] != null ? Math.round(Number(catalog[col]) * 100) : 0,
   }));
   const competencies = competenciesRaw.filter(c => c.pct > 0);
   return {
