@@ -157,16 +157,19 @@ button,input{font-family:inherit;}
 .cp-empty-hint{font-size:13px;color:var(--text3);margin-top:8px;}
 
 /* SPREADSHEET-STYLE EDITABLE GRID (Assessment/Communication/Schedule/Readings/Activities) */
-.grid-table{table-layout:auto;}
-.grid-table th{padding:0 4px 12px;}
+.grid-table{table-layout:fixed;}
+.grid-table th{position:relative;padding:10px 14px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);text-align:left;background:var(--surface2);border-right:1px solid var(--border-em);border-bottom:1px solid var(--border-em);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.grid-table th:last-child{border-right:none;}
 .grid-table td{padding:0;border-right:1px solid var(--border);}
 .grid-table td:last-child{border-right:none;}
-.grid-input{width:100%;min-width:110px;height:42px;border:1px solid transparent;background:transparent;font-size:14px;font-family:inherit;color:var(--text);padding:9px 12px;outline:none;border-radius:0;}
+.grid-resize-handle{position:absolute;top:0;right:-3px;width:7px;height:100%;cursor:col-resize;z-index:2;}
+.grid-resize-handle:hover,.grid-resize-handle.resizing{background:var(--blue-m);}
+.grid-input{width:100%;height:42px;border:1px solid transparent;background:transparent;font-size:14px;font-family:inherit;color:var(--text);padding:9px 12px;outline:none;border-radius:0;}
 .grid-input:focus{border-color:var(--blue-m);background:var(--surface);box-shadow:0 0 0 1px var(--blue-m);}
 .grid-input:disabled{background:transparent;color:var(--text);opacity:1;-webkit-text-fill-color:var(--text);cursor:default;appearance:none;}
 .grid-table tr:hover td{background:var(--surface2);}
 .grid-table tr:hover .grid-input:focus{background:var(--surface);}
-.grid-remove-cell{width:1%;white-space:nowrap;border-right:none;}
+.grid-remove-cell{white-space:nowrap;border-right:none;}
 
 /* COURSE PAGE — EDIT MODE */
 .cp-actions{margin-left:auto;display:flex;gap:10px;flex-shrink:0;}
@@ -189,13 +192,14 @@ button,input{font-family:inherit;}
 .cp-day-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
 .cp-chip-btn{padding:0 14px;height:38px;border-radius:var(--r);border:1px solid var(--border-em);background:var(--surface);color:var(--text2);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;}
 .cp-chip-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
-.cp-comp-row{display:flex;align-items:center;gap:16px;padding:12px 0;border-bottom:1px solid var(--border);}
+.cp-comp-row{display:flex;align-items:center;gap:20px;padding:12px 0;border-bottom:1px solid var(--border);}
 .cp-comp-row:last-of-type{border-bottom:none;}
-.cp-comp-name{flex:1;font-size:15px;color:var(--text);}
-.cp-comp-input{width:70px;text-align:center;flex-shrink:0;}
-.cp-comp-bar-wrap{flex:1;max-width:220px;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;flex-shrink:0;}
-.cp-comp-bar{height:100%;background:var(--blue);}
-.cp-comp-pct{width:44px;font-size:14px;color:var(--text3);text-align:right;flex-shrink:0;}
+.cp-comp-name{width:300px;flex-shrink:0;font-size:15px;color:var(--text);}
+.cp-comp-input-wrap{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.cp-comp-input{width:64px;text-align:center;flex-shrink:0;}
+.cp-comp-suffix{font-size:14px;color:var(--text3);width:12px;}
+.cp-comp-bar-wrap{flex:1;max-width:520px;height:9px;background:var(--surface2);border-radius:4px;overflow:hidden;flex-shrink:0;}
+.cp-comp-bar{height:100%;background:var(--blue);min-width:3px;transition:width .15s;}
 .cp-comp-total{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border-em);padding-top:14px;margin-top:6px;font-weight:600;font-size:15px;}
 .cp-period-card{border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;margin-bottom:16px;}
 .cp-period-hd{display:flex;align-items:flex-end;gap:20px;margin-bottom:20px;}
@@ -788,9 +792,7 @@ function setCompetencyPct(i, val) {
   const v = Math.max(0, Math.min(100, Number(val) || 0));
   editDraft.competencies[i].pct = v;
   const bar = document.getElementById('comp-bar-' + i);
-  const pct = document.getElementById('comp-pct-' + i);
   if (bar) bar.style.width = v + '%';
-  if (pct) pct.textContent = v + '%';
   const total = editDraft.competencies.reduce((s, x) => s + Number(x.pct), 0);
   const totalEl = document.getElementById('comp-total');
   if (totalEl) { totalEl.textContent = total + '%'; totalEl.style.color = total === 100 ? 'var(--blue)' : 'var(--red)'; }
@@ -807,14 +809,23 @@ function periodCardHtml(p, i, editing, total) {
     const click = editing ? ` onclick="togglePeriodDay(${i},'${key}')"` : '';
     return `<button type="button" class="cp-day-btn ${p.days[key] ? 'active' : ''}" ${dis}${click}>${d.slice(0, 2)}</button>`;
   }).join('');
-  const durBtns = DURATION_OPTIONS.map((m) => {
-    const click = editing ? ` onclick="setPeriodDuration(${i},${m})"` : '';
-    return `<button type="button" class="cp-chip-btn ${p.durationMin === m ? 'active' : ''}" ${dis}${click}>${m}m</button>`;
-  }).join('');
   const tzOptions = TIMEZONE_OPTIONS.map((t) =>
     `<option value="${t.iana}" ${p.timezone === t.iana ? 'selected' : ''}>${esc(tzOptionLabel(t))}</option>`
   ).join('');
   const activeDays = FULL_DAY_ORDER.filter((d) => p.days[d.toLowerCase().slice(0, 3)]);
+  // Days-of-week is meaningful even with nothing selected (it reads like a
+  // calendar), but an all-unselected row in view mode looks identical to a
+  // "still loading" state — call that out explicitly instead of staying silent.
+  const dayHint = (!editing && !activeDays.length)
+    ? `<p style="font-size:13px;color:var(--text3);font-style:italic;margin:8px 0 0;">No class days set yet.</p>` : '';
+
+  // Duration: an editable preset-chip picker only makes sense while editing —
+  // in view mode showing 3 unselectable alternatives next to the real value
+  // is just noise, so it collapses to a plain value.
+  const durationBlock = editing
+    ? `<div style="display:flex;gap:6px;">${DURATION_OPTIONS.map((m) =>
+        `<button type="button" class="cp-chip-btn ${p.durationMin === m ? 'active' : ''}" onclick="setPeriodDuration(${i},${m})">${m}m</button>`).join('')}</div>`
+    : `<div class="cp-value" style="height:42px;display:flex;align-items:center;">${p.durationMin} minutes</div>`;
 
   let preview;
   if (activeDays.length && p.startTime) {
@@ -823,8 +834,10 @@ function periodCardHtml(p, i, editing, total) {
       return `${r.weekday} ${r.startTime}–${r.endTime}`;
     });
     preview = `<p style="font-size:15px;color:var(--text);margin:0;">${esc(parts.join(', '))} ${esc(tzLabel(p.timezone))}</p>`;
+  } else if (!activeDays.length) {
+    preview = `<p style="font-size:14px;color:var(--text3);font-style:italic;margin:0;">Select class days above to preview class times.</p>`;
   } else {
-    preview = `<p style="font-size:14px;color:var(--text3);font-style:italic;margin:0;">Select class days and a start time to preview.</p>`;
+    preview = `<p style="font-size:14px;color:var(--text3);font-style:italic;margin:0;">Set a start time to preview class times.</p>`;
   }
 
   const extraRows = p.extraZones.map((tz, zi) => {
@@ -846,44 +859,57 @@ function periodCardHtml(p, i, editing, total) {
       <option value="">+ Add time zone (${p.extraZones.length} of 3)</option>
       ${availableExtra.map((t) => `<option value="${t.iana}">${esc(tzOptionLabel(t))}</option>`).join('')}
     </select>`;
+  // Nothing to show or do here in view mode once there are no extra zones —
+  // an empty header with no rows beneath it just looks unfinished.
+  const otherZonesBlock = (editing || p.extraZones.length) ? `
+    <div>
+      <p class="cp-label" style="margin-bottom:8px;">Class time in other selected time zones</p>
+      ${extraRows}
+      ${addZoneSelect}
+    </div>` : '';
 
-  const campusInput = editing
-    ? `<input class="cp-input" style="max-width:200px;" placeholder="Location note" value="${esc(p.campusNote)}" oninput="editPeriods[${i}].campusNote=this.value"/>`
-    : `<input class="cp-input" style="max-width:200px;" value="${esc(p.campusNote)}" disabled/>`;
+  // An empty, unlabeled box floating next to the Period badge reads as a
+  // broken control — give it a real label, and simply don't render it in
+  // view mode when there's nothing to show.
+  const campusBlock = editing
+    ? `<div><span class="cp-label" style="display:block;margin-bottom:6px;">Location note</span><input class="cp-input" style="max-width:200px;" placeholder="e.g. Room 302" value="${esc(p.campusNote)}" oninput="editPeriods[${i}].campusNote=this.value"/></div>`
+    : (p.campusNote ? `<div><span class="cp-label" style="display:block;margin-bottom:6px;">Location note</span><input class="cp-input" style="max-width:200px;" value="${esc(p.campusNote)}" disabled/></div>` : '');
   const removeBtn = (editing && total > 1) ? `<button class="cp-period-remove" onclick="removePeriod(${i})">Remove</button>` : '';
+
+  // Valid dates render as a plain mm/dd/yyyy-masked text field rather than a
+  // native <input type="date">, whose displayed format follows the browser's
+  // OS locale and can't be forced to mm/dd/yyyy via HTML/CSS — this keeps the
+  // format guaranteed and consistent instead of fighting the native picker.
+  const dateInput = (field, value) => `<input type="text" class="cp-input" placeholder="mm/dd/yyyy" value="${esc(formatMMDDYYYY(value))}" ${dis} ${editing ? `onchange="setPeriodDateField(${i},'${field}',this.value)"` : ''}/>`;
 
   return `
     <div class="cp-period-card">
       <div class="cp-period-hd">
         <span class="cp-period-badge">Period ${i + 1}</span>
-        ${campusInput}
+        ${campusBlock}
         <div style="flex:1;min-width:220px;">
-          <span class="cp-label" style="display:block;margin-bottom:6px;">Valid dates</span>
+          <span class="cp-label" style="display:block;margin-bottom:6px;">Valid dates (mm/dd/yyyy)</span>
           <div class="cp-date-range">
-            <input type="date" class="cp-input" value="${p.validFrom}" ${dis} ${editing ? `onchange="setPeriodField(${i},'validFrom',this.value)"` : ''}/>
+            ${dateInput('validFrom', p.validFrom)}
             ${chevronSvg()}
-            <input type="date" class="cp-input" value="${p.validTo}" ${dis} ${editing ? `onchange="setPeriodField(${i},'validTo',this.value)"` : ''}/>
+            ${dateInput('validTo', p.validTo)}
           </div>
-          <div class="cp-date-caption">${esc(formatMMDDYYYY(p.validFrom) || '—')} → ${esc(formatMMDDYYYY(p.validTo) || '—')} (mm/dd/yyyy)</div>
         </div>
         ${removeBtn}
       </div>
       <span class="cp-label" style="display:block;margin-bottom:8px;">Class days</span>
-      <div class="cp-day-row" style="margin-bottom:20px;">${dayBtns}</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-bottom:16px;">
+      <div class="cp-day-row">${dayBtns}</div>
+      ${dayHint}
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin:20px 0 16px;">
         <div><span class="cp-label" style="display:block;margin-bottom:6px;">Start time</span><input type="time" class="cp-input" value="${p.startTime}" ${dis} ${editing ? `onchange="setPeriodField(${i},'startTime',this.value)"` : ''}/></div>
         <div><span class="cp-label" style="display:block;margin-bottom:6px;">Time zone</span><select class="cp-select" ${dis} ${editing ? `onchange="setPeriodField(${i},'timezone',this.value)"` : ''}>${tzOptions}</select></div>
-        <div><span class="cp-label" style="display:block;margin-bottom:6px;">Duration</span><div style="display:flex;gap:6px;">${durBtns}</div></div>
+        <div><span class="cp-label" style="display:block;margin-bottom:6px;">Duration</span>${durationBlock}</div>
       </div>
       <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:12px;">
         <p class="cp-label" style="margin-bottom:6px;">Class time in your time zone</p>
         ${preview}
       </div>
-      <div>
-        <p class="cp-label" style="margin-bottom:8px;">Class time in other selected time zones</p>
-        ${extraRows}
-        ${addZoneSelect}
-      </div>
+      ${otherZonesBlock}
     </div>`;
 }
 function periodsBlockHtml(periods, editing) {
@@ -898,6 +924,20 @@ function renderPeriodsEditor() {
 function togglePeriodDay(i, key) { editPeriods[i].days[key] = !editPeriods[i].days[key]; renderPeriodsEditor(); }
 function setPeriodDuration(i, mins) { editPeriods[i].durationMin = mins; renderPeriodsEditor(); }
 function setPeriodField(i, field, value) { editPeriods[i][field] = value; renderPeriodsEditor(); }
+// Parses the mm/dd/yyyy text the professor typed into a Valid Dates field
+// back into the yyyy-mm-dd form the DB (and formatMMDDYYYY) expect.
+function mmddyyyyToIso(s) {
+  const m = String(s || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  return `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
+}
+function setPeriodDateField(i, field, value) {
+  if (!value.trim()) { editPeriods[i][field] = ''; renderPeriodsEditor(); return; }
+  const iso = mmddyyyyToIso(value);
+  if (!iso) { showToast('Please enter the date as mm/dd/yyyy'); renderPeriodsEditor(); return; }
+  editPeriods[i][field] = iso;
+  renderPeriodsEditor();
+}
 function addExtraZone(i, iana) { if (editPeriods[i].extraZones.length < 3) editPeriods[i].extraZones.push(iana); renderPeriodsEditor(); }
 function removeExtraZone(i, zi) { editPeriods[i].extraZones.splice(zi, 1); renderPeriodsEditor(); }
 function addPeriod() { editPeriods.push(newSchedulePeriod()); renderPeriodsEditor(); }
@@ -922,9 +962,11 @@ function renderCpMainShared(c, editing) {
   const compRows = d.competencies.map((comp, i) => `
     <div class="cp-comp-row">
       <span class="cp-comp-name">${esc(comp.label)}</span>
-      <input type="number" min="0" max="100" class="cp-input cp-comp-input" value="${comp.pct}" ${dis} ${oi(`setCompetencyPct(${i}, this.value)`)}/>
+      <div class="cp-comp-input-wrap">
+        <input type="number" min="0" max="100" class="cp-input cp-comp-input" value="${comp.pct}" ${dis} ${oi(`setCompetencyPct(${i}, this.value)`)}/>
+        <span class="cp-comp-suffix">%</span>
+      </div>
       <div class="cp-comp-bar-wrap"><div class="cp-comp-bar" id="comp-bar-${i}" style="width:${comp.pct}%;"></div></div>
-      <span class="cp-comp-pct" id="comp-pct-${i}">${comp.pct}%</span>
     </div>`).join('');
   const compTotal = d.competencies.reduce((s, x) => s + Number(x.pct), 0);
 
@@ -1012,11 +1054,32 @@ function emptyGridRow(tabKey) {
   CP_DETAIL_TABLES[tabKey].columns.forEach(col => { row[col.field] = ''; });
   return row;
 }
+// Per-tab column widths, remembered across reloads (this is the real app
+// itself, not a sandboxed artifact, so localStorage is fine here).
+function getColWidths(tabKey) {
+  try { return JSON.parse(localStorage.getItem('cp-grid-col-widths-' + tabKey)) || {}; }
+  catch (e) { return {}; }
+}
+function setColWidth(tabKey, field, px) {
+  const w = getColWidths(tabKey);
+  w[field] = px;
+  try { localStorage.setItem('cp-grid-col-widths-' + tabKey, JSON.stringify(w)); } catch (e) {}
+}
+
 function detailGridHtml(tabKey, rows, editing) {
   const spec = CP_DETAIL_TABLES[tabKey];
   const dis = editing ? '' : 'disabled';
   const cols = spec.columns;
+  const widths = getColWidths(tabKey);
   if (!rows.length && !editing) return cpEmptyState(spec.hint);
+  // table-layout:fixed means the header row's cell widths set every column's
+  // width for the whole table — no <colgroup> needed. Each header has a
+  // draggable handle (see grid resize listeners) so professors can widen a
+  // long "Description" column or narrow a short "Unit" column, spreadsheet-style.
+  const headerCells = cols.map((c, ci) => {
+    const w = widths[c.field] || (c.type === 'number' ? 110 : 200);
+    return `<th style="width:${w}px;">${esc(c.label)}<span class="grid-resize-handle" data-ci="${ci}"></span></th>`;
+  }).join('');
   const bodyRows = rows.map((r, ri) => `
     <tr>
       ${cols.map((col, ci) => `
@@ -1026,16 +1089,45 @@ function detailGridHtml(tabKey, rows, editing) {
             oninput="setGridCell(${ri},${ci},this.value)"
             onpaste="handleGridPaste(event,${ri},${ci})"/>
         </td>`).join('')}
-      ${editing ? `<td class="grid-remove-cell"><button class="cp-period-remove" onclick="removeGridRow(${ri})">Remove</button></td>` : ''}
+      ${editing ? `<td class="grid-remove-cell" style="width:70px;"><button class="cp-period-remove" onclick="removeGridRow(${ri})">Remove</button></td>` : ''}
     </tr>`).join('');
   const addRow = editing ? `<div class="cp-add-period" style="margin-top:14px;"><button onclick="addGridRow()">+ Add row</button></div>` : '';
   return `
-    <div class="cp-table-wrap"><table class="cp-table grid-table">
-      <thead><tr>${cols.map(c => `<th>${esc(c.label)}</th>`).join('')}${editing ? '<th></th>' : ''}</tr></thead>
+    <div class="cp-table-wrap"><table class="cp-table grid-table" data-tab="${tabKey}">
+      <thead><tr>${headerCells}${editing ? '<th style="width:70px;"></th>' : ''}</tr></thead>
       <tbody>${bodyRows}</tbody>
     </table></div>
     ${addRow}`;
 }
+
+// Column resize — delegated listeners (attached once) so they keep working
+// across re-renders without leaking duplicate handlers.
+let gridResizeState = null;
+document.addEventListener('mousedown', (e) => {
+  const handle = e.target.closest('.grid-resize-handle');
+  if (!handle) return;
+  const th = handle.closest('th');
+  const table = handle.closest('table.grid-table');
+  if (!th || !table) return;
+  gridResizeState = { tabKey: table.dataset.tab, ci: Number(handle.dataset.ci), th, startX: e.clientX, startWidth: th.offsetWidth };
+  handle.classList.add('resizing');
+  document.body.style.cursor = 'col-resize';
+  e.preventDefault();
+});
+document.addEventListener('mousemove', (e) => {
+  if (!gridResizeState) return;
+  const newWidth = Math.max(70, gridResizeState.startWidth + (e.clientX - gridResizeState.startX));
+  gridResizeState.th.style.width = newWidth + 'px';
+});
+document.addEventListener('mouseup', () => {
+  if (!gridResizeState) return;
+  const spec = CP_DETAIL_TABLES[gridResizeState.tabKey];
+  const col = spec && spec.columns[gridResizeState.ci];
+  if (col) setColWidth(gridResizeState.tabKey, col.field, parseInt(gridResizeState.th.style.width, 10));
+  document.querySelectorAll('.grid-resize-handle.resizing').forEach(h => h.classList.remove('resizing'));
+  document.body.style.cursor = '';
+  gridResizeState = null;
+});
 function renderDetailTabShared(tabKey, rows, editing) {
   let footer = '';
   if (tabKey === 'assessment' && rows.length) {
