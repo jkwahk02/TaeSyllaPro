@@ -187,6 +187,7 @@ button,input{font-family:inherit;}
 /* COURSE PAGE — EDIT MODE */
 .cp-actions{margin-left:auto;display:flex;gap:10px;flex-shrink:0;}
 .btn{height:40px;padding:0 18px;border-radius:var(--r);font-size:18px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border-em);background:var(--surface);color:var(--text);display:inline-flex;align-items:center;gap:7px;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
 .btn:hover{background:var(--surface2);}
 .btn-primary{background:var(--blue);color:#fff;border-color:var(--blue);}
 .btn-primary:hover{background:var(--blue-b);}
@@ -811,9 +812,17 @@ function renderCoursePage() {
     }
   }
 
+  // Publishing is the gate on editing: a published syllabus is what students
+  // are reading, so it can't be changed underneath them. Unpublish first, edit,
+  // then publish again — the same draft/published cycle the status badge shows.
+  const isPublished = c.status === 'published';
   const actions = editMode
     ? `<button class="btn" onclick="cancelEdit()">Cancel</button><button class="btn btn-primary" id="cp-save-btn" onclick="saveCourseEdits()"><i></i>Save changes</button>`
-    : `<button class="btn" onclick="enterEditMode()">Edit</button>`;
+    : isPublished
+      ? `<button class="btn" onclick="setCoursePublished(false)">Unpublish</button>` +
+        `<button class="btn" disabled title="Unpublish first to make changes">Edit</button>`
+      : `<button class="btn" onclick="enterEditMode()">Edit</button>` +
+        `<button class="btn btn-primary" onclick="setCoursePublished(true)">Publish</button>`;
 
   el.innerHTML = `
     <button class="cp-back" onclick="backToHome()">${chevronSvg()} Back to courses</button>
@@ -873,9 +882,29 @@ function deriveMainDraft(c) {
 // tabs load lazily the first time the professor switches to them (see
 // setCourseTab / ensureEditRowsForTab) and everything stays live until Save
 // or Cancel — switching tabs in between never discards anything.
+// Flips course_offerings.status between draft and published. Publishing locks
+// editing (the Edit button goes disabled); unpublishing unlocks it again.
+async function setCoursePublished(publish) {
+  const c = courses.find(x => String(x.id) === String(currentCourseId));
+  if (!c) return;
+  if (publish && !confirm(`Publish ${c.code}?\n\nStudents will see this syllabus, and it can't be edited until you unpublish it.`)) return;
+  const prev = c.status;
+  c.status = publish ? 'published' : 'draft';   // optimistic — the page re-renders immediately
+  renderCoursePage();
+  try {
+    await sbPatch(TBL_OFFERINGS, `offering_id=eq.${encodeURIComponent(c.id)}`, { status: c.status });
+    showToast(publish ? 'Published' : 'Unpublished — you can edit now');
+  } catch (e) {
+    c.status = prev;                            // roll back the optimistic flip
+    renderCoursePage();
+    showToast('Could not change status: ' + e.message);
+  }
+}
+
 async function enterEditMode() {
   const c = courses.find(x => String(x.id) === String(currentCourseId));
   if (!c) return;
+  if (c.status === 'published') { showToast('Unpublish first to make changes'); return; }
   editDraft = deriveMainDraft(c);
   editRowsByTab = {};
   editMode = true;
