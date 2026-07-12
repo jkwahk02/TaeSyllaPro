@@ -769,6 +769,11 @@ function renderCoursePage() {
   // Periods (Class meeting times) back both the Main tab and the Schedule
   // tab's computed Class Date column, so load them lazily for either.
   if ((courseTab === 'main' || courseTab === 'schedule') && !periodsCache[c.id]) loadPeriodsIfNeeded(c.id); // fire-and-forget, re-renders on arrival
+  // The Schedule tab's Class Date column also needs the cohort's academic
+  // calendar (holidays / breaks / make-up days) -- same lazy-load pattern.
+  if (courseTab === 'schedule' && !academicCalendar) {
+    loadAcademicCalendar().then(() => { if (String(currentCourseId) === String(c.id) && courseTab === 'schedule') renderCoursePage(); });
+  }
 
   let tabContent;
   if (courseTab === 'main') {
@@ -1401,7 +1406,14 @@ function detailGridHtml(tabKey, rows, editing) {
       <button class="btn btn-danger" style="height:36px;" onclick="deleteSelectedGridRows()">Delete selected</button>
     </div>` : '';
   const addRow = editing ? `<div class="cp-add-period" style="margin-top:14px;"><button onclick="addGridRow()">+ Add row</button></div>` : '';
-  const classDateNote = classDateByRow ? `<p style="font-size:16px;color:var(--text3);margin-top:10px;">Class Date is calculated from "Class meeting times" on the Main tab (and any academic-calendar breaks) — rows whose Item starts with "Lesson N" are matched to dates in order.</p>` : '';
+  const classDateNote = classDateByRow ? (() => {
+    const cc = courses.find(x => String(x.id) === String(currentCourseId));
+    const term = academicTermFor(cc);
+    const src = term
+      ? `${term.year} ${term.semester} · ${term.cohort} academic calendar (${term.start_date} – ${term.end_date})`
+      : `no academic calendar matched for ${(cc && cc.semester) || ''} — holidays, breaks and make-up days are NOT applied`;
+    return `<p style="font-size:16px;color:var(--text3);margin-top:10px;">Class Date = "Class meeting times" (Main tab) − holidays − breaks + make-up days, from the ${esc(src)}. Rows whose Item starts with "Lesson N" are matched to dates in order.</p>`;
+  })() : '';
   return `
     ${bulkBar}
     <div class="cp-table-wrap"><table class="cp-table grid-table" data-tab="${tabKey}">
@@ -2044,55 +2056,146 @@ function newSchedulePeriod() {
 }
 
 // ── Computed Class Date (Schedule tab) ──
-// Regular institutional non-class days — Spring Break, Student Return Home,
-// etc. — that generated class dates should skip. There's no Supabase table
-// for this yet, so it's a plain constant here (same idea as the original
-// Class Date script's hardcoded `breaks` list) — update it each semester to
-// match Taejae's official academic calendar. Leave it empty if none apply.
-const ACADEMIC_CALENDAR_BREAKS = [
-  // { label: 'Spring Break', start: '2026-03-30', end: '2026-04-05' },
-];
-function isInAcademicBreak(isoDate) {
-  return ACADEMIC_CALENDAR_BREAKS.some(b => isoDate >= b.start && isoDate <= b.end);
+// Backed by the `academic_terms` / `academic_events` tables (see
+// academic_calendar_schema.sql) instead of a hardcoded per-semester list.
+// A calendar is published per (year, semester, cohort) — in Fall 2026 alone,
+// Year 1 ends Dec 10 while Year 2/3-4 end Dec 14 and hold make-up classes on
+// Dec 15 & 17 — so the offering's cohort has to be resolved before any date
+// can be computed. See cohortForCourseCode below.
+let academicCalendar = null;          // { terms:[], eventsByTerm:{ [term_id]: [] } }
+let academicCalendarLoading = null;
+
+async function loadAcademicCalendar() {
+  if (academicCalendar) return academicCalendar;
+  if (academicCalendarLoading) return academicCalendarLoading;
+  academicCalendarLoading = (async () => {
+    const [terms, events] = await Promise.all([
+      sbGet('academic_terms',  'select=*'),
+      sbGet('academic_events', 'select=*&order=start_date.asc'),
+    ]);
+    const eventsByTerm = {};
+    events.forEach((e) => { (eventsByTerm[e.term_id] = eventsByTerm[e.term_id] || []).push(e); });
+    academicCalendar = { terms, eventsByTerm };
+    return academicCalendar;
+  })().catch((e) => {
+    academicCalendarLoading = null;
+    showToast('Could not load the academic calendar: ' + e.message);
+    academicCalendar = { terms: [], eventsByTerm: {} };   // degrade to "no breaks/holidays"
+    return academicCalendar;
+  });
+  return academicCalendarLoading;
 }
+
+// Which cohort's academic calendar applies to a course?
+//   - course code contains "IF"  -> Year 1 (the IF courses target first-years)
+//   - otherwise the first digit of the course number is its Level:
+//       1 -> Year 1,  2 -> Year 2,  3 or 4 -> Year 3-4
+// Older semesters label the same populations by cohort ("3rd Cohort") rather
+// than by year, so COHORT_ALIASES bridges the two naming schemes.
+function cohortForCourseCode(code) {
+  const s = String(code || '').toUpperCase();
+  if (s.includes('IF')) return 'Year 1';
+  const m = s.match(/\d/);
+  if (!m) return null;
+  const level = Number(m[0]);
+  if (level <= 1) return 'Year 1';
+  if (level === 2) return 'Year 2';
+  if (level === 3 || level === 4) return 'Year 3-4';
+  return null;
+}
+// 'Fall 2026' -> { year: 2026, semester: 'fall' }
+function parseSemesterLabel(label) {
+  const [term, year] = String(label || '').trim().split(/\s+/);
+  return { year: Number(year), semester: String(term || '').toLowerCase() };
+}
+// Year-named cohorts (2026 Fall onward) and cohort-named ones (2025 Fall,
+// 2026 Spring) describe the same students -- accept either spelling.
+const COHORT_ALIASES = {
+  'Year 1':   ['Year 1', '3rd Cohort'],
+  'Year 2':   ['Year 2', '1st & 2nd Cohort'],
+  'Year 3-4': ['Year 3-4', '1st & 2nd Cohort'],
+};
+function academicTermFor(course) {
+  if (!academicCalendar || !course) return null;
+  const { year, semester } = parseSemesterLabel(course.semester);
+  const inTerm = academicCalendar.terms.filter(t => t.year === year && t.semester === semester);
+  if (!inTerm.length) return null;
+  const cohort = course.cohort || cohortForCourseCode(course.code);
+  const names = COHORT_ALIASES[cohort] || (cohort ? [cohort] : []);
+  for (const n of names) {
+    const hit = inTerm.find(t => t.cohort === n);
+    if (hit) return hit;
+  }
+  return inTerm.length === 1 ? inTerm[0] : null;   // unambiguous single calendar
+}
+
 function addDaysIso(isoDate, days) {
   const [y, m, d] = isoDate.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
   dt.setUTCDate(dt.getUTCDate() + days);
   return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
 }
-// Walks every schedule period (Main tab > Class meeting times) for this
-// offering day-by-day across its valid_from..valid_to range, keeping any day
-// that matches one of the period's active weekdays and isn't inside an
-// academic-calendar break — a "generate then filter" approach, driven by the
-// structured period data this app already stores rather than re-parsing
-// free-text schedule strings.
+const DAY_KEY_BY_DOW = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+function dayKeyOf(isoDate) {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  return DAY_KEY_BY_DOW[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+}
+
+// Walks every schedule period (Main tab > Class meeting times) day-by-day
+// across its valid range, keeping days that match the period's weekdays, then
+// applies the cohort's academic calendar:
+//
+//   class dates = weekday pattern - holidays - breaks + make-up days
+//
+// The make-up term is what the old hardcoded-breaks version missed. A make-up
+// day *moves a weekday*: Chuseok falls on Thu Sept 24, so Thursday's classes
+// meet on Fri Oct 2 instead -- a Friday-only course does NOT meet twice that
+// day. academic_events.makes_up_for holds the date being made up, and only
+// periods active on that date's weekday pick the make-up day up.
+//
+// Fridays hold no regular classes (other activities only), which is why the
+// make-up days mostly land on Fridays -- and why a Friday holiday (Thanksgiving
+// Nov 27, 2026) gets no make-up day at all. That's the calendar working as
+// intended, not a missing row.
 function computeClassDatesForOffering(offeringId) {
   const periods = periodsCache[offeringId];
   if (!periods || !periods.length) return [];
-  const dayKeyByDow = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  const course = courses.find(x => String(x.id) === String(offeringId));
+  const term   = academicTermFor(course);
+  const events = (term && academicCalendar.eventsByTerm[term.id]) || [];
+  const noClass = events.filter(e => e.event_type === 'holiday' || e.event_type === 'break');
+  const makeups = events.filter(e => e.event_type === 'makeup' && e.makes_up_for);
+  const isNoClassDay = (iso) => noClass.some(e => iso >= e.start_date && iso <= e.end_date);
+
   const out = [];
   periods.forEach((p) => {
-    if (!p.validFrom || !p.validTo || !p.startTime) return;
+    // Fall back to the term's official start/end when a period leaves its
+    // valid range blank -- the academic calendar already knows those dates.
+    const from = p.validFrom || (term && term.start_date);
+    const to   = p.validTo   || (term && term.end_date);
+    if (!from || !to || !p.startTime) return;
     const activeKeys = Object.keys(p.days).filter((k) => p.days[k]);
     if (!activeKeys.length) return;
     const [sh, smi] = p.startTime.split(':').map(Number);
     const [eh, emi] = addMinutes(sh, smi, p.durationMin || DEFAULT_DURATION_MIN);
-    let cursor = p.validFrom;
-    let guard = 0;
-    while (cursor <= p.validTo && guard < 2000) {
+    const endTime = `${String(eh).padStart(2, '0')}:${String(emi).padStart(2, '0')}`;
+    const push = (iso, note) => out.push({
+      isoDate: iso, startTime: p.startTime, endTime, timezone: p.timezone, note: note || '',
+    });
+
+    let cursor = from, guard = 0;
+    while (cursor <= to && guard < 2000) {
       guard++;
-      const [y, m, d] = cursor.split('-').map(Number);
-      const dayKey = dayKeyByDow[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
-      if (activeKeys.includes(dayKey) && !isInAcademicBreak(cursor)) {
-        out.push({
-          isoDate: cursor, startTime: p.startTime,
-          endTime: `${String(eh).padStart(2, '0')}:${String(emi).padStart(2, '0')}`,
-          timezone: p.timezone,
-        });
-      }
+      if (activeKeys.includes(dayKeyOf(cursor)) && !isNoClassDay(cursor)) push(cursor);
       cursor = addDaysIso(cursor, 1);
     }
+    // Make-up days are added regardless of the period's own weekdays (a
+    // Thursday class can land on a Friday) and regardless of the term's end
+    // date (Year 2/3-4's Dec 15 & 17 sit past the Dec 14 last day of classes).
+    makeups.forEach((mu) => {
+      if (!activeKeys.includes(dayKeyOf(mu.makes_up_for))) return;
+      push(mu.start_date, mu.title);
+    });
   });
   out.sort((a, b) => a.isoDate === b.isoDate ? a.startTime.localeCompare(b.startTime) : a.isoDate.localeCompare(b.isoDate));
   return out;
@@ -2105,6 +2208,7 @@ function formatClassDateLabel(d) {
   let s = `${dayNames[dt.getUTCDay()]}, ${monthNames[dt.getUTCMonth()]} ${dt.getUTCDate()}, ${y}`;
   if (d.startTime) s += ` · ${d.startTime}`;
   if (d.timezone) s += ` ${tzLabel(d.timezone)}`;
+  if (d.note) s += ` (${d.note})`;      // e.g. "(Make-up day for Chuseok)"
   return s;
 }
 // Pushes one Google Calendar event per calculated class date directly into
