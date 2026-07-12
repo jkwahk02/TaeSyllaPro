@@ -1353,11 +1353,12 @@ function detailGridHtml(tabKey, rows, editing) {
   const cols = spec.columns;
   const widths = getColWidths(tabKey);
   if (!rows.length && !editing) return cpEmptyState(spec.hint);
-  // Schedule tab only: a read-only "Class Date" column computed from the
-  // Main tab's Class meeting times + academic-calendar breaks (see
-  // ACADEMIC_CALENDAR_BREAKS / computeClassDatesForOffering below). It isn't
-  // part of spec.columns since it's derived, not stored — rows whose Item
-  // starts with "Lesson N" are matched in row order to the Nth calculated
+  // Schedule tab only: a read-only "Class Date" column computed from the Main
+  // tab's Class meeting times and the cohort's academic calendar — holidays,
+  // breaks, make-up days and any mid-term timezone switch (see
+  // loadAcademicCalendar / computeClassDatesForOffering below). It isn't part
+  // of spec.columns since it's derived, not stored — rows whose Item starts
+  // with "Lesson N" are matched in row order to the Nth calculated
   // class-meeting date.
   let classDateByRow = null;
   if (tabKey === 'schedule') {
@@ -1412,7 +1413,11 @@ function detailGridHtml(tabKey, rows, editing) {
     const src = term
       ? `${term.year} ${term.semester} · ${term.cohort} academic calendar (${term.start_date} – ${term.end_date})`
       : `no academic calendar matched for ${(cc && cc.semester) || ''} — holidays, breaks and make-up days are NOT applied`;
-    return `<p style="font-size:16px;color:var(--text3);margin-top:10px;">Class Date = "Class meeting times" (Main tab) − holidays − breaks + make-up days, from the ${esc(src)}. Rows whose Item starts with "Lesson N" are matched to dates in order.</p>`;
+    const sw = term && academicCalendar ? timezoneSwitchOf(academicCalendar.eventsByTerm[term.id]) : null;
+    const tzNote = sw
+      ? ` Meeting times switch to ${esc(tzLabel(sw.timezone))} on ${esc(sw.start_date)} (${esc(sw.title)}), so each Period applies only to its own stretch of the term.`
+      : '';
+    return `<p style="font-size:16px;color:var(--text3);margin-top:10px;">Class Date = "Class meeting times" (Main tab) − holidays − breaks + make-up days, from the ${esc(src)}.${tzNote} Rows whose Item starts with "Lesson N" are matched to dates in order.</p>`;
   })() : '';
   return `
     ${bulkBar}
@@ -2157,6 +2162,42 @@ function dayKeyOf(isoDate) {
 // make-up days mostly land on Fridays -- and why a Friday holiday (Thanksgiving
 // Nov 27, 2026) gets no make-up day at all. That's the calendar working as
 // intended, not a missing row.
+// A course can have more than one meeting pattern, and they are NOT
+// concurrent — they are consecutive. Spring 2026 (1st & 2nd Cohort) is the
+// case in point: students sit in New York until the one-week return-home
+// suspension (May 18-22), then classes resume in Korea on May 25. So the
+// course meets Mon/Wed 21:00 Eastern for the first stretch and Tue/Thu 20:00
+// Korea for the rest — the same class, but a different weekday-and-time
+// pattern on either side of the switch.
+//
+// When a period carries an explicit valid_from/valid_to, that wins. When it
+// doesn't, the range is derived from the academic calendar: a
+// `timezone_switch` event marks the day the term changes timezone, and each
+// period is assigned to the stretch whose timezone it is written in. Applying
+// both patterns across the whole term is what made the Schedule tab look like
+// the course met every single day.
+//
+// Without such an event, all periods share the full term — the ordinary
+// second_weekday_time case (a lecture slot plus a weekly lab slot).
+function timezoneSwitchOf(events) {
+  return (events || []).find(e => e.event_type === 'timezone_switch' && e.timezone) || null;
+}
+function periodRange(p, term, events) {
+  if (p.validFrom && p.validTo) return { from: p.validFrom, to: p.validTo };
+  if (!term) return { from: p.validFrom || '', to: p.validTo || '' };
+  const sw = timezoneSwitchOf(events);
+  // No switch this term: every period runs the whole term. That's the ordinary
+  // "second_weekday_time" case — a lecture slot plus a lab slot, both weekly
+  // for the full semester, sharing the same valid range.
+  if (!sw || !p.timezone) return { from: term.start_date, to: term.end_date };
+  // Switch this term: the periods are consecutive, not concurrent. Assign each
+  // to the stretch written in its own timezone. Matching on timezone (not on
+  // row order) means it doesn't matter how the periods are stored.
+  return p.timezone === sw.timezone
+    ? { from: sw.start_date, to: term.end_date }                    // after the switch
+    : { from: term.start_date, to: addDaysIso(sw.start_date, -1) }; // before it
+}
+
 function computeClassDatesForOffering(offeringId) {
   const periods = periodsCache[offeringId];
   if (!periods || !periods.length) return [];
@@ -2169,10 +2210,7 @@ function computeClassDatesForOffering(offeringId) {
 
   const out = [];
   periods.forEach((p) => {
-    // Fall back to the term's official start/end when a period leaves its
-    // valid range blank -- the academic calendar already knows those dates.
-    const from = p.validFrom || (term && term.start_date);
-    const to   = p.validTo   || (term && term.end_date);
+    const { from, to } = periodRange(p, term, events);
     if (!from || !to || !p.startTime) return;
     const activeKeys = Object.keys(p.days).filter((k) => p.days[k]);
     if (!activeKeys.length) return;
@@ -2194,6 +2232,12 @@ function computeClassDatesForOffering(offeringId) {
     // date (Year 2/3-4's Dec 15 & 17 sit past the Dec 14 last day of classes).
     makeups.forEach((mu) => {
       if (!activeKeys.includes(dayKeyOf(mu.makes_up_for))) return;
+      // The make-up has to fall in this period's own stretch (a make-up held
+      // while the cohort is still in New York belongs to the Mon/Wed pattern).
+      // Dec 15/17-style make-ups sit just past the last day of classes, so the
+      // window is the period's range extended to the end of the term.
+      const tail = (term && term.end_date > to) ? term.end_date : to;
+      if (mu.start_date < from || mu.start_date > addDaysIso(tail, 14)) return;
       push(mu.start_date, mu.title);
     });
   });
