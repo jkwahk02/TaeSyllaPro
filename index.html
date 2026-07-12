@@ -169,12 +169,15 @@ button,input{font-family:inherit;}
    broken. Widened to 11px and given a high z-index for a reliable hit area. */
 .grid-resize-handle{position:absolute;top:0;right:-5px;width:11px;height:100%;cursor:col-resize;z-index:10;}
 .grid-resize-handle:hover,.grid-resize-handle.resizing{background:var(--blue-m);}
-.grid-input{width:100%;height:42px;border:1px solid transparent;background:transparent;font-size:18px;font-family:inherit;color:var(--text);padding:9px 12px;outline:none;border-radius:0;}
+.grid-input{width:100%;min-height:42px;height:auto;border:1px solid transparent;background:transparent;font-size:18px;font-family:inherit;color:var(--text);padding:9px 12px;outline:none;border-radius:0;resize:none;overflow:hidden;line-height:1.4;display:block;}
 .grid-input:focus{border-color:var(--blue-m);background:var(--surface);box-shadow:0 0 0 1px var(--blue-m);}
 .grid-input:disabled{background:transparent;color:var(--text);opacity:1;-webkit-text-fill-color:var(--text);cursor:default;appearance:none;}
 .grid-table tr:hover td{background:var(--surface2);}
 .grid-table tr:hover .grid-input:focus{background:var(--surface);}
 .grid-remove-cell{white-space:nowrap;border-right:none;}
+.grid-check-cell{width:44px;text-align:center;vertical-align:middle!important;}
+.grid-check-cell input,.grid-table th input[type=checkbox]{width:19px;height:19px;cursor:pointer;}
+.grid-computed-cell{padding:9px 14px;font-size:17px;color:var(--text);background:var(--surface2);vertical-align:middle;line-height:1.4;}
 
 /* COURSE PAGE — EDIT MODE */
 .cp-actions{margin-left:auto;display:flex;gap:10px;flex-shrink:0;}
@@ -197,16 +200,22 @@ button,input{font-family:inherit;}
 .cp-day-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
 .cp-chip-btn{padding:0 14px;height:38px;border-radius:var(--r);border:1px solid var(--border-em);background:var(--surface);color:var(--text2);font-size:18px;font-weight:500;cursor:pointer;font-family:inherit;}
 .cp-chip-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
-.cp-comp-row{display:flex;align-items:center;gap:20px;padding:12px 0;border-bottom:1px solid var(--border);}
+/* Grid (not flex) so the name/input/bar columns line up exactly between
+   rows and the Total line, and the bar's column is a true 1fr — it fills
+   whatever width is left instead of stopping at a fixed max and leaving a
+   dead gap on wide screens. minmax() on the name column gives long labels
+   ("Communication and Collaboration") enough room to stay on one line
+   without being a rigid fixed width that clips on smaller screens. */
+.cp-comp-row,.cp-comp-total{grid-template-columns:minmax(200px,380px) 100px 1fr;}
+.cp-comp-row{display:grid;align-items:center;gap:20px;padding:12px 0;border-bottom:1px solid var(--border);}
 .cp-comp-row:last-of-type{border-bottom:none;}
-.cp-comp-name{width:300px;flex-shrink:0;font-size:19px;color:var(--text);}
-.cp-comp-input-wrap{display:flex;align-items:center;gap:5px;flex-shrink:0;}
-.cp-comp-input{width:64px;text-align:center;flex-shrink:0;}
-.cp-comp-suffix{font-size:18px;color:var(--text3);width:12px;}
-.cp-comp-bar-wrap{flex:1;max-width:520px;height:9px;background:var(--surface2);border-radius:4px;overflow:hidden;flex-shrink:0;}
+.cp-comp-name{font-size:19px;color:var(--text);line-height:1.3;}
+.cp-comp-input-wrap{display:flex;align-items:center;gap:5px;}
+.cp-comp-input{width:84px;text-align:center;padding:0 8px;}
+.cp-comp-suffix{font-size:18px;color:var(--text3);width:14px;}
+.cp-comp-bar-wrap{height:9px;background:var(--surface2);border-radius:4px;overflow:hidden;width:100%;}
 .cp-comp-bar{height:100%;background:var(--blue);min-width:3px;transition:width .15s;}
-.cp-comp-total{display:flex;align-items:center;gap:20px;border-top:1px solid var(--border-em);padding-top:14px;margin-top:6px;font-weight:600;font-size:19px;}
-.cp-comp-total-label{width:300px;flex-shrink:0;}
+.cp-comp-total{display:grid;align-items:center;gap:20px;border-top:1px solid var(--border-em);padding-top:14px;margin-top:6px;font-weight:600;font-size:19px;}
 .cp-period-card{border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;margin-bottom:16px;}
 .cp-period-hd{display:flex;align-items:flex-end;gap:20px;margin-bottom:20px;}
 .cp-period-badge{background:var(--blue);color:#fff;font-size:16px;font-weight:600;padding:5px 11px;border-radius:12px;height:fit-content;flex-shrink:0;}
@@ -254,6 +263,18 @@ button,input{font-family:inherit;}
 .toast{position:fixed;bottom:26px;right:26px;background:var(--text);color:#fff;font-size:18px;font-weight:500;padding:12px 20px;border-radius:var(--r);z-index:9999;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;}
 .toast.show{opacity:1;transform:translateY(0);}
 
+/* UNSAVED CHANGES CONFIRM MODAL */
+#confirm-modal{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:400;display:none;align-items:center;justify-content:center;}
+#confirm-modal.open{display:flex;}
+#settings-modal{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:400;display:none;align-items:center;justify-content:center;}
+#settings-modal.open{display:flex;}
+.confirm-card{background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.1);width:100%;max-width:460px;padding:32px;margin:0 16px;}
+.confirm-title{font-size:23px;font-weight:600;color:var(--text);margin-bottom:10px;}
+.confirm-body{font-size:19px;color:var(--text2);line-height:1.5;margin-bottom:26px;}
+.confirm-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;}
+.btn-danger{color:var(--red);}
+.btn-danger:hover{background:var(--red-l);}
+
 @media (max-width:900px){
   .course-grid,.kpi-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr));}
 }
@@ -270,6 +291,7 @@ button,input{font-family:inherit;}
   .course-card{padding:18px 20px;}
 }
 </style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -348,6 +370,7 @@ button,input{font-family:inherit;}
         </div>
       </button>
       <div class="tb-dropdown" id="tb-dropdown">
+        <button class="tb-dropdown-item" onclick="showSettingsModal();closeUserMenu()">Settings</button>
         <button class="tb-dropdown-item" onclick="showChangePwModal();closeUserMenu()">Change password</button>
         <div class="tb-dropdown-div"></div>
         <button class="tb-dropdown-item danger" onclick="handleSignOut()">Sign out</button>
@@ -379,6 +402,30 @@ button,input{font-family:inherit;}
 
 <div class="toast" id="toast"></div>
 
+<!-- UNSAVED CHANGES CONFIRM MODAL -->
+<div id="confirm-modal">
+  <div class="confirm-card">
+    <div class="confirm-title">Save your changes?</div>
+    <div class="confirm-body">You're still editing this course. If you leave now without saving, your changes will be lost.</div>
+    <div class="confirm-actions">
+      <button class="btn" onclick="confirmModalCancel()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmModalDiscard()">Discard changes</button>
+      <button class="btn btn-primary" id="confirm-save-btn" onclick="confirmModalSave()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="settings-modal">
+  <div class="confirm-card" style="max-width:560px;">
+    <div class="confirm-title" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <span>Settings</span>
+      <button class="btn" style="height:34px;padding:0 12px;" onclick="closeSettingsModal()">Close</button>
+    </div>
+    <div id="settings-modal-body"></div>
+  </div>
+</div>
+
 <script>
 // ── SUPABASE CONFIG ──
 const SUPABASE_URL  = 'https://ecktuualyuvctixlkjve.supabase.co';
@@ -405,6 +452,22 @@ let supabaseUser = null;
 let PROFESSOR = { name: '', email: '', school: '', isChair: false };
 let courses = [];
 let dataLoaded = false;
+
+// ── Google Calendar integration (same pattern as Telos: GSI token client,
+// a dedicated auto-created calendar, and a per-item export instead of a
+// downloaded .ics file) ──
+// Reuses Telos's registered OAuth Client ID. TaeSylla Pro is hosted at
+// https://jkwahk02.github.io/TaeSyllaPro/ — a different origin than Telos —
+// so https://jkwahk02.github.io must be added under "Authorized JavaScript
+// origins" for this Client ID in Google Cloud Console (APIs & Services →
+// Credentials → this OAuth 2.0 Client ID) before Connect will work here.
+// Otherwise swap in a Client ID of your own with that origin authorized.
+const GCAL_CLIENT_ID = '290444850759-26d8ch9qjk7hvsudgavlqi8tdngsgism.apps.googleusercontent.com';
+const GCAL_SCOPE = 'https://www.googleapis.com/auth/calendar';
+const GCAL_CALENDAR_NAME = 'TaeSylla Pro — Class Schedule';
+let gcalToken = null; // in-memory only — re-authorize after a reload or ~1hr
+const _storedGcalCalId = localStorage.getItem('taesylla_gcal_calendar_id');
+let gcalCalendarId = (_storedGcalCalId && _storedGcalCalId !== 'undefined') ? _storedGcalCalId : null;
 let viewMode = { thisSemester: 'grid', upcoming: 'list', history: 'list' };
 let historyExpanded = false;
 let loginAttempts = 0, loginLocked = false;
@@ -444,6 +507,7 @@ let editMode = false;
 let editDraft = null;
 let editPeriods = [];
 let editRowsByTab = {}; // { [tabKey]: rows[] } for assessment/communication/schedule/readings/activities
+let editSnapshot = null; // JSON baseline captured right after edit data loads, for dirty-checking
 let periodsCache = {}; // { [offeringId]: mapped period rows already saved in the DB }
 const CP_TABS = [
   { key: 'main', label: 'Main' },
@@ -454,24 +518,89 @@ const CP_TABS = [
   { key: 'activities', label: 'T-Learning Activities' },
 ];
 
+// ── Unsaved-changes guard ──
+// editSnapshot is a JSON baseline taken right after each piece of edit data
+// finishes loading (see enterEditMode / ensureEditRowsForTab); comparing the
+// live draft against it tells us whether the professor has actually typed
+// anything, as opposed to just having clicked Edit.
+function captureEditSnapshot() {
+  editSnapshot = JSON.stringify({ draft: editDraft, periods: editPeriods, rowsByTab: editRowsByTab });
+}
+function hasUnsavedChanges() {
+  if (!editMode) return false;
+  return JSON.stringify({ draft: editDraft, periods: editPeriods, rowsByTab: editRowsByTab }) !== editSnapshot;
+}
+function clearEditState() {
+  editMode = false; editDraft = null; editPeriods = []; editRowsByTab = {}; editSnapshot = null;
+}
+// Runs `onProceed` immediately if there's nothing unsaved; otherwise shows
+// the Save/Discard/Cancel modal and only runs it once the professor picks
+// Save (and it succeeds) or Discard.
+let pendingProceedAction = null;
+function confirmDiscardIfDirty(onProceed) {
+  if (!hasUnsavedChanges()) { onProceed(); return; }
+  pendingProceedAction = onProceed;
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function confirmModalCancel() {
+  pendingProceedAction = null;
+  document.getElementById('confirm-modal').classList.remove('open');
+}
+function confirmModalDiscard() {
+  document.getElementById('confirm-modal').classList.remove('open');
+  clearEditState();
+  const action = pendingProceedAction; pendingProceedAction = null;
+  if (action) action();
+}
+async function confirmModalSave() {
+  const btn = document.getElementById('confirm-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  const ok = await saveCourseEdits();
+  if (btn) { btn.disabled = false; btn.textContent = 'Save changes'; }
+  if (ok) {
+    document.getElementById('confirm-modal').classList.remove('open');
+    const action = pendingProceedAction; pendingProceedAction = null;
+    if (action) action();
+  }
+  // On failure, saveCourseEdits() already toasted the error — leave the
+  // modal open so the professor can retry or fall back to Discard/Cancel.
+}
+
 function goToCourse(id) {
   location.hash = `course/${id}`;
 }
 function backToHome() {
-  editMode = false; editDraft = null; editPeriods = []; editRowsByTab = {};
-  location.hash = '';
+  confirmDiscardIfDirty(() => {
+    clearEditState();
+    location.hash = '';
+  });
 }
+// Guards against re-entrancy while we programmatically bounce the hash back
+// to its previous value (see below) — that bounce itself fires hashchange,
+// which must not be treated as a second real navigation.
+let routeGuardActive = false;
 window.addEventListener('hashchange', handleRoute);
 function handleRoute() {
-  if (!dataLoaded) return; // loadData() calls handleRoute() again once ready
+  if (!dataLoaded || routeGuardActive) return; // loadData() calls handleRoute() again once ready
   const m = location.hash.match(/^#course\/(.+)$/);
+  const newId = m ? m[1] : null;
+  // Leaving the course being edited (browser back/forward, or any other hash
+  // change) with real unsaved changes — revert the URL immediately so it
+  // doesn't visibly jump ahead, ask, then replay the navigation if confirmed.
+  if (editMode && String(newId) !== String(currentCourseId) && hasUnsavedChanges()) {
+    const targetHash = location.hash;
+    routeGuardActive = true;
+    location.hash = currentCourseId !== null ? `course/${currentCourseId}` : '';
+    routeGuardActive = false;
+    confirmDiscardIfDirty(() => { location.hash = targetHash.replace(/^#/, ''); });
+    return;
+  }
   if (m) {
-    const newId = m[1];
     // Only reset the edit session when actually navigating to a different
     // course. Re-firing on the same course/hash (rare, but possible) leaves
     // an in-progress edit alone instead of silently discarding it.
     if (String(newId) !== String(currentCourseId)) {
-      editMode = false; editDraft = null; editPeriods = []; editRowsByTab = {};
+      clearEditState();
       courseTab = 'main';
     }
     currentCourseId = newId;
@@ -607,9 +736,12 @@ function renderCoursePage() {
     return;
   }
 
+  // Periods (Class meeting times) back both the Main tab and the Schedule
+  // tab's computed Class Date column, so load them lazily for either.
+  if ((courseTab === 'main' || courseTab === 'schedule') && !periodsCache[c.id]) loadPeriodsIfNeeded(c.id); // fire-and-forget, re-renders on arrival
+
   let tabContent;
   if (courseTab === 'main') {
-    if (!periodsCache[c.id]) loadPeriodsIfNeeded(c.id); // fire-and-forget, re-renders on arrival
     tabContent = renderCpMainShared(c, editMode);
   } else if (editMode) {
     const rows = editRowsByTab[courseTab];
@@ -652,7 +784,7 @@ function renderCoursePage() {
     </div>
     <div id="cp-tab-body">${tabContent}</div>
   `;
-  document.querySelectorAll('#cp-tab-body textarea.cp-textarea').forEach(autoGrowTextarea);
+  document.querySelectorAll('#cp-tab-body textarea.cp-textarea, #cp-tab-body textarea.grid-input').forEach(autoGrowTextarea);
 }
 
 // Grows a textarea to fit its content (view mode included, so long saved
@@ -703,7 +835,7 @@ async function enterEditMode() {
   renderCoursePage();
   await loadPeriodsIfNeeded(c.id);
   editPeriods = (periodsCache[c.id] || []).map(p => JSON.parse(JSON.stringify(p)));
-  if (courseTab === 'main') renderCoursePage();
+  if (courseTab === 'main') { captureEditSnapshot(); renderCoursePage(); }
   else await ensureEditRowsForTab(courseTab);
 }
 
@@ -719,12 +851,13 @@ async function ensureEditRowsForTab(tabKey) {
   let arr = JSON.parse(JSON.stringify(Array.isArray(rows) ? rows : []));
   if (!arr.length) arr = [emptyGridRow(tabKey)];
   editRowsByTab[tabKey] = arr;
+  captureEditSnapshot(); // re-baseline now that this tab's rows are loaded, so hasUnsavedChanges() isn't tripped by the load itself
   if (editMode && String(currentCourseId) === String(c.id) && courseTab === tabKey) renderCoursePage();
   return arr;
 }
 
 function cancelEdit() {
-  editMode = false; editDraft = null; editPeriods = []; editRowsByTab = {};
+  clearEditState();
   renderCoursePage();
 }
 
@@ -757,9 +890,9 @@ async function loadPeriodsIfNeeded(offeringId) {
     periodsCache[offeringId] = [];
     showToast('Could not load schedule periods: ' + e.message);
   }
-  if (String(currentCourseId) === String(offeringId) && courseTab === 'main') {
-    if (editMode) editPeriods = periodsCache[offeringId].map(p => JSON.parse(JSON.stringify(p)));
-    renderCoursePage();
+  if (String(currentCourseId) === String(offeringId)) {
+    if (editMode && courseTab === 'main') { editPeriods = periodsCache[offeringId].map(p => JSON.parse(JSON.stringify(p))); captureEditSnapshot(); }
+    if (courseTab === 'main' || courseTab === 'schedule') renderCoursePage();
   }
   return periodsCache[offeringId];
 }
@@ -820,9 +953,12 @@ async function saveDetailTabInner(c, tabKey, rows) {
 // edit session in one pass — Main (if its draft exists) plus every detail
 // tab the professor visited — not just whichever tab happens to be showing
 // when the button is clicked.
+// Returns true/false so callers (including the unsaved-changes confirm
+// modal) know whether it's safe to proceed with whatever navigation
+// triggered the save.
 async function saveCourseEdits() {
   const c = courses.find(x => String(x.id) === String(currentCourseId));
-  if (!c) return;
+  if (!c) return false;
   const btn = document.getElementById('cp-save-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
   try {
@@ -830,12 +966,14 @@ async function saveCourseEdits() {
     for (const tabKey of Object.keys(editRowsByTab)) {
       await saveDetailTabInner(c, tabKey, editRowsByTab[tabKey]);
     }
-    editMode = false; editDraft = null; editPeriods = []; editRowsByTab = {};
+    clearEditState();
     showToast('Changes saved');
     await loadData(); // refreshes `courses` from the DB and re-renders via handleRoute()
+    return true;
   } catch (e) {
     showToast('Save failed: ' + e.message);
     if (btn) { btn.disabled = false; btn.textContent = 'Save changes'; }
+    return false;
   }
 }
 
@@ -1069,7 +1207,7 @@ function renderCpMainShared(c, editing) {
     <div class="cp-card">
       <div class="cp-card-title">6 key competencies</div>
       ${compRows}
-      <div class="cp-comp-total"><span class="cp-comp-total-label">Total</span><span id="comp-total" style="color:${compTotal === 100 ? 'var(--blue)' : 'var(--red)'};">${compTotal}%</span></div>
+      <div class="cp-comp-total"><span>Total</span><span id="comp-total" style="color:${compTotal === 100 ? 'var(--blue)' : 'var(--red)'};">${compTotal}%</span></div>
     </div>
 
     <div class="cp-card">
@@ -1116,6 +1254,22 @@ function detailGridHtml(tabKey, rows, editing) {
   const cols = spec.columns;
   const widths = getColWidths(tabKey);
   if (!rows.length && !editing) return cpEmptyState(spec.hint);
+  // Schedule tab only: a read-only "Class Date" column computed from the
+  // Main tab's Class meeting times + academic-calendar breaks (see
+  // ACADEMIC_CALENDAR_BREAKS / computeClassDatesForOffering below). It isn't
+  // part of spec.columns since it's derived, not stored — rows whose Item
+  // starts with "Lesson N" are matched in row order to the Nth calculated
+  // class-meeting date.
+  let classDateByRow = null;
+  if (tabKey === 'schedule') {
+    const dates = computeClassDatesForOffering(currentCourseId);
+    let lessonIdx = 0;
+    classDateByRow = rows.map((r) => {
+      const isLesson = /^(lesson|l)\s*\d+/i.test(String(r.item || '').trim());
+      if (!isLesson) return undefined;
+      return dates[lessonIdx++];
+    });
+  }
   // table-layout:fixed means the header row's cell widths set every column's
   // width for the whole table — no <colgroup> needed. Each header has a
   // draggable handle (see grid resize listeners) so professors can widen a
@@ -1123,25 +1277,45 @@ function detailGridHtml(tabKey, rows, editing) {
   const headerCells = cols.map((c, ci) => {
     const w = widths[c.field] || (c.type === 'number' ? 110 : 200);
     return `<th style="width:${w}px;"><span class="grid-th-label">${esc(c.label)}</span><span class="grid-resize-handle" data-ci="${ci}"></span></th>`;
-  }).join('');
+  }).join('') + (classDateByRow ? `<th style="width:230px;"><span class="grid-th-label">Class Date</span></th>` : '');
+  // A per-row "Remove" button doesn't scale once there are more than a
+  // couple of rows — select via checkbox instead, with one bulk delete
+  // action for however many rows are checked (see bulkBar below).
+  const selectedCount = editing ? rows.filter((r) => r._selected).length : 0;
+  const allSelected = editing && rows.length > 0 && rows.every((r) => r._selected);
+  const checkHeader = editing ? `<th style="width:44px;"><input type="checkbox" ${allSelected ? 'checked' : ''} onchange="toggleAllGridRows(this.checked)"/></th>` : '';
+  // Text columns render as auto-growing textareas (not <input>, which can't
+  // hold a line break at all) so multi-line content — pasted or typed with
+  // Shift+Enter — displays properly and the cell/row grows to fit it instead
+  // of clipping or scrolling. Number columns stay single-line <input>s.
   const bodyRows = rows.map((r, ri) => `
     <tr>
-      ${cols.map((col, ci) => `
-        <td>
-          <input class="grid-input" type="${col.type === 'number' ? 'number' : 'text'}"
-            value="${esc(r[col.field] ?? '')}" ${dis}
-            oninput="setGridCell(${ri},${ci},this.value)"
-            onpaste="handleGridPaste(event,${ri},${ci})"/>
-        </td>`).join('')}
-      ${editing ? `<td class="grid-remove-cell" style="width:70px;"><button class="cp-period-remove" onclick="removeGridRow(${ri})">Remove</button></td>` : ''}
+      ${editing ? `<td class="grid-check-cell"><input type="checkbox" ${r._selected ? 'checked' : ''} onchange="toggleGridRowSelect(${ri},this.checked)"/></td>` : ''}
+      ${cols.map((col, ci) => {
+        const val = r[col.field] ?? '';
+        const common = `${dis} oninput="setGridCell(${ri},${ci},this.value)${col.type === 'number' ? '' : ';autoGrowTextarea(this)'}" onpaste="handleGridPaste(event,${ri},${ci})"`;
+        const cell = col.type === 'number'
+          ? `<input class="grid-input" type="number" value="${esc(val)}" ${common}/>`
+          : `<textarea class="grid-input" rows="1" ${common}>${esc(val)}</textarea>`;
+        return `<td>${cell}</td>`;
+      }).join('')}
+      ${classDateByRow ? `<td class="grid-computed-cell">${classDateByRow[ri] ? esc(formatClassDateLabel(classDateByRow[ri])) : '<span style="color:var(--text3);font-style:italic;">—</span>'}</td>` : ''}
     </tr>`).join('');
+  const bulkBar = (editing && selectedCount > 0) ? `
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:var(--r);padding:10px 16px;margin-bottom:10px;">
+      <span style="font-size:18px;color:var(--text);">${selectedCount} row${selectedCount > 1 ? 's' : ''} selected</span>
+      <button class="btn btn-danger" style="height:36px;" onclick="deleteSelectedGridRows()">Delete selected</button>
+    </div>` : '';
   const addRow = editing ? `<div class="cp-add-period" style="margin-top:14px;"><button onclick="addGridRow()">+ Add row</button></div>` : '';
+  const classDateNote = classDateByRow ? `<p style="font-size:16px;color:var(--text3);margin-top:10px;">Class Date is calculated from "Class meeting times" on the Main tab (and any academic-calendar breaks) — rows whose Item starts with "Lesson N" are matched to dates in order.</p>` : '';
   return `
+    ${bulkBar}
     <div class="cp-table-wrap"><table class="cp-table grid-table" data-tab="${tabKey}">
-      <thead><tr>${headerCells}${editing ? '<th style="width:70px;"></th>' : ''}</tr></thead>
+      <thead><tr>${checkHeader}${headerCells}</tr></thead>
       <tbody>${bodyRows}</tbody>
     </table></div>
-    ${addRow}`;
+    ${addRow}
+    ${classDateNote}`;
 }
 
 // Column resize — delegated listeners (attached once) so they keep working
@@ -1183,23 +1357,40 @@ function renderDetailTabShared(tabKey, rows, editing) {
     const total = rows.reduce((sum, r) => sum + (Number(r.ratio_pct) || 0), 0);
     footer = `<p style="margin-top:14px;font-size:18px;color:${total === 100 ? 'var(--text3)' : 'var(--red)'};">Total: ${total}%${total === 100 ? '' : ' (should be 100%)'}</p>`;
   }
+  let headerExtra = '';
+  if (tabKey === 'schedule') {
+    headerExtra = gcalToken
+      ? `<button id="cp-gcal-export-btn" class="btn btn-primary" style="margin-left:auto;height:38px;" onclick="exportScheduleToGoogleCalendar()">Export to Google Calendar</button>`
+      : `<span style="margin-left:auto;font-size:16px;color:var(--text3);">Connect Google Calendar in <a href="#" onclick="event.preventDefault();showSettingsModal();" style="color:var(--blue);">Settings</a> to export.</span>`;
+  }
   return `
     <div class="cp-card">
-      <div class="cp-card-title">${esc(CP_TAB_TITLES[tabKey])}</div>
+      <div class="cp-card-title" style="display:flex;align-items:center;gap:14px;">
+        <span>${esc(CP_TAB_TITLES[tabKey])}</span>
+        ${headerExtra}
+      </div>
       <div id="grid-editor-inner">${detailGridHtml(tabKey, rows, editing)}</div>
       ${footer}
     </div>`;
 }
 function renderGridEditor() {
   const el = document.getElementById('grid-editor-inner');
-  if (el) el.innerHTML = detailGridHtml(courseTab, editRowsByTab[courseTab], true);
+  if (!el) return;
+  el.innerHTML = detailGridHtml(courseTab, editRowsByTab[courseTab], true);
+  el.querySelectorAll('textarea.grid-input').forEach(autoGrowTextarea);
 }
 function setGridCell(ri, ci, val) {
   const field = CP_DETAIL_TABLES[courseTab].columns[ci].field;
   editRowsByTab[courseTab][ri][field] = val;
 }
 function addGridRow() { editRowsByTab[courseTab].push(emptyGridRow(courseTab)); renderGridEditor(); }
-function removeGridRow(ri) { editRowsByTab[courseTab].splice(ri, 1); renderGridEditor(); }
+function toggleGridRowSelect(ri, checked) { editRowsByTab[courseTab][ri]._selected = checked; renderGridEditor(); }
+function toggleAllGridRows(checked) { editRowsByTab[courseTab].forEach((r) => { r._selected = checked; }); renderGridEditor(); }
+function deleteSelectedGridRows() {
+  editRowsByTab[courseTab] = editRowsByTab[courseTab].filter((r) => !r._selected);
+  if (!editRowsByTab[courseTab].length) editRowsByTab[courseTab] = [emptyGridRow(courseTab)];
+  renderGridEditor();
+}
 // Pastes a block of cells copied from Excel/Sheets (tab-separated columns,
 // newline-separated rows) starting at the cell that was pasted into,
 // growing the grid with new rows as needed. A single-cell paste (no tabs or
@@ -1396,6 +1587,104 @@ function handleSignOut() {
   document.getElementById('wall-password').value = '';
 }
 
+// ── SETTINGS MODAL — Google Calendar connect (mirrors Telos) ──
+function showSettingsModal() {
+  document.getElementById('settings-modal').classList.add('open');
+  renderSettingsModal();
+}
+function closeSettingsModal() {
+  document.getElementById('settings-modal').classList.remove('open');
+}
+function renderSettingsModal() {
+  const body = document.getElementById('settings-modal-body');
+  if (!body) return;
+  body.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:36px;height:36px;border-radius:8px;background:${gcalToken ? 'var(--green-l)' : 'var(--surface2)'};border:1px solid ${gcalToken ? 'var(--green-b)' : 'var(--border)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="13" rx="1.5" stroke="${gcalToken ? 'var(--green)' : 'var(--text3)'}" stroke-width="1.2"/><path d="M1 6h14M5 1v3M11 1v3" stroke="${gcalToken ? 'var(--green)' : 'var(--text3)'}" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <div style="font-size:19px;font-weight:500;color:var(--text);">Google Calendar</div>
+          <div style="font-size:16px;color:var(--text3);margin-top:2px;line-height:1.4;">Connect your Google account so course schedules can be exported straight to a "${esc(GCAL_CALENDAR_NAME)}" calendar.</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;padding-bottom:10px;">
+      ${gcalToken
+        ? `<span style="font-size:15px;font-weight:600;padding:3px 11px;border-radius:20px;background:var(--green-l);color:var(--green);">Connected</span>
+           <button class="btn" onclick="disconnectGoogleCalendar()">Disconnect</button>`
+        : `<button class="btn btn-primary" onclick="connectGoogleCalendar()">Connect Google account</button>`
+      }
+    </div>
+    ${gcalToken ? `<div style="display:flex;align-items:center;gap:6px;padding:9px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);font-size:15px;color:var(--text2);">
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></div>
+        Calendar: <span style="color:var(--text);font-weight:500;margin-left:4px;">${esc(GCAL_CALENDAR_NAME)}</span>
+      </div>` : ''}
+  `;
+}
+function connectGoogleCalendar() {
+  if (typeof google === 'undefined' || !google.accounts?.oauth2) {
+    showToast('Google sign-in is still loading — try again in a second.');
+    return;
+  }
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: GCAL_CLIENT_ID,
+    scope: GCAL_SCOPE,
+    prompt: 'select_account',
+    callback: async (resp) => {
+      if (resp.error) { showToast('Google sign-in failed: ' + resp.error); return; }
+      gcalToken = resp.access_token;
+      showToast('Signed in to Google — setting up calendar…');
+      await ensureTaeSyllaCalendar();
+      renderSettingsModal();
+      if (currentCourseId !== null) renderCoursePage(); // refresh Schedule tab's export button state
+    },
+  });
+  client.requestAccessToken();
+}
+// Finds (or creates, first time) a dedicated calendar so exported class
+// dates don't get mixed into the professor's main Google Calendar.
+async function ensureTaeSyllaCalendar() {
+  if (gcalCalendarId) return gcalCalendarId;
+  if (!gcalToken) { showToast('Google token missing — please reconnect.'); return null; }
+  const listRes = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
+    headers: { Authorization: `Bearer ${gcalToken}` },
+  });
+  const listData = await listRes.json();
+  const existing = listData.items?.find(c => c.summary === GCAL_CALENDAR_NAME);
+  if (existing) {
+    gcalCalendarId = existing.id;
+    localStorage.setItem('taesylla_gcal_calendar_id', gcalCalendarId);
+    showToast(`✓ Connected to existing "${GCAL_CALENDAR_NAME}" calendar`);
+    return gcalCalendarId;
+  }
+  const createRes = await fetch('https://www.googleapis.com/calendar/v3/calendars', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${gcalToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ summary: GCAL_CALENDAR_NAME, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }),
+  });
+  const created = await createRes.json();
+  if (!createRes.ok || !created.id) {
+    console.error('Calendar create failed:', created);
+    showToast(`Failed to create calendar: ${created.error?.message || createRes.status}`);
+    return null;
+  }
+  gcalCalendarId = created.id;
+  localStorage.setItem('taesylla_gcal_calendar_id', gcalCalendarId);
+  showToast(`✓ "${GCAL_CALENDAR_NAME}" calendar created in your Google Calendar`);
+  return gcalCalendarId;
+}
+function disconnectGoogleCalendar() {
+  if (!confirm('Disconnect Google Calendar?')) return;
+  gcalToken = null;
+  gcalCalendarId = null;
+  localStorage.removeItem('taesylla_gcal_calendar_id');
+  renderSettingsModal();
+  if (currentCourseId !== null) renderCoursePage();
+  showToast('Google Calendar disconnected');
+}
+
 // ── DATA ──
 // PostgREST embeds the linked `courses` catalog row automatically via the
 // course_offerings.course_base_id -> courses.course_id foreign key.
@@ -1556,6 +1845,123 @@ function newSchedulePeriod() {
     days: { mon: false, tue: false, wed: false, thu: false, fri: false, sat: false, sun: false },
     startTime: '', durationMin: 100, timezone: 'America/Los_Angeles', extraZones: [],
   };
+}
+
+// ── Computed Class Date (Schedule tab) ──
+// Regular institutional non-class days — Spring Break, Student Return Home,
+// etc. — that generated class dates should skip. There's no Supabase table
+// for this yet, so it's a plain constant here (same idea as the original
+// Class Date script's hardcoded `breaks` list) — update it each semester to
+// match Taejae's official academic calendar. Leave it empty if none apply.
+const ACADEMIC_CALENDAR_BREAKS = [
+  // { label: 'Spring Break', start: '2026-03-30', end: '2026-04-05' },
+];
+function isInAcademicBreak(isoDate) {
+  return ACADEMIC_CALENDAR_BREAKS.some(b => isoDate >= b.start && isoDate <= b.end);
+}
+function addDaysIso(isoDate, days) {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+}
+// Walks every schedule period (Main tab > Class meeting times) for this
+// offering day-by-day across its valid_from..valid_to range, keeping any day
+// that matches one of the period's active weekdays and isn't inside an
+// academic-calendar break — a "generate then filter" approach, driven by the
+// structured period data this app already stores rather than re-parsing
+// free-text schedule strings.
+function computeClassDatesForOffering(offeringId) {
+  const periods = periodsCache[offeringId];
+  if (!periods || !periods.length) return [];
+  const dayKeyByDow = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  const out = [];
+  periods.forEach((p) => {
+    if (!p.validFrom || !p.validTo || !p.startTime) return;
+    const activeKeys = Object.keys(p.days).filter((k) => p.days[k]);
+    if (!activeKeys.length) return;
+    const [sh, smi] = p.startTime.split(':').map(Number);
+    const [eh, emi] = addMinutes(sh, smi, p.durationMin || 0);
+    let cursor = p.validFrom;
+    let guard = 0;
+    while (cursor <= p.validTo && guard < 2000) {
+      guard++;
+      const [y, m, d] = cursor.split('-').map(Number);
+      const dayKey = dayKeyByDow[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+      if (activeKeys.includes(dayKey) && !isInAcademicBreak(cursor)) {
+        out.push({
+          isoDate: cursor, startTime: p.startTime,
+          endTime: `${String(eh).padStart(2, '0')}:${String(emi).padStart(2, '0')}`,
+          timezone: p.timezone,
+        });
+      }
+      cursor = addDaysIso(cursor, 1);
+    }
+  });
+  out.sort((a, b) => a.isoDate === b.isoDate ? a.startTime.localeCompare(b.startTime) : a.isoDate.localeCompare(b.isoDate));
+  return out;
+}
+function formatClassDateLabel(d) {
+  const [y, mo, da] = d.isoDate.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, mo - 1, da));
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  let s = `${dayNames[dt.getUTCDay()]}, ${monthNames[dt.getUTCMonth()]} ${dt.getUTCDate()}, ${y}`;
+  if (d.startTime) s += ` · ${d.startTime}`;
+  if (d.timezone) s += ` ${tzLabel(d.timezone)}`;
+  return s;
+}
+// Pushes one Google Calendar event per calculated class date directly into
+// the professor's connected "TaeSylla Pro — Class Schedule" calendar (see
+// connectGoogleCalendar/ensureTaeSyllaCalendar) — same live-API approach as
+// Telos's "Add to Google Calendar", rather than a downloaded .ics file.
+async function exportScheduleToGoogleCalendar() {
+  const c = courses.find(x => String(x.id) === String(currentCourseId));
+  if (!c) return;
+  if (!gcalToken) { showToast('Connect Google Calendar in Settings first.'); return; }
+  const rows = (editMode && editRowsByTab.schedule) ? editRowsByTab.schedule : (courseDetailCache[c.id]?.schedule);
+  if (!Array.isArray(rows) || !rows.length) { showToast('No schedule rows to export yet.'); return; }
+  const dates = computeClassDatesForOffering(c.id);
+  if (!dates.length) { showToast('No class dates calculated yet — set up Class meeting times on the Main tab first.'); return; }
+
+  let lessonIdx = 0;
+  const events = [];
+  rows.forEach((r) => {
+    const isLesson = /^(lesson|l)\s*\d+/i.test(String(r.item || '').trim());
+    if (!isLesson) return;
+    const d = dates[lessonIdx++];
+    if (!d) return;
+    events.push({ item: r.item, topic: r.topic_title || '', date: d });
+  });
+  if (!events.length) { showToast('No lesson rows with a calculated date to export.'); return; }
+
+  const btn = document.getElementById('cp-gcal-export-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Exporting…'; }
+  try {
+    const calId = await ensureTaeSyllaCalendar();
+    if (!calId) { showToast('Could not find or create the calendar.'); return; }
+    let ok = 0, failed = 0;
+    for (const ev of events) {
+      const event = {
+        summary: `${c.code} | ${ev.item}${ev.topic ? ' - ' + ev.topic : ''}`,
+        description: [`Course: ${c.code} ${c.title}`, c.professor ? `Professor: ${c.professor}` : ''].filter(Boolean).join('\n'),
+        start: { dateTime: `${ev.date.isoDate}T${ev.date.startTime}:00`, timeZone: ev.date.timezone },
+        end: { dateTime: `${ev.date.isoDate}T${ev.date.endTime}:00`, timeZone: ev.date.timezone },
+      };
+      try {
+        const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${gcalToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(event),
+        });
+        if (!res.ok) throw new Error();
+        ok++;
+      } catch (e) { failed++; }
+    }
+    showToast(failed ? `Exported ${ok} of ${events.length} class date(s) — ${failed} failed.` : `✓ Exported ${ok} class date(s) to "${GCAL_CALENDAR_NAME}"`);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Export to Google Calendar'; }
+  }
 }
 
 function parseClassTime(text) {
