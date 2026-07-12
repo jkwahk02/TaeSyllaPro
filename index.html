@@ -909,7 +909,16 @@ async function saveMainEditsInner(c) {
   };
   d.competencies.forEach((comp) => { coursePatch[comp.col] = Number(comp.pct) / 100; });
   await sbPatch('courses', `course_id=eq.${encodeURIComponent(c.courseBaseId)}`, coursePatch);
-  await sbPatch(TBL_OFFERINGS, `offering_id=eq.${c.id}`, { professor: d.professor, office_hours: d.officeHours });
+  // Keep course_offerings.weekday_time (the field the home page card and
+  // Weekly Timetable actually read — see parseWeekdayTime/mapCourse) in sync
+  // with whatever "Class meeting times" now says, in the same
+  // "Mon./Wed. 21:00 Eastern Time" format. mon..sun/class_time are updated
+  // too, from the first active period, purely as a fallback for any other
+  // reader of those older columns.
+  await sbPatch(TBL_OFFERINGS, `offering_id=eq.${c.id}`, {
+    professor: d.professor, office_hours: d.officeHours,
+    ...buildOfferingScheduleFields(editPeriods),
+  });
 
   await sbDelete('course_schedule_periods', `offering_id=eq.${c.id}`);
   if (editPeriods.length) {
@@ -1693,11 +1702,21 @@ function disconnectGoogleCalendar() {
 // for every row (no error) — that's the #1 cause of "title/credits missing"
 // even though the offering itself loaded fine. See supabase-courses-schema.sql.
 
+// PostgREST normally returns real JSON booleans for boolean columns, but if
+// mon..sun ever come back as text ('true'/'false'/'t'/'f') or 0/1, a plain
+// truthy check on the string "false" would wrongly count as "on" (non-empty
+// string). Coerce explicitly instead of trusting JS truthiness.
+function truthyFlag(v) {
+  if (v === true || v === 1) return true;
+  if (v === false || v === null || v === undefined || v === 0) return false;
+  const s = String(v).trim().toLowerCase();
+  return s === 'true' || s === 't' || s === '1' || s === 'yes' || s === 'y';
+}
 function daysFromBooleans(r) {
   return [
     ['Mon', r.mon], ['Tue', r.tue], ['Wed', r.wed], ['Thu', r.thu], ['Fri', r.fri],
     ['Sat', r.sat], ['Sun', r.sun],
-  ].filter(([, on]) => on).map(([label]) => label);
+  ].filter(([, on]) => truthyFlag(on)).map(([label]) => label);
 }
 
 // The six Key Competency percentage columns on `courses`, in the order shown
@@ -1966,14 +1985,100 @@ async function exportScheduleToGoogleCalendar() {
 
 function parseClassTime(text) {
   if (!text) return { start: '', end: '' };
-  const m = String(text).match(/(\d{1,2}):(\d{2})\s*(am|pm)?\s*(?:-|–|~|to)\s*(\d{1,2}):(\d{2})\s*(am|pm)?/i);
-  if (!m) return { start: '', end: '' };
+  const s = String(text).trim();
   const to24 = (h, mm, ap) => {
     h = parseInt(h, 10);
     if (ap) { ap = ap.toLowerCase(); if (ap === 'pm' && h !== 12) h += 12; if (ap === 'am' && h === 12) h = 0; }
     return `${String(h).padStart(2, '0')}:${mm}`;
   };
-  return { start: to24(m[1], m[2], m[3]), end: to24(m[4], m[5], m[6] || m[3]) };
+  // Range: "10:00-11:30", "10:00:00 - 11:30:00", "10:00 AM-11:30 AM", etc.
+  // Seconds on either side (the ":00" a Postgres `time` value serializes
+  // with) are optional and ignored so a range with seconds still matches.
+  const range = s.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*(am|pm)?\s*(?:-|–|—|~|to)\s*(\d{1,2}):(\d{2})(?::\d{2})?\s*(am|pm)?/i);
+  if (range) return { start: to24(range[1], range[2], range[3]), end: to24(range[4], range[5], range[6] || range[3]) };
+  // Single time only — covers class_time stored as a plain Postgres `time`
+  // value ("10:00:00") with no separate end time in this table. Use it as
+  // the start time; there's no range to derive an end time from.
+  const single = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(am|pm)?$/i);
+  if (single) return { start: to24(single[1], single[2], single[3]), end: '' };
+  return { start: '', end: '' };
+}
+
+// weekday_time is the authoritative schedule field on course_offerings — a
+// single free-text string carrying days, start time, AND a human timezone
+// name together, e.g. "Mon./Wed. 21:00 Eastern Time". Parse all three out of
+// it; the separate mon..sun booleans + class_time are kept only as a
+// fallback for rows that don't have weekday_time populated.
+function parseWeekdayTime(text) {
+  const out = { days: [], startTime: '', endTime: '', timezone: '' };
+  if (!text) return out;
+  const s = String(text).trim();
+
+  const dayMap = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' };
+  const dayRegex = /\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?/gi;
+  let dm;
+  while ((dm = dayRegex.exec(s)) !== null) {
+    const d = dayMap[dm[1].toLowerCase()];
+    if (d && !out.days.includes(d)) out.days.push(d);
+  }
+
+  const to24 = (h, mm, ap) => {
+    h = parseInt(h, 10);
+    if (ap) { ap = ap.toLowerCase(); if (ap === 'pm' && h !== 12) h += 12; if (ap === 'am' && h === 12) h = 0; }
+    return `${String(h).padStart(2, '0')}:${mm}`;
+  };
+  // Range first ("21:00-22:15"); falls back to a single time ("21:00") since
+  // this field is often just a start time with no explicit end.
+  const range = s.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*(am|pm)?\s*(?:-|–|—|~|to)\s*(\d{1,2}):(\d{2})(?::\d{2})?\s*(am|pm)?/i);
+  if (range) {
+    out.startTime = to24(range[1], range[2], range[3]);
+    out.endTime = to24(range[4], range[5], range[6] || range[3]);
+  } else {
+    const single = s.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*(am|pm)?/i);
+    if (single) out.startTime = to24(single[1], single[2], single[3]);
+  }
+
+  // Match against the app's own TIMEZONE_OPTIONS labels ("Eastern Time",
+  // "Pacific Time", "Korea Time", ...) — longest label first so e.g. a
+  // hypothetical "Time" substring never shadows a real, longer label.
+  const sortedTz = [...TIMEZONE_OPTIONS].sort((a, b) => b.label.length - a.label.length);
+  for (const t of sortedTz) {
+    if (s.toLowerCase().includes(t.label.toLowerCase())) { out.timezone = t.iana; break; }
+  }
+  return out;
+}
+
+// Inverse of parseWeekdayTime — turns one schedule period's days/time/zone
+// back into the same "Mon./Wed. 21:00 Eastern Time" string the field is
+// stored in. Multiple periods (e.g. a mid-semester time change) are joined
+// with "; " so nothing is silently dropped, though the common case is one.
+function buildWeekdayTimeString(periods) {
+  if (!periods || !periods.length) return '';
+  const parts = periods.map((p) => {
+    const activeDays = FULL_DAY_ORDER.filter((d) => p.days[d.toLowerCase().slice(0, 3)]);
+    if (!activeDays.length || !p.startTime) return '';
+    const dayStr = activeDays.map((d) => `${d}.`).join('/');
+    const tzOpt = TIMEZONE_OPTIONS.find((t) => t.iana === p.timezone);
+    const tzStr = tzOpt ? tzOpt.label : (p.timezone || '');
+    return `${dayStr} ${p.startTime}${tzStr ? ' ' + tzStr : ''}`.trim();
+  }).filter(Boolean);
+  return parts.join('; ');
+}
+// Builds the full course_offerings schedule patch: weekday_time (primary,
+// see above) plus mon..sun/class_time from the first active period, kept in
+// sync purely as a fallback for anything still reading those older columns.
+function buildOfferingScheduleFields(periods) {
+  const weekday_time = buildWeekdayTimeString(periods) || null;
+  const primary = (periods || []).find((p) => p.startTime && Object.values(p.days).some(Boolean)) || null;
+  const dayFlags = { mon: false, tue: false, wed: false, thu: false, fri: false, sat: false, sun: false };
+  let class_time = null;
+  if (primary) {
+    Object.keys(dayFlags).forEach((k) => { dayFlags[k] = !!primary.days[k]; });
+    const [h, mi] = primary.startTime.split(':').map(Number);
+    const [eh, emi] = addMinutes(h, mi, primary.durationMin || 0);
+    class_time = `${primary.startTime}-${String(eh).padStart(2, '0')}:${String(emi).padStart(2, '0')}`;
+  }
+  return { weekday_time, class_time, ...dayFlags };
 }
 
 function mapCourse(r) {
@@ -1986,8 +2091,6 @@ function mapCourse(r) {
       `See the RLS section in supabase-courses-schema.sql.`
     );
   }
-  const days = daysFromBooleans(r);
-  const { start, end } = parseClassTime(r.class_time);
   // `courses.code` is just the department prefix (e.g. "DA"), not the full
   // course id. The real identifier is the offering's own course_id (a
   // generated column: course_base_id, plus "-<section>" if sectioned), or
@@ -2000,6 +2103,16 @@ function mapCourse(r) {
   const isPlaceholderTime = (s) => !s || /^0?0:00(:00)?$/.test(String(s).trim());
   const weekdayTime = isPlaceholderTime(r.weekday_time) ? '' : r.weekday_time;
   const classTime = isPlaceholderTime(r.class_time) ? '' : r.class_time;
+  // weekday_time ("Mon./Wed. 21:00 Eastern Time") is the authoritative
+  // source for days/time/timezone — parse it first, and only fall back to
+  // the separate mon..sun booleans + class_time for rows that don't have it.
+  const wd = parseWeekdayTime(weekdayTime);
+  const boolDays = daysFromBooleans(r);
+  const { start: classStart, end: classEnd } = parseClassTime(classTime);
+  const days = wd.days.length ? wd.days : boolDays;
+  const startTime = wd.startTime || (isPlaceholderTime(classStart) ? '' : classStart);
+  const endTime = wd.endTime || classEnd;
+  const classTimezone = wd.timezone || '';
   // `courses.competency_*` stores a 0–1 fraction (e.g. 0.1 = 10%), not a
   // whole percentage — convert to a 0–100 display value here, and back to a
   // fraction on save (see saveMainEdits).
@@ -2018,8 +2131,9 @@ function mapCourse(r) {
     semester: r.semester_year || [r.semester, r.year].filter(Boolean).join(' '),
     scheduleDays: days,
     scheduleDisplay: weekdayTime || (days.length ? `${days.join('/')} ${classTime}`.trim() : ''),
-    startTime: isPlaceholderTime(start) ? '' : start,
-    endTime: end,
+    startTime,
+    endTime,
+    classTimezone,
     status: r.status === 'published' ? 'published' : 'draft',
     officeHours: r.office_hours || '',
     professor: r.professor || PROFESSOR.name,
@@ -2053,6 +2167,19 @@ async function loadData() {
     courses = rows.map(mapCourse);
     const missing = courses.filter(c => c.title.includes('catalog data unavailable')).length;
     console.log(`[TaeSylla] Loaded ${courses.length} offering(s) for ${PROFESSOR.email}` + (missing ? ` — ${missing} missing catalog data, see warnings above.` : '.'));
+    // Day/time diagnostic — open DevTools console and look at this table if
+    // a course's schedule still looks wrong. "raw mon..sun/class_time" are
+    // exactly what came back from course_offerings; "days/startTime/endTime"
+    // are what the app parsed from them. If the raw columns look right but
+    // the parsed ones are blank/wrong, that's a parsing bug — copy this
+    // table's row for that course when reporting it.
+    console.table(rows.map((r, i) => ({
+      code: courses[i].code, semester: courses[i].semester,
+      raw_mon: r.mon, raw_tue: r.tue, raw_wed: r.wed, raw_thu: r.thu, raw_fri: r.fri, raw_sat: r.sat, raw_sun: r.sun,
+      raw_class_time: r.class_time, raw_weekday_time: r.weekday_time,
+      parsed_days: courses[i].scheduleDays.join('/'), parsed_startTime: courses[i].startTime, parsed_endTime: courses[i].endTime,
+      parsed_timezone: courses[i].classTimezone,
+    })));
     dataLoaded = true;
     renderHome();
     handleRoute();
