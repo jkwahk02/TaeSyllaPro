@@ -266,9 +266,17 @@ button,input{font-family:inherit;}
 /* UNSAVED CHANGES CONFIRM MODAL */
 #confirm-modal{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:400;display:none;align-items:center;justify-content:center;}
 #confirm-modal.open{display:flex;}
-#settings-modal{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:400;display:none;align-items:center;justify-content:center;}
-#settings-modal.open{display:flex;}
 .confirm-card{background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.1);width:100%;max-width:460px;padding:32px;margin:0 16px;}
+/* SETTINGS PAGE */
+.settings-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px;max-width:640px;}
+.settings-card-hd{padding:14px 20px;border-bottom:1px solid var(--border);}
+.settings-card-title{font-size:19px;font-weight:600;color:var(--text);}
+.settings-card-sub{font-size:15px;color:var(--text3);margin-top:3px;line-height:1.5;}
+.settings-row{display:flex;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid var(--border);}
+.settings-row:last-child{border-bottom:none;}
+.settings-row-label{font-size:15px;color:var(--text3);min-width:130px;flex-shrink:0;}
+.settings-row-val{font-size:17px;color:var(--text);flex:1;}
+.settings-card-ft{padding:12px 20px;background:var(--surface2);border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
 .confirm-title{font-size:23px;font-weight:600;color:var(--text);margin-bottom:10px;}
 .confirm-body{font-size:19px;color:var(--text2);line-height:1.5;margin-bottom:26px;}
 .confirm-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;}
@@ -370,7 +378,7 @@ button,input{font-family:inherit;}
         </div>
       </button>
       <div class="tb-dropdown" id="tb-dropdown">
-        <button class="tb-dropdown-item" onclick="showSettingsModal();closeUserMenu()">Settings</button>
+        <button class="tb-dropdown-item" onclick="closeUserMenu();location.hash='settings'">Settings</button>
         <button class="tb-dropdown-item" onclick="showChangePwModal();closeUserMenu()">Change password</button>
         <div class="tb-dropdown-div"></div>
         <button class="tb-dropdown-item danger" onclick="handleSignOut()">Sign out</button>
@@ -390,6 +398,9 @@ button,input{font-family:inherit;}
     <button class="rail-btn" title="Dashboard" onclick="showToast('Dashboard — coming soon')">
       <svg width="21" height="21" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="6.5" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="2" width="5" height="4" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="8" width="5" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="10.5" width="5" height="3.5" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
     </button>
+    <button class="rail-btn" title="Settings" onclick="location.hash='settings'">
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.3" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.6v1.7M8 12.7v1.7M14.4 8h-1.7M3.3 8H1.6M12.3 3.7l-1.2 1.2M4.9 11.1l-1.2 1.2M12.3 12.3l-1.2-1.2M4.9 4.9 3.7 3.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    </button>
   </div>
 
   <div class="main">
@@ -397,6 +408,7 @@ button,input{font-family:inherit;}
       <div class="loading-state" id="loading-state" style="padding:80px 0;text-align:center;color:var(--text3);font-size:20px;">Loading…</div>
     </div>
     <div id="page-course" style="display:none;"></div>
+    <div id="page-settings" style="display:none;"></div>
   </div>
 </div>
 
@@ -412,17 +424,6 @@ button,input{font-family:inherit;}
       <button class="btn btn-danger" onclick="confirmModalDiscard()">Discard changes</button>
       <button class="btn btn-primary" id="confirm-save-btn" onclick="confirmModalSave()">Save changes</button>
     </div>
-  </div>
-</div>
-
-<!-- SETTINGS MODAL -->
-<div id="settings-modal">
-  <div class="confirm-card" style="max-width:560px;">
-    <div class="confirm-title" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-      <span>Settings</span>
-      <button class="btn" style="height:34px;padding:0 12px;" onclick="closeSettingsModal()">Close</button>
-    </div>
-    <div id="settings-modal-body"></div>
   </div>
 </div>
 
@@ -449,7 +450,7 @@ function abbrevSemester(semester) {
 
 // ── STATE ──
 let supabaseUser = null;
-let PROFESSOR = { name: '', email: '', school: '', isChair: false };
+let PROFESSOR = { name: '', email: '', school: '', isChair: false, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone };
 let courses = [];
 let dataLoaded = false;
 
@@ -604,11 +605,18 @@ function handleRoute() {
       courseTab = 'main';
     }
     currentCourseId = newId;
+    document.getElementById('page-settings').style.display = 'none';
     document.getElementById('page-home').style.display = 'none';
     document.getElementById('page-course').style.display = 'block';
     renderCoursePage();
+  } else if (location.hash === '#settings') {
+    document.getElementById('page-course').style.display = 'none';
+    document.getElementById('page-home').style.display = 'none';
+    document.getElementById('page-settings').style.display = 'block';
+    renderSettingsPage();
   } else {
     document.getElementById('page-course').style.display = 'none';
+    document.getElementById('page-settings').style.display = 'none';
     document.getElementById('page-home').style.display = 'block';
   }
 }
@@ -868,23 +876,50 @@ async function loadPeriodsIfNeeded(offeringId) {
   if (periodsCache[offeringId]) return periodsCache[offeringId];
   try {
     const rows = await sbGet('course_schedule_periods', `offering_id=eq.${offeringId}&select=*&order=id.asc`);
-    if (rows.length) {
-      periodsCache[offeringId] = rows.map(r => ({
+    const c = courses.find(x => x.id === offeringId);
+    const loaded = rows.map(r => {
+      // A period stored with the app's own hardcoded fallback timezone
+      // ('America/Los_Angeles', used both here and in newSchedulePeriod())
+      // was very likely never actually chosen by a human — e.g. a row saved
+      // back before weekday_time parsing existed. Prefer weekday_time's
+      // timezone in that case too, not only when r.timezone is outright
+      // null, so a stale "Pacific Time" default doesn't linger forever.
+      let timezone = r.timezone || (c && c.classTimezone) || 'America/Los_Angeles';
+      if (timezone === 'America/Los_Angeles' && c && c.classTimezone && c.classTimezone !== 'America/Los_Angeles') {
+        timezone = c.classTimezone;
+      }
+      return {
         id: r.id, campusNote: r.campus_note || '', validFrom: r.valid_from || '', validTo: r.valid_to || '',
         days: { mon: !!r.mon, tue: !!r.tue, wed: !!r.wed, thu: !!r.thu, fri: !!r.fri, sat: !!r.sat, sun: !!r.sun },
-        startTime: (r.start_time || '09:00:00').slice(0, 5), durationMin: r.duration_min || 75,
-        timezone: r.timezone || 'America/Los_Angeles', extraZones: r.extra_timezones || [],
-      }));
-    } else {
-      // No saved periods yet — seed "Period 1" from this offering's existing
-      // legacy single-schedule fields (mon..sun / class_time) so nothing is lost.
-      const c = courses.find(x => x.id === offeringId);
+        // No "09:00:00" fallback here on purpose — a genuinely-empty start_time
+        // must stay blank, or the isBlank() check below can never detect a
+        // placeholder row (see next comment).
+        startTime: (r.start_time || '').slice(0, 5), durationMin: r.duration_min || DEFAULT_DURATION_MIN,
+        timezone, extraZones: r.extra_timezones || [],
+      };
+    });
+    // A saved period row with no class days and no start time is just an
+    // empty placeholder (e.g. inserted by an earlier Save before this
+    // offering's schedule was ever filled in) — prefer seeding fresh from
+    // weekday_time (see mapCourse/parseWeekdayTime) over showing that blank
+    // row, same as if no period had been saved at all.
+    const isBlank = (p) => !p.startTime && !Object.values(p.days).some(Boolean);
+    const allBlank = loaded.length > 0 && loaded.every(isBlank);
+    const hasWeekdayData = !!(c && c.scheduleDays.length && c.startTime);
+    if (!loaded.length || (allBlank && hasWeekdayData)) {
       const seed = newSchedulePeriod();
       if (c) {
         FULL_DAY_ORDER.forEach(d => { seed.days[d.toLowerCase().slice(0, 3)] = c.scheduleDays.includes(d); });
         if (c.startTime) seed.startTime = c.startTime;
+        if (c.classTimezone) seed.timezone = c.classTimezone;
       }
+      // Keep the existing (blank) row's id/campusNote/validFrom/validTo if
+      // there was one, so the next Save updates it in place instead of
+      // inserting a duplicate period.
+      if (allBlank) Object.assign(seed, { id: loaded[0].id, campusNote: loaded[0].campusNote, validFrom: loaded[0].validFrom, validTo: loaded[0].validTo });
       periodsCache[offeringId] = [seed];
+    } else {
+      periodsCache[offeringId] = loaded;
     }
   } catch (e) {
     periodsCache[offeringId] = [];
@@ -1370,7 +1405,7 @@ function renderDetailTabShared(tabKey, rows, editing) {
   if (tabKey === 'schedule') {
     headerExtra = gcalToken
       ? `<button id="cp-gcal-export-btn" class="btn btn-primary" style="margin-left:auto;height:38px;" onclick="exportScheduleToGoogleCalendar()">Export to Google Calendar</button>`
-      : `<span style="margin-left:auto;font-size:16px;color:var(--text3);">Connect Google Calendar in <a href="#" onclick="event.preventDefault();showSettingsModal();" style="color:var(--blue);">Settings</a> to export.</span>`;
+      : `<span style="margin-left:auto;font-size:16px;color:var(--text3);">Connect Google Calendar in <a href="#settings" style="color:var(--blue);">Settings</a> to export.</span>`;
   }
   return `
     <div class="cp-card">
@@ -1485,7 +1520,7 @@ async function handleWallLogin() {
     supabaseUser = data;
 
     const profRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/faculty_profiles?email=eq.${encodeURIComponent(email)}&select=name_en,email,school,is_chair,must_change_password`,
+      `${SUPABASE_URL}/rest/v1/faculty_profiles?email=eq.${encodeURIComponent(email)}&select=name_en,email,school,is_chair,must_change_password,timezone`,
       { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${data.access_token}` } }
     );
     const profData = await profRes.json();
@@ -1496,9 +1531,19 @@ async function handleWallLogin() {
         email: profData[0].email,
         school: profData[0].school || '',
         isChair: profData[0].is_chair === true,
+        timezone: profData[0].timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
       };
+      // First login with no timezone saved yet — backfill from the browser
+      // so Settings shows something sensible instead of blank.
+      if (!profData[0].timezone) {
+        fetch(`${SUPABASE_URL}/rest/v1/faculty_profiles?email=eq.${encodeURIComponent(email)}`, {
+          method: 'PATCH',
+          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${data.access_token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ timezone: PROFESSOR.timezone }),
+        }).catch(() => {});
+      }
     } else {
-      PROFESSOR = { name: data.user?.user_metadata?.full_name || email.split('@')[0], email, school: '', isChair: false };
+      PROFESSOR = { name: data.user?.user_metadata?.full_name || email.split('@')[0], email, school: '', isChair: false, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone };
     }
 
     const initials = (PROFESSOR.name || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -1596,19 +1641,85 @@ function handleSignOut() {
   document.getElementById('wall-password').value = '';
 }
 
-// ── SETTINGS MODAL — Google Calendar connect (mirrors Telos) ──
-function showSettingsModal() {
-  document.getElementById('settings-modal').classList.add('open');
-  renderSettingsModal();
+// ── SETTINGS PAGE (own page, not a popup — see #settings route in
+// handleRoute) — profile/timezone card + Google Calendar connect, same idea
+// as Telos's Settings tab. ──
+function renderSettingsPage() {
+  const el = document.getElementById('page-settings');
+  if (!el) return;
+  const roleLabel = PROFESSOR.isChair ? 'Program Chair' : 'Faculty';
+  el.innerHTML = `
+    <button class="cp-back" onclick="location.hash=''">${chevronSvg()} Back to courses</button>
+    <p class="cp-title" style="margin-bottom:20px;">Settings</p>
+
+    <div class="settings-card">
+      <div class="settings-card-hd">
+        <div class="settings-card-title">My profile</div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-label">Email</div>
+        <div class="settings-row-val">${esc(PROFESSOR.email)}</div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-label">School</div>
+        <div class="settings-row-val">${esc(PROFESSOR.school || '—')}</div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-label">Role</div>
+        <div class="settings-row-val">${esc(roleLabel)}</div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-label">Timezone</div>
+        <div class="settings-row-val">
+          <select class="cp-input" id="settings-tz-select" style="max-width:340px;" onchange="markSettingsDirty()">
+            ${TIMEZONE_OPTIONS.map((t) => `<option value="${t.iana}" ${t.iana === PROFESSOR.timezone ? 'selected' : ''}>${esc(tzOptionLabel(t))}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="settings-card-ft">
+        <span id="settings-save-status" style="font-size:15px;color:var(--text3);align-self:center;margin-right:auto;"></span>
+        <button class="btn btn-primary" id="settings-save-btn" disabled onclick="saveProfileSettings()">Save profile</button>
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <div class="settings-card-hd">
+        <div class="settings-card-title">Integrations</div>
+        <div class="settings-card-sub">Connect external services to enhance your workflow.</div>
+      </div>
+      <div id="settings-gcal-body" style="padding:18px 20px;"></div>
+    </div>
+  `;
+  renderGcalSettingsBlock();
 }
-function closeSettingsModal() {
-  document.getElementById('settings-modal').classList.remove('open');
+function markSettingsDirty() {
+  const btn = document.getElementById('settings-save-btn');
+  if (btn) btn.disabled = false;
+  const status = document.getElementById('settings-save-status');
+  if (status) status.textContent = '';
 }
-function renderSettingsModal() {
-  const body = document.getElementById('settings-modal-body');
+async function saveProfileSettings() {
+  const tz = document.getElementById('settings-tz-select')?.value;
+  const btn = document.getElementById('settings-save-btn');
+  const status = document.getElementById('settings-save-status');
+  if (!tz) return;
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+  try {
+    await sbPatch('faculty_profiles', `email=eq.${encodeURIComponent(PROFESSOR.email)}`, { timezone: tz });
+    PROFESSOR.timezone = tz;
+    if (status) { status.textContent = 'Saved ✓'; setTimeout(() => { status.textContent = ''; }, 2500); }
+    showToast('Profile updated');
+  } catch (e) {
+    if (status) status.textContent = `Failed: ${e.message}`;
+  } finally {
+    if (btn) { btn.textContent = 'Save profile'; btn.disabled = true; }
+  }
+}
+function renderGcalSettingsBlock() {
+  const body = document.getElementById('settings-gcal-body');
   if (!body) return;
   body.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="width:36px;height:36px;border-radius:8px;background:${gcalToken ? 'var(--green-l)' : 'var(--surface2)'};border:1px solid ${gcalToken ? 'var(--green-b)' : 'var(--border)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
           <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="13" rx="1.5" stroke="${gcalToken ? 'var(--green)' : 'var(--text3)'}" stroke-width="1.2"/><path d="M1 6h14M5 1v3M11 1v3" stroke="${gcalToken ? 'var(--green)' : 'var(--text3)'}" stroke-width="1.2" stroke-linecap="round"/></svg>
@@ -1618,15 +1729,15 @@ function renderSettingsModal() {
           <div style="font-size:16px;color:var(--text3);margin-top:2px;line-height:1.4;">Connect your Google account so course schedules can be exported straight to a "${esc(GCAL_CALENDAR_NAME)}" calendar.</div>
         </div>
       </div>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;padding-bottom:10px;">
       ${gcalToken
-        ? `<span style="font-size:15px;font-weight:600;padding:3px 11px;border-radius:20px;background:var(--green-l);color:var(--green);">Connected</span>
-           <button class="btn" onclick="disconnectGoogleCalendar()">Disconnect</button>`
-        : `<button class="btn btn-primary" onclick="connectGoogleCalendar()">Connect Google account</button>`
+        ? `<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+             <span style="font-size:15px;font-weight:600;padding:3px 11px;border-radius:20px;background:var(--green-l);color:var(--green);">Connected</span>
+             <button class="btn" onclick="disconnectGoogleCalendar()">Disconnect</button>
+           </div>`
+        : `<button class="btn btn-primary" style="flex-shrink:0;" onclick="connectGoogleCalendar()">Connect Google account</button>`
       }
     </div>
-    ${gcalToken ? `<div style="display:flex;align-items:center;gap:6px;padding:9px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);font-size:15px;color:var(--text2);">
+    ${gcalToken ? `<div style="display:flex;align-items:center;gap:6px;margin-top:14px;padding:9px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);font-size:15px;color:var(--text2);">
         <div style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></div>
         Calendar: <span style="color:var(--text);font-weight:500;margin-left:4px;">${esc(GCAL_CALENDAR_NAME)}</span>
       </div>` : ''}
@@ -1646,7 +1757,7 @@ function connectGoogleCalendar() {
       gcalToken = resp.access_token;
       showToast('Signed in to Google — setting up calendar…');
       await ensureTaeSyllaCalendar();
-      renderSettingsModal();
+      renderGcalSettingsBlock();
       if (currentCourseId !== null) renderCoursePage(); // refresh Schedule tab's export button state
     },
   });
@@ -1689,7 +1800,7 @@ function disconnectGoogleCalendar() {
   gcalToken = null;
   gcalCalendarId = null;
   localStorage.removeItem('taesylla_gcal_calendar_id');
-  renderSettingsModal();
+  renderGcalSettingsBlock();
   if (currentCourseId !== null) renderCoursePage();
   showToast('Google Calendar disconnected');
 }
@@ -1781,6 +1892,10 @@ const TIMEZONE_OPTIONS = [
   { iana: 'Asia/Shanghai', label: 'China Time', gmt: 'GMT+8' },
 ];
 function tzOptionLabel(t) { return `${t.label} (${t.gmt})`; }
+// Whenever a class duration isn't explicitly known (a new period, a
+// duration_min gap in an existing row, or a weekday_time string that only
+// carries a start time with no end), assume 100 minutes.
+const DEFAULT_DURATION_MIN = 100;
 const DURATION_OPTIONS = [50, 75, 100, 120];
 const FULL_DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const FULL_DAY_NAMES = { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' };
@@ -1824,6 +1939,11 @@ function addMinutes(h, mi, mins) {
   const total = h * 60 + mi + mins;
   return [Math.floor(((total % 1440) + 1440) % 1440 / 60), ((total % 60) + 60) % 60];
 }
+function addMinutesToTimeStr(timeStr, mins) {
+  const [h, mi] = timeStr.split(':').map(Number);
+  const [eh, emi] = addMinutes(h, mi, mins);
+  return `${String(eh).padStart(2, '0')}:${String(emi).padStart(2, '0')}`;
+}
 function tzLabel(iana) {
   const opt = TIMEZONE_OPTIONS.find(t => t.iana === iana);
   return opt ? tzOptionLabel(opt) : iana;
@@ -1862,7 +1982,7 @@ function newSchedulePeriod() {
   return {
     id: null, campusNote: '', validFrom: '', validTo: '',
     days: { mon: false, tue: false, wed: false, thu: false, fri: false, sat: false, sun: false },
-    startTime: '', durationMin: 100, timezone: 'America/Los_Angeles', extraZones: [],
+    startTime: '', durationMin: DEFAULT_DURATION_MIN, timezone: 'America/Los_Angeles', extraZones: [],
   };
 }
 
@@ -1900,7 +2020,7 @@ function computeClassDatesForOffering(offeringId) {
     const activeKeys = Object.keys(p.days).filter((k) => p.days[k]);
     if (!activeKeys.length) return;
     const [sh, smi] = p.startTime.split(':').map(Number);
-    const [eh, emi] = addMinutes(sh, smi, p.durationMin || 0);
+    const [eh, emi] = addMinutes(sh, smi, p.durationMin || DEFAULT_DURATION_MIN);
     let cursor = p.validFrom;
     let guard = 0;
     while (cursor <= p.validTo && guard < 2000) {
@@ -2075,7 +2195,7 @@ function buildOfferingScheduleFields(periods) {
   if (primary) {
     Object.keys(dayFlags).forEach((k) => { dayFlags[k] = !!primary.days[k]; });
     const [h, mi] = primary.startTime.split(':').map(Number);
-    const [eh, emi] = addMinutes(h, mi, primary.durationMin || 0);
+    const [eh, emi] = addMinutes(h, mi, primary.durationMin || DEFAULT_DURATION_MIN);
     class_time = `${primary.startTime}-${String(eh).padStart(2, '0')}:${String(emi).padStart(2, '0')}`;
   }
   return { weekday_time, class_time, ...dayFlags };
@@ -2111,7 +2231,9 @@ function mapCourse(r) {
   const { start: classStart, end: classEnd } = parseClassTime(classTime);
   const days = wd.days.length ? wd.days : boolDays;
   const startTime = wd.startTime || (isPlaceholderTime(classStart) ? '' : classStart);
-  const endTime = wd.endTime || classEnd;
+  // No explicit end/duration in weekday_time or class_time — assume the
+  // default 100-minute class length rather than leaving endTime blank.
+  const endTime = wd.endTime || classEnd || (startTime ? addMinutesToTimeStr(startTime, DEFAULT_DURATION_MIN) : '');
   const classTimezone = wd.timezone || '';
   // `courses.competency_*` stores a 0–1 fraction (e.g. 0.1 = 10%), not a
   // whole percentage — convert to a 0–100 display value here, and back to a
