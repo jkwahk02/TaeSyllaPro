@@ -238,7 +238,12 @@ button,input{font-family:inherit;}
    overlay span shows the value in guaranteed mm/dd/yyyy, independent of
    whatever date format the browser/OS locale would otherwise render. */
 .cp-date-native{color:transparent!important;-webkit-text-fill-color:transparent!important;cursor:pointer;position:relative;z-index:1;background:transparent;}
-.cp-date-native:disabled{cursor:default;}
+/* In view mode the date input is disabled, and `.cp-input:disabled` paints an
+   opaque surface2 background — higher specificity than `.cp-date-native`, so it
+   was covering the mm/dd/yyyy overlay underneath it (input z-index 1 > overlay 0).
+   Keep the disabled field transparent so the overlay shows through: the value was
+   always there, just hidden. */
+.cp-date-native:disabled{cursor:default;background:transparent!important;-webkit-text-fill-color:transparent!important;}
 .cp-date-field .cp-date-overlay{position:absolute;left:11px;top:0;height:100%;display:flex;align-items:center;pointer-events:none;font-size:19px;color:var(--text);z-index:0;}
 .cp-date-field .cp-date-overlay.muted{color:var(--text3);}
 .cp-date-caption{font-size:16px;color:var(--text3);margin-top:5px;}
@@ -1004,7 +1009,20 @@ function fillDerivedPeriodRanges(offeringId) {
   if (!periods || !periods.length) return;
   const course = courses.find(x => String(x.id) === String(offeringId));
   const term = academicTermFor(course);
-  if (!term) return;
+  if (!term) {
+    // Blank valid dates almost always mean the offering couldn't be matched to
+    // a published calendar — say which lookup failed instead of leaving the
+    // professor staring at two empty date fields.
+    const want = course ? parseSemesterLabel(course.semester) : {};
+    console.warn(
+      '[TaeSylla] No academic calendar matched — Valid dates left blank.',
+      { code: course && course.code, semesterLabel: course && course.semester,
+        parsed: want, cohortGuess: course && cohortForCourseCode(course.code),
+        calendarLoaded: !!academicCalendar,
+        termsInDb: academicCalendar ? academicCalendar.terms.map(t => `${t.year} ${t.semester} / ${t.cohort}`) : null }
+    );
+    return;
+  }
   const events = (academicCalendar && academicCalendar.eventsByTerm[term.id]) || [];
   periods.forEach((p) => {
     if (p.validFrom && p.validTo) return;
@@ -1012,6 +1030,8 @@ function fillDerivedPeriodRanges(offeringId) {
     if (!p.validFrom) p.validFrom = from;
     if (!p.validTo)   p.validTo   = to;
   });
+  console.log('[TaeSylla] Valid dates from calendar:', `${term.year} ${term.semester} / ${term.cohort}`,
+    periods.map(p => `${Object.keys(p.days).filter(k => p.days[k]).join('/')} ${p.timezone}: ${p.validFrom} → ${p.validTo}`));
 }
 
 async function saveMainEditsInner(c) {
