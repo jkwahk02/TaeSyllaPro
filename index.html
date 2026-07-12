@@ -649,6 +649,10 @@ function handleRoute() {
     document.getElementById('page-course').style.display = 'none';
     document.getElementById('page-settings').style.display = 'none';
     document.getElementById('page-home').style.display = 'block';
+    // Re-render rather than just un-hiding: the home page was built once at
+    // load, so anything changed on a course page since then (Publish/Unpublish,
+    // an edited title, a new schedule) would still show its stale value here.
+    renderHome();
     setRailActive('rail-home');
   }
 }
