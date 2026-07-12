@@ -612,7 +612,8 @@ function handleRoute() {
     // Only reset the edit session when actually navigating to a different
     // course. Re-firing on the same course/hash (rare, but possible) leaves
     // an in-progress edit alone instead of silently discarding it.
-    if (String(newId) !== String(currentCourseId)) {
+    const isNewCourse = String(newId) !== String(currentCourseId);
+    if (isNewCourse) {
       clearEditState();
       courseTab = 'main';
     }
@@ -622,6 +623,9 @@ function handleRoute() {
     document.getElementById('page-course').style.display = 'block';
     renderCoursePage();
     setRailActive('rail-home'); // a course is reached from/nested under Home
+    // Land at the top of the course page rather than wherever the home page
+    // (which can be long/scrolled) happened to be scrolled to.
+    if (isNewCourse) window.scrollTo(0, 0);
   } else if (location.hash === '#settings') {
     document.getElementById('page-course').style.display = 'none';
     document.getElementById('page-home').style.display = 'none';
@@ -935,7 +939,28 @@ async function loadPeriodsIfNeeded(offeringId) {
       // there was one, so the next Save updates it in place instead of
       // inserting a duplicate period.
       if (allBlank) Object.assign(seed, { id: loaded[0].id, campusNote: loaded[0].campusNote, validFrom: loaded[0].validFrom, validTo: loaded[0].validTo });
-      periodsCache[offeringId] = [seed];
+      const seeds = [seed];
+      // course_offerings.second_weekday_time ("Mon./Wed. 21:00 Eastern
+      // Time") describes a second weekly meeting pattern — e.g. a lecture
+      // slot plus a lab slot — that's separate from weekday_time. When
+      // there's no saved schedule yet, seed a second Period for it too, so
+      // both show up right away instead of the professor having to notice
+      // it's missing and add it by hand.
+      if (c && c.secondScheduleDays.length && c.secondStartTime) {
+        const seed2 = newSchedulePeriod();
+        FULL_DAY_ORDER.forEach(d => { seed2.days[d.toLowerCase().slice(0, 3)] = c.secondScheduleDays.includes(d); });
+        seed2.startTime = c.secondStartTime;
+        if (c.secondClassTimezone) seed2.timezone = c.secondClassTimezone;
+        // Reuse Period 1's valid dates so the professor isn't left re-typing
+        // the same semester date range for the second meeting pattern.
+        seed2.validFrom = seed.validFrom;
+        seed2.validTo = seed.validTo;
+        if (loaded.length > 1 && isBlank(loaded[1])) {
+          Object.assign(seed2, { id: loaded[1].id, campusNote: loaded[1].campusNote });
+        }
+        seeds.push(seed2);
+      }
+      periodsCache[offeringId] = seeds;
     } else {
       periodsCache[offeringId] = loaded;
     }
@@ -1585,6 +1610,13 @@ async function handleWallLogin() {
       return;
     }
     await loadData();
+    // gcalToken is intentionally never persisted (matches Telos), so every
+    // fresh sign-in starts "disconnected" — rather than making the
+    // professor open Settings and click Connect by hand each time, offer
+    // the Google account picker right here. Fire-and-forget: if it's
+    // dismissed, blocked, or fails, the app is still fully usable and
+    // Settings remains the manual fallback.
+    connectGoogleCalendar();
   } catch (e) {
     loginAttempts++;
     if (loginAttempts >= 5) {
@@ -2195,26 +2227,30 @@ function parseWeekdayTime(text) {
 
 // Inverse of parseWeekdayTime — turns one schedule period's days/time/zone
 // back into the same "Mon./Wed. 21:00 Eastern Time" string the field is
-// stored in. Multiple periods (e.g. a mid-semester time change) are joined
-// with "; " so nothing is silently dropped, though the common case is one.
-function buildWeekdayTimeString(periods) {
-  if (!periods || !periods.length) return '';
-  const parts = periods.map((p) => {
-    const activeDays = FULL_DAY_ORDER.filter((d) => p.days[d.toLowerCase().slice(0, 3)]);
-    if (!activeDays.length || !p.startTime) return '';
-    const dayStr = activeDays.map((d) => `${d}.`).join('/');
-    const tzOpt = TIMEZONE_OPTIONS.find((t) => t.iana === p.timezone);
-    const tzStr = tzOpt ? tzOpt.label : (p.timezone || '');
-    return `${dayStr} ${p.startTime}${tzStr ? ' ' + tzStr : ''}`.trim();
-  }).filter(Boolean);
-  return parts.join('; ');
+// stored in.
+function buildWeekdayTimeString(p) {
+  if (!p) return '';
+  const activeDays = FULL_DAY_ORDER.filter((d) => p.days[d.toLowerCase().slice(0, 3)]);
+  if (!activeDays.length || !p.startTime) return '';
+  const dayStr = activeDays.map((d) => `${d}.`).join('/');
+  const tzOpt = TIMEZONE_OPTIONS.find((t) => t.iana === p.timezone);
+  const tzStr = tzOpt ? tzOpt.label : (p.timezone || '');
+  return `${dayStr} ${p.startTime}${tzStr ? ' ' + tzStr : ''}`.trim();
 }
-// Builds the full course_offerings schedule patch: weekday_time (primary,
-// see above) plus mon..sun/class_time from the first active period, kept in
-// sync purely as a fallback for anything still reading those older columns.
+// Builds the full course_offerings schedule patch. weekday_time and
+// second_weekday_time are two separate columns (see
+// supabase: course_offerings.second_weekday_time), each holding ONE meeting
+// pattern — the first active period becomes weekday_time, the next distinct
+// one becomes second_weekday_time, mirroring how they were originally
+// imported rather than joining every period into a single string.
+// mon..sun/class_time are kept in sync too, from the first period, purely as
+// a fallback for anything still reading those older columns.
 function buildOfferingScheduleFields(periods) {
-  const weekday_time = buildWeekdayTimeString(periods) || null;
-  const primary = (periods || []).find((p) => p.startTime && Object.values(p.days).some(Boolean)) || null;
+  const real = (periods || []).filter((p) => p.startTime && Object.values(p.days).some(Boolean));
+  const primary = real[0] || null;
+  const secondary = real[1] || null;
+  const weekday_time = buildWeekdayTimeString(primary) || null;
+  const second_weekday_time = buildWeekdayTimeString(secondary) || null;
   const dayFlags = { mon: false, tue: false, wed: false, thu: false, fri: false, sat: false, sun: false };
   let class_time = null;
   if (primary) {
@@ -2223,7 +2259,7 @@ function buildOfferingScheduleFields(periods) {
     const [eh, emi] = addMinutes(h, mi, primary.durationMin || DEFAULT_DURATION_MIN);
     class_time = `${primary.startTime}-${String(eh).padStart(2, '0')}:${String(emi).padStart(2, '0')}`;
   }
-  return { weekday_time, class_time, ...dayFlags };
+  return { weekday_time, second_weekday_time, class_time, ...dayFlags };
 }
 
 function mapCourse(r) {
@@ -2260,6 +2296,17 @@ function mapCourse(r) {
   // default 100-minute class length rather than leaving endTime blank.
   const endTime = wd.endTime || classEnd || (startTime ? addMinutesToTimeStr(startTime, DEFAULT_DURATION_MIN) : '');
   const classTimezone = wd.timezone || '';
+  // second_weekday_time is the same "Mon./Wed. 21:00 Eastern Time" format,
+  // for a course with two separate weekly meeting patterns (e.g. a lecture
+  // slot plus a lab slot). Parsed the same way as weekday_time — see
+  // loadPeriodsIfNeeded, which seeds a second schedule period from this when
+  // present and no periods have been saved for the course yet.
+  const secondWeekdayTime = isPlaceholderTime(r.second_weekday_time) ? '' : r.second_weekday_time;
+  const wd2 = parseWeekdayTime(secondWeekdayTime);
+  const secondScheduleDays = wd2.days;
+  const secondStartTime = wd2.startTime;
+  const secondEndTime = wd2.endTime || (secondStartTime ? addMinutesToTimeStr(secondStartTime, DEFAULT_DURATION_MIN) : '');
+  const secondClassTimezone = wd2.timezone || '';
   // `courses.competency_*` stores a 0–1 fraction (e.g. 0.1 = 10%), not a
   // whole percentage — convert to a 0–100 display value here, and back to a
   // fraction on save (see saveMainEdits).
@@ -2281,6 +2328,10 @@ function mapCourse(r) {
     startTime,
     endTime,
     classTimezone,
+    secondScheduleDays,
+    secondStartTime,
+    secondEndTime,
+    secondClassTimezone,
     status: r.status === 'published' ? 'published' : 'draft',
     officeHours: r.office_hours || '',
     professor: r.professor || PROFESSOR.name,
@@ -2305,7 +2356,7 @@ async function loadData() {
       TBL_OFFERINGS,
       `professor_email=eq.${encodeURIComponent(PROFESSOR.email)}` +
       `&select=offering_id,course_id,course_base_id,section,semester,year,semester_year,` +
-      `mon,tue,wed,thu,fri,sat,sun,class_time,weekday_time,office_hours,status,professor,` +
+      `mon,tue,wed,thu,fri,sat,sun,class_time,weekday_time,second_weekday_time,office_hours,status,professor,` +
       `courses(code,title,credits,classification,description,prerequisites,program,` +
       `competency_critical_thinking,competency_creative_thinking,competency_self_directed_learning,` +
       `competency_communication,competency_diversity_empathy,competency_global_harmony,` +
