@@ -980,7 +980,12 @@ async function loadPeriodsIfNeeded(offeringId) {
     // offering's schedule was ever filled in) — prefer seeding fresh from
     // weekday_time (see mapCourse/parseWeekdayTime) over showing that blank
     // row, same as if no period had been saved at all.
-    const isBlank = (p) => !p.startTime && !Object.values(p.days).some(Boolean);
+    // A saved period with no class days is not a usable meeting pattern — even
+    // when a stale start_time/duration lingers on it (e.g. a 09:00 / 75-min row
+    // left by an earlier import). Treat "no class days" alone as a placeholder
+    // and re-seed from weekday_time; otherwise the detail page shows that stale
+    // row while the home card (which reads weekday_time) shows the real schedule.
+    const isBlank = (p) => !Object.values(p.days).some(Boolean);
     const allBlank = loaded.length > 0 && loaded.every(isBlank);
     const hasWeekdayData = !!(c && c.scheduleDays.length && c.startTime);
     if (!loaded.length || (allBlank && hasWeekdayData)) {
@@ -1070,29 +1075,23 @@ function fillDerivedPeriodRanges(offeringId) {
 async function saveMainEditsInner(c) {
   if (!editDraft) return;
   const d = editDraft;
-  const coursePatch = {
-    classification: d.classification, credits: d.credits,
+  // Edits are saved as per-offering OVERRIDES on course_offerings, never to the
+  // shared base courses row — so changing one offering (e.g. DA200-1's title or
+  // learning objectives) never affects DA200-2 or other semesters. mapCourse
+  // inherits from the base course whenever an override column is null. The base
+  // courses row stays the template; adjust it directly in the DB if the whole
+  // course needs to change.
+  const offeringPatch = {
+    title: d.title, classification: d.classification, credits: d.credits,
     program: d.program, category: d.category,
     description: d.description, short_description: d.shortDescription,
     prerequisites: d.prerequisites, learning_objectives: d.learningObjectives,
     required_text: d.requiredText, new_curriculum: d.newCurriculum,
-  };
-  d.competencies.forEach((comp) => { coursePatch[comp.col] = Number(comp.pct) / 100; });
-  await sbPatch('courses', `course_id=eq.${encodeURIComponent(c.courseBaseId)}`, coursePatch);
-  // Keep course_offerings.weekday_time (the field the home page card and
-  // Weekly Timetable actually read — see parseWeekdayTime/mapCourse) in sync
-  // with whatever "Class meeting times" now says, in the same
-  // "Mon./Wed. 21:00 Eastern Time" format. mon..sun/class_time are updated
-  // too, from the first active period, purely as a fallback for any other
-  // reader of those older columns.
-  // title is saved as a per-offering override (course_offerings.title), NOT to
-  // the shared base courses.title — so editing e.g. DA200-1's title never
-  // clobbers DA200-2 or the base course. mapCourse falls back to the base
-  // title when this override is null.
-  await sbPatch(TBL_OFFERINGS, `offering_id=eq.${c.id}`, {
-    title: d.title, professor: d.professor, office_hours: d.officeHours,
+    professor: d.professor, office_hours: d.officeHours,
     ...buildOfferingScheduleFields(editPeriods),
-  });
+  };
+  d.competencies.forEach((comp) => { offeringPatch[comp.col] = Number(comp.pct) / 100; });
+  await sbPatch(TBL_OFFERINGS, `offering_id=eq.${c.id}`, offeringPatch);
 
   await sbDelete('course_schedule_periods', `offering_id=eq.${c.id}`);
   if (editPeriods.length) {
@@ -2569,9 +2568,15 @@ function mapCourse(r) {
   // `courses.competency_*` stores a 0–1 fraction (e.g. 0.1 = 10%), not a
   // whole percentage — convert to a 0–100 display value here, and back to a
   // fraction on save (see saveMainEdits).
-  const competenciesRaw = COMPETENCY_COLS.map(([col, label]) => ({
-    col, label, pct: catalog[col] != null ? Math.round(Number(catalog[col]) * 100) : 0,
-  }));
+  // Each catalog field defaults to (inherits) the base course value, but the
+  // offering may override it — the offering's own column wins when it is set
+  // (non-null / non-empty), otherwise we fall back to the base course.
+  const ovT = (col) => { const v = r[col]; return (v === null || v === undefined || v === '') ? catalog[col] : v; };
+  const ovN = (col) => (r[col] ?? catalog[col]);
+  const competenciesRaw = COMPETENCY_COLS.map(([col, label]) => {
+    const cv = ovN(col);
+    return { col, label, pct: cv != null ? Math.round(Number(cv) * 100) : 0 };
+  });
   const competencies = competenciesRaw.filter(c => c.pct > 0);
   return {
     id: r.offering_id,
@@ -2580,9 +2585,9 @@ function mapCourse(r) {
     section: r.section || null,
     // Prefer a section-specific title stored on the offering (e.g. DA200-1 vs
     // DA200-2); fall back to the base course's catalog title.
-    title: r.title || catalog.title || (catalogMissing ? '(catalog data unavailable — check RLS)' : '(untitled)'),
-    credits: catalog.credits ?? null,
-    classification: catalog.classification || '—',
+    title: ovT('title') || (catalogMissing ? '(catalog data unavailable — check RLS)' : '(untitled)'),
+    credits: ovN('credits') ?? null,
+    classification: ovT('classification') || '—',
     semester: r.semester_year || [r.semester, r.year].filter(Boolean).join(' '),
     scheduleDays: days,
     scheduleDisplay: weekdayTime || (days.length ? `${days.join('/')} ${classTime}`.trim() : ''),
@@ -2596,15 +2601,15 @@ function mapCourse(r) {
     status: r.status === 'published' ? 'published' : 'draft',
     officeHours: r.office_hours || '',
     professor: r.professor || PROFESSOR.name,
-    program: catalog.program || '',
-    description: catalog.description || '',
-    prerequisites: catalog.prerequisites || '',
-    learningObjectives: catalog.learning_objectives || '',
-    requiredText: catalog.required_text || '',
-    category: catalog.category || '',
-    shortDescription: catalog.short_description || '',
-    syllabusLink: catalog.syllabus_link || '',
-    newCurriculum: catalog.new_curriculum !== false,
+    program: ovT('program') || '',
+    description: ovT('description') || '',
+    prerequisites: ovT('prerequisites') || '',
+    learningObjectives: ovT('learning_objectives') || '',
+    requiredText: ovT('required_text') || '',
+    category: ovT('category') || '',
+    shortDescription: ovT('short_description') || '',
+    syllabusLink: ovT('syllabus_link') || '',
+    newCurriculum: (r.new_curriculum ?? catalog.new_curriculum) !== false,
     competencies,
     competenciesRaw,
   };
@@ -2617,7 +2622,10 @@ async function loadData() {
       TBL_OFFERINGS,
       `professor_email=eq.${encodeURIComponent(PROFESSOR.email)}` +
       `&select=offering_id,course_id,course_base_id,section,semester,year,semester_year,` +
-      `mon,tue,wed,thu,fri,sat,sun,class_time,weekday_time,second_weekday_time,office_hours,status,professor,title,` +
+      `mon,tue,wed,thu,fri,sat,sun,class_time,weekday_time,second_weekday_time,office_hours,status,professor,` +
+      // Per-offering override columns (inherit from courses when null). See mapCourse ovT/ovN.
+      `title,description,prerequisites,learning_objectives,required_text,classification,credits,category,short_description,syllabus_link,new_curriculum,program,` +
+      `competency_critical_thinking,competency_creative_thinking,competency_self_directed_learning,competency_communication,competency_diversity_empathy,competency_global_harmony,` +
       `courses(code,title,credits,classification,description,prerequisites,program,` +
       `competency_critical_thinking,competency_creative_thinking,competency_self_directed_learning,` +
       `competency_communication,competency_diversity_empathy,competency_global_harmony,` +
