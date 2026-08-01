@@ -1892,7 +1892,7 @@ function renderGcalSettingsBlock() {
         </div>
         <div>
           <div style="font-size:19px;font-weight:500;color:var(--text);">Google Calendar</div>
-          <div style="font-size:16px;color:var(--text3);margin-top:2px;line-height:1.4;">Connect your Google account so course schedules can be exported straight to a "${esc(GCAL_CALENDAR_NAME)}" calendar.</div>
+          <div style="font-size:16px;color:var(--text3);margin-top:2px;line-height:1.4;">Connect your Google account so each course's schedule can be exported to its own calendar, named "&lt;Course ID&gt; &lt;Semester&gt;" (e.g. "DA200 Fall 2026").</div>
         </div>
       </div>
       ${gcalToken
@@ -1905,7 +1905,7 @@ function renderGcalSettingsBlock() {
     </div>
     ${gcalToken ? `<div style="display:flex;align-items:center;gap:6px;margin-top:14px;padding:9px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);font-size:15px;color:var(--text2);">
         <div style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></div>
-        Calendar: <span style="color:var(--text);font-weight:500;margin-left:4px;">${esc(GCAL_CALENDAR_NAME)}</span>
+        A separate calendar is created per course on export &mdash; and cleared &amp; rebuilt each time you re-export, so dates never duplicate.
       </div>` : ''}
   `;
 }
@@ -1921,8 +1921,7 @@ function connectGoogleCalendar() {
     callback: async (resp) => {
       if (resp.error) { showToast('Google sign-in failed: ' + resp.error); return; }
       gcalToken = resp.access_token;
-      showToast('Signed in to Google — setting up calendar…');
-      await ensureTaeSyllaCalendar();
+      showToast('✓ Signed in to Google Calendar');
       renderGcalSettingsBlock();
       if (currentCourseId !== null) renderCoursePage(); // refresh Schedule tab's export button state
     },
@@ -1931,24 +1930,21 @@ function connectGoogleCalendar() {
 }
 // Finds (or creates, first time) a dedicated calendar so exported class
 // dates don't get mixed into the professor's main Google Calendar.
-async function ensureTaeSyllaCalendar() {
-  if (gcalCalendarId) return gcalCalendarId;
+// Find or create a per-course calendar named "<code> <semester>" (e.g.
+// "DA200 Fall 2026"), matching the Apps Script makeGoogleCalendar() behavior.
+// New calendars are created in Eastern Time, as in the script.
+async function ensureCourseCalendar(calName) {
   if (!gcalToken) { showToast('Google token missing — please reconnect.'); return null; }
   const listRes = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
     headers: { Authorization: `Bearer ${gcalToken}` },
   });
   const listData = await listRes.json();
-  const existing = listData.items?.find(c => c.summary === GCAL_CALENDAR_NAME);
-  if (existing) {
-    gcalCalendarId = existing.id;
-    localStorage.setItem('taesylla_gcal_calendar_id', gcalCalendarId);
-    showToast(`✓ Connected to existing "${GCAL_CALENDAR_NAME}" calendar`);
-    return gcalCalendarId;
-  }
+  const existing = listData.items?.find(c => c.summary === calName);
+  if (existing) return existing.id;
   const createRes = await fetch('https://www.googleapis.com/calendar/v3/calendars', {
     method: 'POST',
     headers: { Authorization: `Bearer ${gcalToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ summary: GCAL_CALENDAR_NAME, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }),
+    body: JSON.stringify({ summary: calName, timeZone: 'America/New_York' }),   // ★ ET, per Apps Script
   });
   const created = await createRes.json();
   if (!createRes.ok || !created.id) {
@@ -1956,10 +1952,33 @@ async function ensureTaeSyllaCalendar() {
     showToast(`Failed to create calendar: ${created.error?.message || createRes.status}`);
     return null;
   }
-  gcalCalendarId = created.id;
-  localStorage.setItem('taesylla_gcal_calendar_id', gcalCalendarId);
-  showToast(`✓ "${GCAL_CALENDAR_NAME}" calendar created in your Google Calendar`);
-  return gcalCalendarId;
+  return created.id;
+}
+
+// Delete every event on a (course-dedicated) calendar so a re-export never
+// piles duplicates on top of the previous run, matching the Apps Script's
+// "clear existing events, then recreate" step.
+async function clearCalendarEvents(calId) {
+  let deleted = 0, pageToken = '';
+  do {
+    const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`);
+    url.searchParams.set('maxResults', '2500');
+    url.searchParams.set('showDeleted', 'false');
+    if (pageToken) url.searchParams.set('pageToken', pageToken);
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${gcalToken}` } });
+    const data = await res.json();
+    for (const it of (data.items || [])) {
+      try {
+        await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(it.id)}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${gcalToken}` },
+        });
+        deleted++;
+      } catch (e) { /* ignore individual delete failures */ }
+    }
+    pageToken = data.nextPageToken || '';
+  } while (pageToken);
+  return deleted;
 }
 function disconnectGoogleCalendar() {
   if (!confirm('Disconnect Google Calendar?')) return;
@@ -2336,10 +2355,10 @@ function formatClassDateLabel(d) {
   if (d.note) s += ` (${d.note})`;      // e.g. "(Make-up day for Chuseok)"
   return s;
 }
-// Pushes one Google Calendar event per calculated class date directly into
-// the professor's connected "TaeSylla Pro — Class Schedule" calendar (see
-// connectGoogleCalendar/ensureTaeSyllaCalendar) — same live-API approach as
-// Telos's "Add to Google Calendar", rather than a downloaded .ics file.
+// Pushes one Google Calendar event per calculated class date into a
+// per-course calendar named "<code> <semester>" (created in Eastern Time),
+// clearing that calendar first so a re-run never duplicates events — same
+// behavior as the Apps Script makeGoogleCalendar().
 async function exportScheduleToGoogleCalendar() {
   const c = courses.find(x => String(x.id) === String(currentCourseId));
   if (!c) return;
@@ -2360,16 +2379,23 @@ async function exportScheduleToGoogleCalendar() {
   });
   if (!events.length) { showToast('No lesson rows with a calculated date to export.'); return; }
 
+  const calName = `${c.code} ${c.semester}`.trim();   // e.g. "DA200 Fall 2026"
   const btn = document.getElementById('cp-gcal-export-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Exporting…'; }
   try {
-    const calId = await ensureTaeSyllaCalendar();
+    const calId = await ensureCourseCalendar(calName);
     if (!calId) { showToast('Could not find or create the calendar.'); return; }
+    await clearCalendarEvents(calId);   // ★ clear before recreating → no duplicates on re-export
     let ok = 0, failed = 0;
     for (const ev of events) {
       const event = {
         summary: `${c.code} | ${ev.item}${ev.topic ? ' - ' + ev.topic : ''}`,
-        description: [`Course: ${c.code} ${c.title}`, c.professor ? `Professor: ${c.professor}` : ''].filter(Boolean).join('\n'),
+        description: [
+          `Course: ${c.code} ${c.title}`,
+          c.professor ? `Professor: ${c.professor}` : '',
+          `${ev.item}${ev.topic ? ': ' + ev.topic : ''}`,
+          `Class time: ${formatClassDateLabel(ev.date)}`,
+        ].filter(Boolean).join('\n'),
         start: { dateTime: `${ev.date.isoDate}T${ev.date.startTime}:00`, timeZone: ev.date.timezone },
         end: { dateTime: `${ev.date.isoDate}T${ev.date.endTime}:00`, timeZone: ev.date.timezone },
       };
@@ -2383,7 +2409,7 @@ async function exportScheduleToGoogleCalendar() {
         ok++;
       } catch (e) { failed++; }
     }
-    showToast(failed ? `Exported ${ok} of ${events.length} class date(s) — ${failed} failed.` : `✓ Exported ${ok} class date(s) to "${GCAL_CALENDAR_NAME}"`);
+    showToast(failed ? `Exported ${ok} of ${events.length} class date(s) — ${failed} failed.` : `✓ Exported ${ok} class date(s) to "${calName}"`);
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Export to Google Calendar'; }
   }
