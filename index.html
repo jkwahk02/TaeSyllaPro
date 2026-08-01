@@ -114,9 +114,9 @@ button,input{font-family:inherit;}
 .tt-daylabel{display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;color:var(--text2);border-radius:5px;}
 .tt-daylabel.today{background:var(--blue-l);color:var(--blue);}
 .tt-hour{font-size:18px;color:var(--text3);text-align:right;padding-right:7px;}
-.tt-block{border-radius:5px;padding:6px 8px;display:flex;flex-direction:column;justify-content:center;overflow:hidden;}
-.tt-block .code{font-size:18px;font-weight:600;font-family:'DM Mono',monospace;}
-.tt-block .title{font-size:18px;}
+.tt-block{border-radius:5px;padding:6px 8px;display:flex;flex-direction:column;justify-content:center;overflow:hidden;gap:2px;}
+.tt-block .code{font-size:16px;font-weight:600;font-family:'DM Mono',monospace;flex-shrink:0;}
+.tt-block .title{font-size:13px;line-height:1.15;overflow:hidden;}
 
 /* TIMELINE */
 .timeline-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px 24px 8px;}
@@ -2694,7 +2694,8 @@ function renderHome() {
       <div class="sec-hd">
         <div class="sec-label-wrap">
           <span class="sec-dot" style="background:var(--amber-b);"></span>
-          <span class="sec-label" style="color:var(--amber);">Weekly timetable</span>
+          <span class="sec-label" style="color:var(--amber);">My weekly timetable</span>
+          <span id="tt-tz-label" style="font-size:15px;color:var(--text3);font-weight:400;margin-left:8px;"></span>
         </div>
       </div>
       <div id="timetable-body"></div>
@@ -2856,21 +2857,48 @@ function renderUpcoming() {
 // ── RENDER: This week timetable ──
 function renderTimetable() {
   const el = document.getElementById('timetable-body');
+  const tzEl = document.getElementById('tt-tz-label');
+  const myTz = PROFESSOR.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
   const thisSem = courses.filter(c => c.semester === CURRENT_SEMESTER && c.scheduleDays.length && c.startTime);
+  if (tzEl) tzEl.textContent = thisSem.length ? `· times shown in ${tzLabel(myTz)}` : '';
   if (!thisSem.length) {
     el.innerHTML = `<div class="timetable-card"><div class="empty-row" style="padding:8px 0;">No classes scheduled this semester.</div></div>`;
     return;
   }
 
   const toHour = (t) => parseInt(t.split(':')[0], 10);
-  let minHour = Math.min(...thisSem.map(c => toHour(c.startTime)));
-  let maxHour = Math.max(...thisSem.map(c => toHour(c.endTime || c.startTime) + (c.endTime && c.endTime.split(':')[1] > '00' ? 1 : 0)));
+  const durOf = (c) => {
+    const [sh, sm] = c.startTime.split(':').map(Number);
+    if (!c.endTime) return DEFAULT_DURATION_MIN;
+    const [eh, em] = c.endTime.split(':').map(Number);
+    const d = (eh * 60 + em) - (sh * 60 + sm);
+    return d > 0 ? d : DEFAULT_DURATION_MIN;
+  };
+  // Every course may be taught in a different timezone, so convert each meeting
+  // into the professor's own timezone (myTz) — the whole grid then reads in one
+  // consistent zone (labelled next to the title), and a day can shift (e.g. a
+  // Mon evening class in Pacific becomes Tue morning in Korea).
+  const meetings = [];
+  thisSem.forEach((c) => {
+    const dur = durOf(c);
+    c.scheduleDays.forEach((day) => {
+      let mday = day, mstart = c.startTime, mend = c.endTime || addMinutesToTimeStr(c.startTime, dur);
+      if (c.classTimezone && c.classTimezone !== myTz) {
+        const r = convertDayToZone(day, c.startTime, dur, '', c.classTimezone, myTz);
+        mday = r.weekday; mstart = r.startTime; mend = r.endTime;
+      }
+      meetings.push({ code: c.code, title: c.title, day: mday, start: mstart, end: mend });
+    });
+  });
+
+  let minHour = Math.min(...meetings.map(m => toHour(m.start)));
+  let maxHour = Math.max(...meetings.map(m => toHour(m.end) + (m.end.split(':')[1] > '00' ? 1 : 0)));
   if (maxHour <= minHour) maxHour = minHour + 1;
   const hourCount = maxHour - minHour;
 
   const todayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()];
   const colorMap = {};
-  thisSem.forEach((c) => { if (!colorMap[c.code]) colorMap[c.code] = COURSE_COLORS[Object.keys(colorMap).length % COURSE_COLORS.length]; });
+  meetings.forEach((m) => { if (!colorMap[m.code]) colorMap[m.code] = COURSE_COLORS[Object.keys(colorMap).length % COURSE_COLORS.length]; });
 
   let cells = '';
   cells += `<div></div>`;
@@ -2881,19 +2909,17 @@ function renderTimetable() {
   for (let h = 0; h < hourCount; h++) {
     cells += `<div class="tt-hour" style="grid-row:${h + 2};">${minHour + h}</div>`;
   }
-  thisSem.forEach(c => {
-    const startRow = toHour(c.startTime) - minHour + 2;
-    const endHour = c.endTime ? toHour(c.endTime) + (c.endTime.split(':')[1] > '00' ? 1 : 0) : toHour(c.startTime) + 1;
-    const span = Math.max(1, endHour - toHour(c.startTime));
-    const color = colorMap[c.code];
-    c.scheduleDays.forEach(day => {
-      const colIndex = DAY_ORDER.indexOf(day);
-      if (colIndex === -1) return;
-      cells += `<div class="tt-block" style="grid-column:${colIndex + 2};grid-row:${startRow} / span ${span};background:${color.bg};">
-        <span class="code" style="color:${color.text};">${esc(c.code)}</span>
-        <span class="title" style="color:${color.text};">${esc(c.title.split(' ').slice(0, 2).join(' '))}</span>
-      </div>`;
-    });
+  meetings.forEach((m) => {
+    const colIndex = DAY_ORDER.indexOf(m.day);
+    if (colIndex === -1) return;   // shifted onto Sat/Sun — not shown in the Mon–Fri grid
+    const startRow = toHour(m.start) - minHour + 2;
+    const endHour = toHour(m.end) + (m.end.split(':')[1] > '00' ? 1 : 0);
+    const span = Math.max(1, endHour - toHour(m.start));
+    const color = colorMap[m.code];
+    cells += `<div class="tt-block" title="${esc(m.code + ' — ' + m.title)}" style="grid-column:${colIndex + 2};grid-row:${startRow} / span ${span};background:${color.bg};">
+      <span class="code" style="color:${color.text};">${esc(m.code)}</span>
+      <span class="title" style="color:${color.text};">${esc(m.title)}</span>
+    </div>`;
   });
 
   el.innerHTML = `<div class="timetable-card"><div class="tt-wrap">
