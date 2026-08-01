@@ -1071,7 +1071,7 @@ async function saveMainEditsInner(c) {
   if (!editDraft) return;
   const d = editDraft;
   const coursePatch = {
-    title: d.title, classification: d.classification, credits: d.credits,
+    classification: d.classification, credits: d.credits,
     program: d.program, category: d.category,
     description: d.description, short_description: d.shortDescription,
     prerequisites: d.prerequisites, learning_objectives: d.learningObjectives,
@@ -1085,8 +1085,12 @@ async function saveMainEditsInner(c) {
   // "Mon./Wed. 21:00 Eastern Time" format. mon..sun/class_time are updated
   // too, from the first active period, purely as a fallback for any other
   // reader of those older columns.
+  // title is saved as a per-offering override (course_offerings.title), NOT to
+  // the shared base courses.title — so editing e.g. DA200-1's title never
+  // clobbers DA200-2 or the base course. mapCourse falls back to the base
+  // title when this override is null.
   await sbPatch(TBL_OFFERINGS, `offering_id=eq.${c.id}`, {
-    professor: d.professor, office_hours: d.officeHours,
+    title: d.title, professor: d.professor, office_hours: d.officeHours,
     ...buildOfferingScheduleFields(editPeriods),
   });
 
@@ -2574,7 +2578,9 @@ function mapCourse(r) {
     courseBaseId: r.course_base_id,
     code: fullCode,
     section: r.section || null,
-    title: catalog.title || (catalogMissing ? '(catalog data unavailable — check RLS)' : '(untitled)'),
+    // Prefer a section-specific title stored on the offering (e.g. DA200-1 vs
+    // DA200-2); fall back to the base course's catalog title.
+    title: r.title || catalog.title || (catalogMissing ? '(catalog data unavailable — check RLS)' : '(untitled)'),
     credits: catalog.credits ?? null,
     classification: catalog.classification || '—',
     semester: r.semester_year || [r.semester, r.year].filter(Boolean).join(' '),
@@ -2611,7 +2617,7 @@ async function loadData() {
       TBL_OFFERINGS,
       `professor_email=eq.${encodeURIComponent(PROFESSOR.email)}` +
       `&select=offering_id,course_id,course_base_id,section,semester,year,semester_year,` +
-      `mon,tue,wed,thu,fri,sat,sun,class_time,weekday_time,second_weekday_time,office_hours,status,professor,` +
+      `mon,tue,wed,thu,fri,sat,sun,class_time,weekday_time,second_weekday_time,office_hours,status,professor,title,` +
       `courses(code,title,credits,classification,description,prerequisites,program,` +
       `competency_critical_thinking,competency_creative_thinking,competency_self_directed_learning,` +
       `competency_communication,competency_diversity_empathy,competency_global_harmony,` +
