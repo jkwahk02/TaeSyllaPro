@@ -785,6 +785,9 @@ async function loadCourseDetailTab(offeringId, tabKey) {
   cache[tabKey] = 'loading';
   try {
     const rows = await sbGet(spec.table, `offering_id=eq.${offeringId}&select=${spec.cols}&order=id.asc`);
+    // Guarantee id-ascending order client-side (the intended row order) regardless
+    // of what order the server actually returns rows in.
+    if (Array.isArray(rows)) rows.sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
     cache[tabKey] = rows;
   } catch (e) {
     cache[tabKey] = { error: e.message };
@@ -2339,11 +2342,11 @@ async function makeSyllabusDocument(offeringId) {
     const rawRows = await sbGet(TBL_OFFERINGS, `offering_id=eq.${encodeURIComponent(offeringId)}&select=professor_email,weekday_time,second_weekday_time,semester,year`);
     const raw = (rawRows && rawRows[0]) || {};
     const [assess, comm, sched, reads] = await Promise.all([
-      sbGet('course_assessments', `offering_id=eq.${encodeURIComponent(offeringId)}&select=item,ratio_pct,description&order=id.asc`),
-      sbGet('course_communications', `offering_id=eq.${encodeURIComponent(offeringId)}&select=method,description&order=id.asc`),
-      sbGet('course_schedule', `offering_id=eq.${encodeURIComponent(offeringId)}&select=item,topic_title,learning_objectives&order=id.asc`),
-      sbGet('course_readings', `offering_id=eq.${encodeURIComponent(offeringId)}&select=lesson,category,reading_title,url_link&order=id.asc`),
-    ]);
+      sbGet('course_assessments', `offering_id=eq.${encodeURIComponent(offeringId)}&select=id,item,ratio_pct,description&order=id.asc`),
+      sbGet('course_communications', `offering_id=eq.${encodeURIComponent(offeringId)}&select=id,method,description&order=id.asc`),
+      sbGet('course_schedule', `offering_id=eq.${encodeURIComponent(offeringId)}&select=id,item,topic_title,learning_objectives&order=id.asc`),
+      sbGet('course_readings', `offering_id=eq.${encodeURIComponent(offeringId)}&select=id,lesson,category,reading_title,url_link&order=id.asc`),
+    ].map(p => p.then(rows => Array.isArray(rows) ? rows.sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0)) : rows)));
 
     setSyllabusProgress(15, 'Preparing folder…');
     const templateId = extractDriveId(getSyllabusTemplateUrl()) || SYLLABUS_TEMPLATE_DEFAULT_ID;
