@@ -2142,6 +2142,23 @@ function collectTablesAfter(doc, anchor, count) {
   }
   return out;
 }
+// Align the tables we just inserted to their source blocks by matching column
+// count in document order — skips any pre-existing template table whose column
+// count differs, so fills/styles never land on (or over-address) the wrong table.
+function matchBlockTables(doc, anchor, blocks) {
+  const all = [];
+  for (const el of (doc.body && doc.body.content) || []) if (el.table && el.startIndex >= anchor) all.push(el);
+  const out = new Array(blocks.length).fill(null);
+  let ti = 0;
+  for (let bi = 0; bi < blocks.length; bi++) {
+    const want = blocks[bi].rows.reduce((m, r) => Math.max(m, r.length), 1);
+    while (ti < all.length) {
+      const t = all[ti++];
+      if (((t.table && t.table.columns) || 0) === want) { out[bi] = t; break; }
+    }
+  }
+  return out;
+}
 // Insert every block's table for one placeholder in batched write calls (to stay
 // under the Docs write quota), fill all cells, then apply Apps-Script-parity
 // styling (Arial 10, non-bold) and fixed column widths. Each block is
@@ -2164,10 +2181,10 @@ async function insertTablesForPlaceholder(docId, placeholder, blocks, token) {
   await docsBatchUpdate(docId, insertReqs, token);
   // B) fill cells + clear placeholder
   doc = await docsGet(docId, token);
-  let tables = collectTablesAfter(doc, anchor, blocks.length);
+  let tables = matchBlockTables(doc, anchor, blocks);
   let fillReqs = [];
-  for (let i = 0; i < tables.length && i < blocks.length; i++) {
-    fillReqs = fillReqs.concat(buildTableFill(tables[i], blocks[i].rows).requests);
+  for (let i = 0; i < blocks.length; i++) {
+    if (tables[i]) fillReqs = fillReqs.concat(buildTableFill(tables[i], blocks[i].rows).requests);
   }
   fillReqs.sort((a, b) => b.insertText.location.index - a.insertText.location.index);
   fillReqs.push(clearReq);
@@ -2175,16 +2192,19 @@ async function insertTablesForPlaceholder(docId, placeholder, blocks, token) {
   // C) style (Arial 10, non-bold) + fixed column widths. Neither op shifts
   //    character indices, so both are safe to send together from a fresh read.
   doc = await docsGet(docId, token);
-  tables = collectTablesAfter(doc, anchor, blocks.length);
+  tables = matchBlockTables(doc, anchor, blocks);
   const styleReqs = [];
-  for (let i = 0; i < tables.length && i < blocks.length; i++) {
+  for (let i = 0; i < blocks.length; i++) {
     const t = tables[i];
+    if (!t) continue;
+    const nActual = (t.table && (t.table.columns || ((t.table.tableRows && t.table.tableRows[0] && t.table.tableRows[0].tableCells.length) || 0))) || 0;
     styleReqs.push({ updateTextStyle: {
       range: { startIndex: t.startIndex, endIndex: t.endIndex },
       textStyle: { weightedFontFamily: { fontFamily: 'Arial' }, fontSize: { magnitude: 10, unit: 'PT' }, bold: false },
       fields: 'weightedFontFamily,fontSize,bold',
     } });
     for (const w of (blocks[i].widths || [])) {
+      if (w.col >= nActual) continue; // guard: never address a column the table doesn't have
       styleReqs.push({ updateTableColumnProperties: {
         tableStartLocation: { index: t.startIndex },
         columnIndices: [w.col],
