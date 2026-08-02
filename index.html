@@ -2176,7 +2176,7 @@ async function insertTablesForPlaceholder(docId, placeholder, blocks, token) {
   const clearReq = { replaceAllText: { containsText: { text: placeholder, matchCase: true }, replaceText: '' } };
   if (!blocks.length) { await docsBatchUpdate(docId, [clearReq], token); return; }
   let doc = await docsGet(docId, token);
-  const anchor = paragraphEndContaining(doc, placeholder);
+  let anchor = paragraphEndContaining(doc, placeholder);
   if (anchor == null) return;
   // A) insert all table structures in FORWARD order (same-index inserts append,
   //    so block0..blockN end up in document order block0..blockN).
