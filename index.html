@@ -492,6 +492,26 @@ const GCAL_CLIENT_ID = '290444850759-26d8ch9qjk7hvsudgavlqi8tdngsgism.apps.googl
 const GCAL_SCOPE = 'https://www.googleapis.com/auth/calendar';
 const GCAL_CALENDAR_NAME = 'TaeSylla Pro — Class Schedule';
 let gcalToken = null; // in-memory only — re-authorize after a reload or ~1hr
+
+// ── SYLLABUS DOCUMENT GENERATION (mirrors Apps Script processSelectedSyllabus) ──
+// Default Google-Doc template that gets copied for each syllabus. This is the
+// fixed default; if the professor edits the Template URL field it's remembered
+// per-browser in localStorage (see getSyllabusTemplateUrl / saveSyllabusTemplate).
+const SYLLABUS_TEMPLATE_DEFAULT_ID = '11Mb44XcKBWtCqFVwIFIzEspQupkBHK33rx2goUuc34c';
+// Drive (copy/folder/share) + Documents (batchUpdate) scopes, requested on
+// demand the first time "Make Syllabus Document" runs (incremental auth) — the
+// Calendar connection stays separate.
+const GDOCS_SCOPE = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/documents';
+let gDocsToken = null; // in-memory only, like gcalToken
+let syllabusBusy = false;
+function getSyllabusTemplateUrl() {
+  const saved = localStorage.getItem('taesylla_syllabus_template');
+  return (saved && saved.trim()) ? saved : `https://docs.google.com/document/d/${SYLLABUS_TEMPLATE_DEFAULT_ID}/edit`;
+}
+function extractDriveId(urlOrId) {
+  const m = String(urlOrId || '').match(/[-\w]{25,}/);
+  return m ? m[0] : '';
+}
 const _storedGcalCalId = localStorage.getItem('taesylla_gcal_calendar_id');
 let gcalCalendarId = (_storedGcalCalId && _storedGcalCalId !== 'undefined') ? _storedGcalCalId : null;
 let viewMode = { thisSemester: 'grid', upcoming: 'list', history: 'list' };
@@ -1351,10 +1371,6 @@ function renderCpMainShared(c, editing) {
     ? '<div class="cp-empty">Loading…</div>'
     : `<div id="periods-editor-inner">${periodsBlockHtml(periods, editing)}</div>`;
 
-  const syllabusVal = d.syllabusLink
-    ? `<a class="cp-value" href="${esc(d.syllabusLink)}" target="_blank" rel="noopener" style="color:var(--blue);">Open syllabus document ↗</a>`
-    : `<span class="cp-value muted">Not added yet</span>`;
-
   return `
     <div class="cp-card">
       <div class="cp-card-title">Course details</div>
@@ -1411,7 +1427,18 @@ function renderCpMainShared(c, editing) {
 
     <div class="cp-card">
       <div class="cp-card-title">Syllabus document</div>
-      ${syllabusVal}
+      <div class="cp-field" style="margin-bottom:20px;">
+        <span class="cp-label">Syllabus Template URL</span>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input id="syl-template" class="cp-input" value="${esc(getSyllabusTemplateUrl())}" oninput="onSyllabusTemplateInput()"/>
+          <button id="syl-template-save" class="btn" style="min-width:96px;" disabled onclick="saveSyllabusTemplate()">Save</button>
+        </div>
+        <span style="font-size:14px;color:var(--text3);margin-top:5px;">The Google Doc copied for each syllabus. A default template is built in; edit to override (saved on this browser).</span>
+      </div>
+      <div id="syl-make-slot" style="margin-bottom:20px;">
+        <button class="btn btn-primary" style="width:100%;height:52px;font-size:19px;" onclick="makeSyllabusDocument(${c.id})">Make Syllabus Document</button>
+      </div>
+      <div class="cp-field" id="syl-url-area">${syllabusUrlAreaHtml(d.syllabusLink)}</div>
     </div>
   `;
 }
@@ -1991,6 +2018,293 @@ function disconnectGoogleCalendar() {
   renderGcalSettingsBlock();
   if (currentCourseId !== null) renderCoursePage();
   showToast('Google Calendar disconnected');
+}
+
+// ══ Syllabus document generation (browser port of Apps Script processSelectedSyllabus) ══
+// Requests a Drive+Documents access token on demand (incremental auth), separate
+// from the Calendar token so making a syllabus never disturbs the Calendar link.
+function getDocsToken() {
+  return new Promise((resolve, reject) => {
+    if (typeof google === 'undefined' || !google.accounts?.oauth2) {
+      reject(new Error('Google sign-in is still loading — try again in a second.'));
+      return;
+    }
+    try {
+      const client = google.accounts.oauth2.initTokenClient({
+        client_id: GCAL_CLIENT_ID,
+        scope: GDOCS_SCOPE,
+        callback: (resp) => {
+          if (resp.error) { reject(new Error(resp.error)); return; }
+          gDocsToken = resp.access_token;
+          resolve(resp.access_token);
+        },
+      });
+      client.requestAccessToken();
+    } catch (e) { reject(e); }
+  });
+}
+async function gapiFetch(url, opts, token) {
+  const res = await fetch(url, { ...opts, headers: { Authorization: `Bearer ${token}`, ...(opts && opts.headers) } });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err.error && (err.error.message || err.error.status)) || `HTTP ${res.status}`);
+  }
+  if (res.status === 204) return null;
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : null;
+}
+async function driveCopyTemplate(templateId, name, token) {
+  const data = await gapiFetch(
+    `https://www.googleapis.com/drive/v3/files/${templateId}/copy?supportsAllDrives=true&fields=id`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) }, token);
+  return data.id;
+}
+async function driveGetOrCreateFolder(name, token) {
+  const q = `mimeType='application/vnd.google-apps.folder' and name='${String(name).replace(/'/g, "\\'")}' and trashed=false`;
+  const found = await gapiFetch(
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)&spaces=drive`, {}, token);
+  if (found.files && found.files.length) return found.files[0].id;
+  const created = await gapiFetch(
+    `https://www.googleapis.com/drive/v3/files?fields=id`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, mimeType: 'application/vnd.google-apps.folder' }) }, token);
+  return created.id;
+}
+async function driveMoveToFolder(fileId, folderId, token) {
+  const meta = await gapiFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=parents&supportsAllDrives=true`, {}, token);
+  const prev = (meta.parents || []).join(',');
+  const qs = `addParents=${folderId}${prev ? `&removeParents=${encodeURIComponent(prev)}` : ''}&fields=id&supportsAllDrives=true`;
+  await gapiFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?${qs}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: '{}' }, token);
+}
+async function driveShareAnyone(fileId, token) {
+  await gapiFetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions?supportsAllDrives=true`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'reader', type: 'anyone' }) }, token);
+}
+async function docsGet(docId, token) { return gapiFetch(`https://docs.googleapis.com/v1/documents/${docId}`, {}, token); }
+async function docsBatchUpdate(docId, requests, token) {
+  if (!requests || !requests.length) return null;
+  return gapiFetch(`https://docs.googleapis.com/v1/documents/${docId}:batchUpdate`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requests }) }, token);
+}
+// End index of the first body paragraph whose text contains `needle`, else null.
+function paragraphEndContaining(doc, needle) {
+  const content = (doc.body && doc.body.content) || [];
+  for (const el of content) {
+    if (!el.paragraph) continue;
+    let text = '';
+    for (const pe of (el.paragraph.elements || [])) if (pe.textRun && pe.textRun.content) text += pe.textRun.content;
+    if (text.indexOf(needle) !== -1) return el.endIndex;
+  }
+  return null;
+}
+function tableAtOrAfter(doc, anchor) {
+  const content = (doc.body && doc.body.content) || [];
+  for (const el of content) if (el.table && el.startIndex >= anchor) return el;
+  return null;
+}
+// Descending-ordered insertText requests to fill a freshly-inserted empty table
+// (plus total chars inserted, so the caller can advance its anchor with no extra get).
+function buildTableFill(tableEl, rows) {
+  const fills = []; let inserted = 0;
+  const trs = tableEl.table.tableRows || [];
+  for (let r = 0; r < trs.length && r < rows.length; r++) {
+    const cells = trs[r].tableCells || [];
+    for (let c = 0; c < cells.length && c < rows[r].length; c++) {
+      const text = rows[r][c] == null ? '' : String(rows[r][c]);
+      if (!text) continue;
+      const idx = cells[c].content && cells[c].content[0] ? cells[c].content[0].startIndex : null;
+      if (idx == null) continue;
+      fills.push({ index: idx, text }); inserted += text.length;
+    }
+  }
+  fills.sort((a, b) => b.index - a.index);
+  return { requests: fills.map(f => ({ insertText: { location: { index: f.index }, text: f.text } })), inserted };
+}
+// Insert `blocks` (ordered 2D string arrays, one per table) right after the
+// paragraph containing `placeholder`, then clear the placeholder text. No-op if
+// the template lacks that placeholder.
+async function insertTablesForPlaceholder(docId, placeholder, blocks, token, onEach) {
+  const clearReq = [{ replaceAllText: { containsText: { text: placeholder, matchCase: true }, replaceText: '' } }];
+  if (!blocks.length) { await docsBatchUpdate(docId, clearReq, token); return; }
+  let doc = await docsGet(docId, token);
+  let anchor = paragraphEndContaining(doc, placeholder);
+  if (anchor == null) return;
+  for (let bi = 0; bi < blocks.length; bi++) {
+    const rows = blocks[bi];
+    const nCols = rows.reduce((m, r) => Math.max(m, r.length), 1);
+    await docsBatchUpdate(docId, [{ insertTable: { rows: rows.length, columns: nCols, location: { index: anchor } } }], token);
+    doc = await docsGet(docId, token);
+    const tbl = tableAtOrAfter(doc, anchor);
+    if (!tbl) throw new Error('Inserted table not found while building syllabus.');
+    const { requests, inserted } = buildTableFill(tbl, rows);
+    await docsBatchUpdate(docId, requests, token);
+    anchor = tbl.endIndex + inserted;
+    if (onEach) onEach();
+  }
+  await docsBatchUpdate(docId, clearReq, token);
+}
+function syllabusSemesterTransition(semester, year) {
+  const s = String(semester || '').toLowerCase(); const y = parseInt(year, 10);
+  if (!isFinite(y)) return null;
+  if (s.indexOf('spring') !== -1) return new Date(y, 4, 25); // May 25
+  if (s.indexOf('fall') !== -1) return new Date(y, 10, 1);   // Nov 1
+  return null;
+}
+function syllabusTimeText(weekdayTime, secondWeekdayTime, semester, year) {
+  const march = (weekdayTime || '').toString().trim();
+  const may = (secondWeekdayTime || '').toString().trim();
+  if (!may || may === march) return march;
+  const trans = syllabusSemesterTransition(semester, year);
+  if (trans) {
+    const ts = trans.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return `${march} (Until ${ts})\n${may} (After ${ts})`;
+  }
+  return `${march}\n${may}`;
+}
+// HTML for the "Syllabus URL" area — a guidance box before anything is generated,
+// or the read-only link + Open button once a document exists.
+function syllabusUrlAreaHtml(link) {
+  if (link) {
+    return `<span class="cp-label">Syllabus URL</span>
+      <div style="display:flex;gap:10px;align-items:center;" id="syl-url-row">
+        <input id="syl-url" class="cp-input" readonly value="${esc(link)}" title="Open syllabus document" style="cursor:pointer;color:var(--blue);" onclick="openSyllabusUrl()"/>
+        <button id="syl-open-btn" class="btn" style="min-width:104px;" onclick="openSyllabusUrl()">Open ↗</button>
+      </div>`;
+  }
+  return `<span class="cp-label">Syllabus URL</span>
+    <div style="padding:14px 16px;background:var(--surface2);border:1px dashed var(--border-em);border-radius:8px;color:var(--text2);font-size:16px;line-height:1.55;">
+      No syllabus document yet.
+      <div style="color:var(--text3);font-size:15px;margin-top:4px;">1) Check the Syllabus Template URL above &nbsp;→&nbsp; 2) click <b>Make Syllabus Document</b>. The link will appear here.</div>
+    </div>`;
+}
+function setSyllabusProgress(pct, label) {
+  const slot = document.getElementById('syl-make-slot');
+  if (!slot) return;
+  const p = Math.max(0, Math.min(100, Math.round(pct)));
+  slot.innerHTML = `<div style="border:1px solid var(--border-em);border-radius:8px;padding:11px 16px;background:var(--blue-l);">
+      <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:600;color:var(--blue);margin-bottom:8px;"><span>${esc(label)}</span><span>${p}%</span></div>
+      <div style="height:9px;border-radius:5px;background:var(--blue-b);overflow:hidden;"><div style="height:100%;width:${p}%;background:var(--blue);transition:width .3s;"></div></div>
+    </div>`;
+}
+function restoreSyllabusMakeButton(offeringId, done) {
+  const slot = document.getElementById('syl-make-slot');
+  if (!slot) return;
+  slot.innerHTML = `<button class="btn btn-primary" style="width:100%;height:52px;font-size:19px;" onclick="makeSyllabusDocument(${offeringId})">${done ? 'Re-make Syllabus Document' : 'Make Syllabus Document'}</button>`;
+}
+function onSyllabusTemplateInput() {
+  const inp = document.getElementById('syl-template'); const btn = document.getElementById('syl-template-save');
+  if (!inp || !btn) return;
+  const changed = inp.value.trim() !== getSyllabusTemplateUrl().trim() && inp.value.trim() !== '';
+  btn.disabled = !changed; btn.classList.toggle('btn-primary', changed);
+}
+function saveSyllabusTemplate() {
+  const inp = document.getElementById('syl-template'); const btn = document.getElementById('syl-template-save');
+  if (!inp) return;
+  const v = inp.value.trim();
+  if (!v) return;
+  if (!extractDriveId(v)) { showToast('That does not look like a Google Doc link or ID.'); return; }
+  localStorage.setItem('taesylla_syllabus_template', v);
+  if (btn) { btn.disabled = true; btn.classList.remove('btn-primary'); btn.textContent = 'Saved'; setTimeout(() => { btn.textContent = 'Save'; }, 1100); }
+  showToast('Template saved');
+}
+function openSyllabusUrl() {
+  const inp = document.getElementById('syl-url');
+  const u = inp && inp.value.trim();
+  if (u) window.open(u, '_blank', 'noopener');
+}
+async function makeSyllabusDocument(offeringId) {
+  if (syllabusBusy) return;
+  const course = courses.find(x => String(x.id) === String(offeringId));
+  if (!course) { showToast('Course not loaded.'); return; }
+  syllabusBusy = true;
+  try {
+    setSyllabusProgress(3, 'Connecting to Google…');
+    const token = await getDocsToken();
+
+    setSyllabusProgress(8, 'Loading course data…');
+    const rawRows = await sbGet(TBL_OFFERINGS, `offering_id=eq.${encodeURIComponent(offeringId)}&select=professor_email,weekday_time,second_weekday_time,semester,year`);
+    const raw = (rawRows && rawRows[0]) || {};
+    const [assess, comm, sched, reads] = await Promise.all([
+      sbGet('course_assessments', `offering_id=eq.${encodeURIComponent(offeringId)}&select=item,ratio_pct,description&order=id.asc`),
+      sbGet('course_communications', `offering_id=eq.${encodeURIComponent(offeringId)}&select=method,description&order=id.asc`),
+      sbGet('course_schedule', `offering_id=eq.${encodeURIComponent(offeringId)}&select=item,topic_title,learning_objectives&order=id.asc`),
+      sbGet('course_readings', `offering_id=eq.${encodeURIComponent(offeringId)}&select=lesson,category,reading_title,url_link&order=id.asc`),
+    ]);
+
+    setSyllabusProgress(15, 'Copying template…');
+    const templateId = extractDriveId(getSyllabusTemplateUrl()) || SYLLABUS_TEMPLATE_DEFAULT_ID;
+    const docId = await driveCopyTemplate(templateId, `${course.code} Syllabus for ${course.semester}`, token);
+
+    setSyllabusProgress(22, 'Filing in course folder…');
+    try {
+      const folderId = await driveGetOrCreateFolder(`${course.code} ${course.title}`, token);
+      await driveMoveToFolder(docId, folderId, token);
+    } catch (e) { console.warn('Folder step failed (non-fatal):', e); }
+
+    setSyllabusProgress(28, 'Setting sharing…');
+    try { await driveShareAnyone(docId, token); } catch (e) { console.warn('Share step failed (non-fatal):', e); }
+
+    setSyllabusProgress(38, 'Filling course details…');
+    const keyComp = (course.competenciesRaw || []).filter(x => x.pct > 0).map(x => `${x.label}: ${x.pct}%`).join('\n');
+    const todayStr = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Seoul', month: '2-digit', day: '2-digit', year: 'numeric' });
+    const timeText = syllabusTimeText(raw.weekday_time || course.scheduleDisplay, raw.second_weekday_time, raw.semester || course.semester, raw.year);
+    const simple = {
+      '{{School}}': course.program, '{{Course ID}}': course.code, '{{Semester}}': course.semester,
+      '{{Course Title}}': course.title, '{{Time}}': timeText, '{{Professor}}': course.professor,
+      '{{Professor e-mail}}': raw.professor_email || '', '{{Office Hours}}': course.officeHours,
+      '{{Course Description}}': course.description, '{{Prerequisites}}': course.prerequisites,
+      '{{Key Competencies}}': keyComp, '{{Course Learning Objectives}}': course.learningObjectives,
+      '{{Required Text}}': course.requiredText, '{{Date}}': todayStr,
+      '{{Footer-School}}': course.program, '{{Footer-Course ID}}': course.code, '{{Footer-Semester}}': course.semester,
+    };
+    await docsBatchUpdate(docId, Object.entries(simple).map(([k, v]) => ({
+      replaceAllText: { containsText: { text: k, matchCase: true }, replaceText: (v == null ? '' : String(v)) },
+    })), token);
+
+    setSyllabusProgress(50, 'Building assessment table…');
+    const assessBlock = [['Items', 'Ratio (%)', 'Description'], ...(assess || []).map(a => [a.item, a.ratio_pct, a.description])];
+    await insertTablesForPlaceholder(docId, '{{Course Assessment}}', (assess && assess.length) ? [assessBlock] : [], token);
+
+    setSyllabusProgress(60, 'Building communication table…');
+    const commBlock = [['Method', 'Description'], ...(comm || []).map(m => [m.method, m.description])];
+    await insertTablesForPlaceholder(docId, '{{Course Communication}}', (comm && comm.length) ? [commBlock] : [], token);
+
+    setSyllabusProgress(70, 'Building schedule…');
+    const readingsByLesson = {};
+    for (const rd of (reads || [])) { const k = String(rd.lesson); (readingsByLesson[k] = readingsByLesson[k] || []).push(rd); }
+    const schedBlocks = [];
+    for (const s of (sched || [])) {
+      schedBlocks.push([[s.item, s.topic_title]]);
+      if (s.learning_objectives && String(s.learning_objectives).trim())
+        schedBlocks.push([['Learning Objectives'], [s.learning_objectives]]);
+      const rds = readingsByLesson[String(s.item)] || [];
+      if (rds.length) schedBlocks.push([['Category', 'Reading Title', 'URL Link'], ...rds.map(r => [r.category, r.reading_title, r.url_link])]);
+    }
+    let schedDone = 0;
+    await insertTablesForPlaceholder(docId, '{{Course Schedule}}', schedBlocks, token, () => {
+      schedDone++;
+      setSyllabusProgress(70 + Math.round((schedDone / Math.max(1, schedBlocks.length)) * 22), 'Building schedule…');
+    });
+
+    setSyllabusProgress(95, 'Saving link…');
+    const url = `https://docs.google.com/document/d/${docId}/edit`;
+    await sbPatch(TBL_OFFERINGS, `offering_id=eq.${encodeURIComponent(offeringId)}`, { syllabus_link: url });
+    course.syllabusLink = url;
+    const area = document.getElementById('syl-url-area');
+    if (area) {
+      area.innerHTML = syllabusUrlAreaHtml(url);
+      const row = document.getElementById('syl-url-row');
+      if (row) { row.style.transition = 'background .3s'; row.style.background = 'var(--green-l)'; setTimeout(() => { row.style.background = 'transparent'; }, 1500); }
+    }
+    setSyllabusProgress(100, 'Done');
+    setTimeout(() => restoreSyllabusMakeButton(offeringId, true), 500);
+    showToast('✓ Syllabus document created');
+  } catch (e) {
+    console.error('Make syllabus failed:', e);
+    showToast('Syllabus failed: ' + (e.message || e));
+    restoreSyllabusMakeButton(offeringId, !!(course && course.syllabusLink));
+  } finally {
+    syllabusBusy = false;
+  }
 }
 
 // ── DATA ──
@@ -2901,13 +3215,13 @@ function renderTimetable() {
   meetings.forEach((m) => { if (!colorMap[m.code]) colorMap[m.code] = COURSE_COLORS[Object.keys(colorMap).length % COURSE_COLORS.length]; });
 
   let cells = '';
-  cells += `<div></div>`;
-  DAY_ORDER.forEach(d => {
+  cells += `<div class="tt-daylabel" style="grid-row:1;grid-column:1;font-size:13px;color:var(--text3);">Time</div>`;
+  DAY_ORDER.forEach((d, idx) => {
     const isToday = d === todayAbbr;
-    cells += `<div class="tt-daylabel ${isToday ? 'today' : ''}" style="grid-row:1;">${d}</div>`;
+    cells += `<div class="tt-daylabel ${isToday ? 'today' : ''}" style="grid-row:1;grid-column:${idx + 2};">${d}</div>`;
   });
   for (let h = 0; h < hourCount; h++) {
-    cells += `<div class="tt-hour" style="grid-row:${h + 2};">${minHour + h}</div>`;
+    cells += `<div class="tt-hour" style="grid-row:${h + 2};grid-column:1;">${minHour + h}</div>`;
   }
   meetings.forEach((m) => {
     const colIndex = DAY_ORDER.indexOf(m.day);
