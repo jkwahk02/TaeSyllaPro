@@ -2166,81 +2166,74 @@ function matchBlockTables(doc, anchor, blocks) {
   }
   return out;
 }
-// Insert every block's table for one placeholder in batched write calls (to stay
-// under the Docs write quota), fill all cells, then apply Apps-Script-parity
-// styling (Arial 10, non-bold) and fixed column widths. Each block is
-// { rows: string[][], widths: [{col, pt}, …] }. All tables are inserted at the
-// same anchor in REVERSE order; because each same-index insert prepends, the
-// final document order ends up block0..blockN.
-async function insertTablesForPlaceholder(docId, placeholder, blocks, token) {
+// Insert each block's table ONE AT A TIME at an advancing anchor, so document
+// order is guaranteed (same-index batch inserts do NOT preserve order). For each
+// table: insert it, re-read to get its cell indices, then in one batch style the
+// (empty) cells — so inserted text inherits Arial 10 — set fixed column widths,
+// and fill the cells. The placeholder is removed LAST. Each block is
+// { rows: string[][], widths: [{col, pt}, …] }. A small per-table delay keeps us
+// under the Docs write quota; onProgress(done, total) drives the progress bar.
+async function insertTablesForPlaceholder(docId, placeholder, blocks, token, onProgress) {
   const clearReq = { replaceAllText: { containsText: { text: placeholder, matchCase: true }, replaceText: '' } };
   if (!blocks.length) { await docsBatchUpdate(docId, [clearReq], token); return; }
   let doc = await docsGet(docId, token);
   let anchor = paragraphEndContaining(doc, placeholder);
   if (anchor == null) return;
-  // A) insert all table structures in FORWARD order (same-index inserts append,
-  //    so block0..blockN end up in document order block0..blockN).
-  const insertReqs = [];
-  for (let i = 0; i < blocks.length; i++) {
-    const rows = blocks[i].rows;
+  for (let bi = 0; bi < blocks.length; bi++) {
+    const rows = blocks[bi].rows;
     const nCols = rows.reduce((m, r) => Math.max(m, r.length), 1);
-    insertReqs.push({ insertTable: { rows: rows.length, columns: nCols, location: { index: anchor } } });
-  }
-  await docsBatchUpdate(docId, insertReqs, token);
-  // B) fill cells + clear placeholder
-  doc = await docsGet(docId, token);
-  let tables = matchBlockTables(doc, anchor, blocks);
-  let fillReqs = [];
-  for (let i = 0; i < blocks.length; i++) {
-    if (tables[i]) fillReqs = fillReqs.concat(buildTableFill(tables[i], blocks[i].rows).requests);
-  }
-  fillReqs.sort((a, b) => b.insertText.location.index - a.insertText.location.index);
-  await docsBatchUpdate(docId, fillReqs, token);
-  // C) style (Arial 10, non-bold) + fixed column widths. The placeholder is still
-  //    present (we clear it LAST, in D) so the earlier fill did not shift indices —
-  //    recompute a fresh anchor here so matching stays aligned.
-  doc = await docsGet(docId, token);
-  anchor = paragraphEndContaining(doc, placeholder);
-  if (anchor == null) return;
-  const _allT = [];
-  for (const el of (doc.body && doc.body.content) || []) if (el.table) _allT.push({ s: el.startIndex, c: tableColCount(el), after: el.startIndex >= anchor });
-  console.log('[syllabus]', placeholder, 'anchor=', anchor, 'blocks=', blocks.length,
-    'wantCols=', JSON.stringify(blocks.map(b => b.rows.reduce((m, r) => Math.max(m, r.length), 1))),
-    'ALLtables(start,cols,afterAnchor)=', JSON.stringify(_allT));
-  tables = matchBlockTables(doc, anchor, blocks);
-  console.log('[syllabus]', placeholder, 'matchedCols=',
-    JSON.stringify(tables.map(t => t ? tableColCount(t) : null)));
-  const styleReqs = [];
-  for (let i = 0; i < blocks.length; i++) {
-    const t = tables[i];
-    if (!t) continue;
-    const trs = (t.table && t.table.tableRows) || [];
-    const nActual = (trs[0] && trs[0].tableCells) ? trs[0].tableCells.length : ((t.table && t.table.columns) || 0);
-    // Style text per CELL — a single table-spanning range does not reliably
-    // restyle text inside cells, so walk each cell's paragraph ranges.
+    // 1) insert ONE table at the current anchor
+    await docsBatchUpdate(docId, [{ insertTable: { rows: rows.length, columns: nCols, location: { index: anchor } } }], token);
+    // 2) locate it: first table at/after the anchor (everything before is already placed)
+    doc = await docsGet(docId, token);
+    let tbl = null;
+    for (const el of (doc.body && doc.body.content) || []) { if (el.table && el.startIndex >= anchor) { tbl = el; break; } }
+    if (!tbl) continue;
+    const trs = tbl.table.tableRows || [];
+    const nActual = (trs[0] && trs[0].tableCells) ? trs[0].tableCells.length : nCols;
+    const reqs = [];
+    // style empty cells first (inserted text inherits the style)
     for (const tr of trs) for (const cell of (tr.tableCells || [])) for (const se of (cell.content || [])) {
       if (se.startIndex != null && se.endIndex != null && se.endIndex > se.startIndex) {
-        styleReqs.push({ updateTextStyle: {
+        reqs.push({ updateTextStyle: {
           range: { startIndex: se.startIndex, endIndex: se.endIndex },
           textStyle: { weightedFontFamily: { fontFamily: 'Arial' }, fontSize: { magnitude: 10, unit: 'PT' }, bold: false },
           fields: 'weightedFontFamily,fontSize,bold',
         } });
       }
     }
-    for (const w of (blocks[i].widths || [])) {
-      if (w.col >= nActual) continue; // guard: never address a column the table doesn't have
-      styleReqs.push({ updateTableColumnProperties: {
-        tableStartLocation: { index: t.startIndex },
+    // fixed column widths
+    for (const w of (blocks[bi].widths || [])) {
+      if (w.col >= nActual) continue;
+      reqs.push({ updateTableColumnProperties: {
+        tableStartLocation: { index: tbl.startIndex },
         columnIndices: [w.col],
         tableColumnProperties: { widthType: 'FIXED_WIDTH', width: { magnitude: w.pt, unit: 'PT' } },
         fields: 'width,widthType',
       } });
     }
+    // fill cells (descending index so positions stay valid), LAST
+    const fills = [];
+    let insertedChars = 0;
+    for (let r = 0; r < trs.length && r < rows.length; r++) {
+      const cells = trs[r].tableCells || [];
+      for (let c = 0; c < cells.length && c < rows[r].length; c++) {
+        const text = rows[r][c] == null ? '' : String(rows[r][c]);
+        if (!text) continue;
+        const idx = cells[c].content && cells[c].content[0] ? cells[c].content[0].startIndex : null;
+        if (idx == null) continue;
+        fills.push({ index: idx, text }); insertedChars += text.length;
+      }
+    }
+    fills.sort((a, b) => b.index - a.index);
+    for (const f of fills) reqs.push({ insertText: { location: { index: f.index }, text: f.text } });
+    await docsBatchUpdate(docId, reqs, token);
+    // 3) advance the anchor past this now-filled table
+    anchor = tbl.endIndex + insertedChars;
+    if (onProgress) onProgress(bi + 1, blocks.length);
+    await new Promise(res => setTimeout(res, 1600)); // pace writes under the Docs quota
   }
-  console.log('[syllabus]', placeholder, 'styleReqs=', styleReqs.length);
-  if (styleReqs.length) await docsBatchUpdate(docId, styleReqs, token);
-  // D) remove the placeholder text LAST — only now is it safe to shift indices.
-  await docsBatchUpdate(docId, [clearReq], token);
+  await docsBatchUpdate(docId, [clearReq], token); // remove placeholder LAST
 }
 function syllabusSemesterTransition(semester, year) {
   const s = String(semester || '').toLowerCase(); const y = parseInt(year, 10);
@@ -2399,8 +2392,9 @@ async function makeSyllabusDocument(offeringId) {
         const rds = readingsByLesson[String(s.item)] || [];
         if (rds.length) schedBlocks.push({ rows: [['Category', 'Reading Title', 'URL Link'], ...rds.map(r => [r.category, r.reading_title, r.url_link])], widths: [{ col: 0, pt: 60 }, { col: 1, pt: 210 }] });
       }
-      await insertTablesForPlaceholder(docId, '{{Course Schedule}}', schedBlocks, token);
-      setSyllabusProgress(92, 'Building schedule…');
+      await insertTablesForPlaceholder(docId, '{{Course Schedule}}', schedBlocks, token, (done, total) => {
+        setSyllabusProgress(70 + Math.round((done / total) * 22), `Building schedule… (${done}/${total})`);
+      });
     } catch (e) {
       console.error('Table build issue (document still saved):', e);
       tableWarn = ' — but a table step failed: ' + (e.message || e);
