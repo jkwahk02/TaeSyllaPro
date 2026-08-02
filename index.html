@@ -734,7 +734,7 @@ const CP_DETAIL_TABLES = {
     ],
   },
   schedule: {
-    table: 'course_schedule', cols: 'id,item,topic_title,learning_objectives,unit',
+    table: 'course_schedule', cols: 'id,item,topic_title,learning_objectives,unit,class_date',
     hint: 'Add rows to course_schedule (offering_id, item, topic_title, learning_objectives, unit) to populate this tab.',
     columns: [
       { field: 'item', label: 'Item', type: 'text' },
@@ -975,6 +975,21 @@ async function ensureEditRowsForTab(tabKey) {
   const rows = await loadCourseDetailTab(c.id, tabKey);
   let arr = JSON.parse(JSON.stringify(Array.isArray(rows) ? rows : []));
   if (!arr.length) arr = [emptyGridRow(tabKey)];
+  // Schedule Class Date rule: a lesson with an EMPTY class_date is pre-filled with
+  // the computed date so that saving persists it into the column (from then on the
+  // stored value is used; editing overwrites it). Lessons that already have a
+  // stored class_date keep it. When there's no computable date (calendar not set),
+  // it stays empty for manual entry.
+  if (tabKey === 'schedule') {
+    const dates = computeClassDatesForOffering(c.id);
+    let li = 0;
+    arr.forEach(r => {
+      const isLesson = /^(lesson|l)\s*\d+/i.test(String(r.item || '').trim());
+      if (!isLesson) return;
+      const computed = dates[li++];
+      if (computed && !(r.class_date && String(r.class_date).trim())) r.class_date = classDateInputValue(computed);
+    });
+  }
   editRowsByTab[tabKey] = arr;
   captureEditSnapshot(); // re-baseline now that this tab's rows are loaded, so hasUnsavedChanges() isn't tripped by the load itself
   if (editMode && String(currentCourseId) === String(c.id) && courseTab === tabKey) renderCoursePage();
@@ -1159,20 +1174,40 @@ async function saveMainEditsInner(c) {
 async function saveDetailTabInner(c, tabKey, rows) {
   const spec = CP_DETAIL_TABLES[tabKey];
   if (!spec) return;
-  const cleanRows = rows
-    .filter(r => spec.columns.some(col => String(r[col.field] ?? '').trim() !== ''))
-    .map(r => {
-      const out = { offering_id: c.id };
-      spec.columns.forEach(col => {
-        const raw = r[col.field];
-        out[col.field] = (raw === '' || raw === null || raw === undefined)
-          ? null
-          : (col.type === 'number' ? Number(raw) : raw);
-      });
-      return out;
+  const buildOut = (r) => {
+    const out = { offering_id: c.id };
+    spec.columns.forEach(col => {
+      const raw = r[col.field];
+      out[col.field] = (raw === '' || raw === null || raw === undefined) ? null : (col.type === 'number' ? Number(raw) : raw);
     });
-  await sbDelete(spec.table, `offering_id=eq.${c.id}`);
-  if (cleanRows.length) await sbInsert(spec.table, cleanRows);
+    // class_date is a per-lesson override, not a normal grid column — persist it.
+    if (tabKey === 'schedule') out.class_date = (r.class_date && String(r.class_date).trim()) ? r.class_date : null;
+    return out;
+  };
+  const hasId = (r) => r && r.id !== undefined && r.id !== null && r.id !== '';
+  const keep = rows.filter(r => spec.columns.some(col => String(r[col.field] ?? '').trim() !== ''));
+  const existing = keep.filter(hasId);
+  const news = keep.filter(r => !hasId(r));
+  const keptIds = existing.map(r => r.id);
+
+  // Edit IN PLACE so ids are preserved — this is what keeps the interleaved
+  // Unit/Lesson ordering intact (delete+insert would reshuffle every id).
+  // 1) delete only the rows that were actually removed
+  if (keptIds.length) await sbDelete(spec.table, `offering_id=eq.${encodeURIComponent(c.id)}&id=not.in.(${keptIds.join(',')})`);
+  else await sbDelete(spec.table, `offering_id=eq.${encodeURIComponent(c.id)}`);
+  // 2) update existing rows in place — only those whose values actually changed
+  const origById = {};
+  const origRows = (courseDetailCache[c.id] && Array.isArray(courseDetailCache[c.id][tabKey])) ? courseDetailCache[c.id][tabKey] : [];
+  origRows.forEach(o => { if (hasId(o)) origById[String(o.id)] = o; });
+  for (const r of existing) {
+    const newOut = buildOut(r);
+    const o = origById[String(r.id)];
+    if (o && JSON.stringify(newOut) === JSON.stringify(buildOut(o))) continue;   // unchanged → skip
+    await sbPatch(spec.table, `id=eq.${encodeURIComponent(r.id)}`, newOut);
+  }
+  // 3) insert genuinely new rows (these get fresh ids, appended)
+  if (news.length) await sbInsert(spec.table, news.map(buildOut));
+
   if (courseDetailCache[c.id]) delete courseDetailCache[c.id][tabKey];
 }
 
@@ -1515,8 +1550,9 @@ function detailGridHtml(tabKey, rows, editing) {
     let lessonIdx = 0;
     classDateByRow = rows.map((r) => {
       const isLesson = /^(lesson|l)\s*\d+/i.test(String(r.item || '').trim());
-      if (!isLesson) return undefined;
-      return dates[lessonIdx++];
+      // Lesson rows carry { computed } (null when no calendar yet) so they stay
+      // editable even with no computed date; non-lesson rows (Units) get null.
+      return isLesson ? { computed: dates[lessonIdx++] || null } : null;
     });
   }
   // table-layout:fixed means the header row's cell widths set every column's
@@ -1548,7 +1584,7 @@ function detailGridHtml(tabKey, rows, editing) {
           : `<textarea class="grid-input" rows="1" ${common}>${esc(val)}</textarea>`;
         return `<td>${cell}</td>`;
       }).join('')}
-      ${classDateByRow ? `<td class="grid-computed-cell">${classDateByRow[ri] ? esc(formatClassDateLabel(classDateByRow[ri])) : '<span style="color:var(--text3);font-style:italic;">—</span>'}</td>` : ''}
+      ${classDateByRow ? classDateCellHtml(classDateByRow[ri], r, ri, editing, currentCourseId) : ''}
     </tr>`).join('');
   const bulkBar = (editing && selectedCount > 0) ? `
     <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:var(--r);padding:10px 16px;margin-bottom:10px;">
@@ -1619,8 +1655,11 @@ function renderDetailTabShared(tabKey, rows, editing) {
   }
   let headerExtra = '';
   if (tabKey === 'schedule') {
+    const exp = getGcalExportState(currentCourseId);
     headerExtra = gcalToken
-      ? `<button id="cp-gcal-export-btn" class="btn btn-primary" style="margin-left:auto;height:38px;" onclick="exportScheduleToGoogleCalendar()">Export to Google Calendar</button>`
+      ? (exp
+          ? `<button id="cp-gcal-export-btn" class="btn" style="margin-left:auto;height:38px;background:var(--green-l);color:var(--green);border-color:var(--green-b);" onclick="exportScheduleToGoogleCalendar()">✓ Update Google Calendar</button>`
+          : `<button id="cp-gcal-export-btn" class="btn btn-primary" style="margin-left:auto;height:38px;" onclick="exportScheduleToGoogleCalendar()">Export to Google Calendar</button>`)
       : `<span style="margin-left:auto;font-size:16px;color:var(--text3);">Connect Google Calendar in <a href="#settings" style="color:var(--blue);">Settings</a> to export.</span>`;
   }
   return `
@@ -1629,6 +1668,7 @@ function renderDetailTabShared(tabKey, rows, editing) {
         <span>${esc(CP_TAB_TITLES[tabKey])}</span>
         ${headerExtra}
       </div>
+      ${tabKey === 'schedule' ? scheduleExportStatusHtml() : ''}
       <div id="grid-editor-inner">${detailGridHtml(tabKey, rows, editing)}</div>
       ${footer}
     </div>`;
@@ -2841,10 +2881,85 @@ function formatClassDateLabel(d) {
   if (d.note) s += ` (${d.note})`;      // e.g. "(Make-up day for Chuseok)"
   return s;
 }
+// ── Per-lesson Class Date override (editable; date+time, pattern timezone kept) ──
+// Builds a class-date object from an override string 'YYYY-MM-DDTHH:MM'. Time zone
+// and duration come from the offering's meeting pattern (not editable).
+function overrideDateObj(overrideStr, fallbackTz, offeringId) {
+  const [datePart, timePart] = String(overrideStr || '').split('T');
+  if (!datePart) return null;
+  const startTime = (timePart || '00:00').slice(0, 5);
+  const periods = periodsCache[offeringId] || [];
+  const dur = (periods[0] && periods[0].durationMin) || DEFAULT_DURATION_MIN;
+  const [sh, sm] = startTime.split(':').map(Number);
+  const [eh, em] = addMinutes(sh, sm, dur);
+  const endTime = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+  return { isoDate: datePart, startTime, endTime, timezone: fallbackTz || (periods[0] && periods[0].timezone) || '', note: '' };
+}
+// Effective date for a lesson row: the professor's override wins, else the computed date.
+function effectiveLessonDate(r, computed, offeringId) {
+  if (r && r.class_date && String(r.class_date).trim()) return overrideDateObj(r.class_date, computed && computed.timezone, offeringId);
+  return computed || null;
+}
+function classDateInputValue(d) {
+  return (d && d.isoDate) ? `${d.isoDate}T${(d.startTime || '00:00').slice(0, 5)}` : '';
+}
+function setClassDateOverride(ri, value) {
+  const rows = editRowsByTab[courseTab];
+  if (!rows || !rows[ri]) return;
+  rows[ri].class_date = value ? value : null;   // empty clears the override → back to computed
+}
+// One Schedule-grid "Class Date" cell. `cd` is null for non-lesson rows (Units),
+// or { computed } for a lesson (computed may be null when no calendar is set yet).
+function classDateCellHtml(cd, r, ri, editing, offeringId) {
+  if (!cd) return '<td class="grid-computed-cell"></td>';
+  const eff = effectiveLessonDate(r, cd.computed, offeringId);
+  const edited = !!(r && r.class_date && String(r.class_date).trim());
+  if (editing) {
+    const tz = (eff && eff.timezone) ? tzLabel(eff.timezone) : '';
+    return `<td class="grid-computed-cell"><input type="datetime-local" class="grid-input" value="${esc(classDateInputValue(eff))}" onchange="setClassDateOverride(${ri}, this.value)"/>` +
+      `<div style="font-size:12px;color:var(--text3);margin-top:2px;">${tz ? esc(tz) : 'set date/time to override'}${edited ? ' · edited' : ''}</div></td>`;
+  }
+  return `<td class="grid-computed-cell">${eff ? esc(formatClassDateLabel(eff)) : '<span style="color:var(--text3);font-style:italic;">—</span>'}${(eff && edited) ? ' <span style="color:var(--blue);font-size:12px;">(edited)</span>' : ''}</td>`;
+}
 // Pushes one Google Calendar event per calculated class date into a
 // per-course calendar named "<code> <semester>" (created in Eastern Time),
 // clearing that calendar first so a re-run never duplicates events — same
 // behavior as the Apps Script makeGoogleCalendar().
+// Remembers, per offering, that the schedule was exported (for the "Update"
+// state + status line). Kept in localStorage so it survives reloads.
+function getGcalExportState(offeringId) {
+  try { return JSON.parse(localStorage.getItem(`taesylla_gcal_export_${offeringId}`) || 'null'); } catch (e) { return null; }
+}
+function setGcalExportState(offeringId, state) {
+  try { localStorage.setItem(`taesylla_gcal_export_${offeringId}`, JSON.stringify(state)); } catch (e) {}
+}
+function gcalOpenUrl(calId) {
+  try { return `https://calendar.google.com/calendar/u/0/r?cid=${btoa(calId).replace(/=+$/, '')}`; } catch (e) { return 'https://calendar.google.com/'; }
+}
+// Shares the calendar with the whole Taejae domain ("Make available for Taejae
+// University"), reader access. Non-fatal — org policy may disallow it.
+async function shareCalendarWithDomain(calId, domain) {
+  try {
+    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/acl`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${gcalToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: 'reader', scope: { type: 'domain', value: domain } }),
+    });
+    return res.ok;
+  } catch (e) { return false; }
+}
+function scheduleExportStatusHtml() {
+  const exp = getGcalExportState(currentCourseId);
+  if (!exp) return '';
+  let when = '';
+  try { if (exp.at) when = new Date(exp.at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); } catch (e) {}
+  return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 16px;font-size:15px;color:var(--text2);">
+      <span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;flex-shrink:0;"></span>
+      <span><b style="color:var(--green);">Exported</b> · ${exp.count} event${exp.count === 1 ? '' : 's'}${when ? ' · ' + esc(when) : ''}</span>
+      ${exp.calId ? `<a href="${esc(gcalOpenUrl(exp.calId))}" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600;">Open in Google Calendar ↗</a>` : ''}
+      ${exp.shared ? `<span style="color:var(--green);">· Shared with Taejae University</span>` : `<span style="color:var(--text3);">· not shared with Taejae (org policy?)</span>`}
+    </div>`;
+}
 async function exportScheduleToGoogleCalendar() {
   const c = courses.find(x => String(x.id) === String(currentCourseId));
   if (!c) return;
@@ -2859,7 +2974,7 @@ async function exportScheduleToGoogleCalendar() {
   rows.forEach((r) => {
     const isLesson = /^(lesson|l)\s*\d+/i.test(String(r.item || '').trim());
     if (!isLesson) return;
-    const d = dates[lessonIdx++];
+    const d = effectiveLessonDate(r, dates[lessonIdx++], c.id);   // per-lesson override wins
     if (!d) return;
     events.push({ item: r.item, topic: r.topic_title || '', date: d });
   });
@@ -2895,9 +3010,16 @@ async function exportScheduleToGoogleCalendar() {
         ok++;
       } catch (e) { failed++; }
     }
-    showToast(failed ? `Exported ${ok} of ${events.length} class date(s) — ${failed} failed.` : `✓ Exported ${ok} class date(s) to "${calName}"`);
+    // Make available to the whole Taejae domain (reader), then remember the export
+    // so the button becomes "Update Google Calendar" with a status line.
+    const shared = await shareCalendarWithDomain(calId, 'taejae.ac.kr');
+    setGcalExportState(c.id, { at: new Date().toISOString(), count: ok, calId, shared });
+    showToast(failed ? `Exported ${ok} of ${events.length} class date(s) — ${failed} failed.` : `✓ Exported ${ok} class date(s) to "${calName}"${shared ? ' · shared with Taejae' : ''}`);
+    if (String(currentCourseId) === String(c.id)) renderCoursePage();   // reflect the "Update" state
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Export to Google Calendar'; }
+    // On success we re-render (fresh "Update" button); only reset here if this
+    // button is still in the DOM (i.e. export failed before the re-render).
+    if (btn && btn.isConnected) { btn.disabled = false; btn.textContent = 'Export to Google Calendar'; }
   }
 }
 
