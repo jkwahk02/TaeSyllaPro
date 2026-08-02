@@ -2166,41 +2166,44 @@ function matchBlockTables(doc, anchor, blocks) {
   }
   return out;
 }
-// Insert each block's table ONE AT A TIME at an advancing anchor, so document
-// order is guaranteed (same-index batch inserts do NOT preserve order). For each
-// table: insert it, re-read to get its cell indices, then in one batch style the
-// (empty) cells — so inserted text inherits Arial 10 — set fixed column widths,
-// and fill the cells. The placeholder is removed LAST. Each block is
+// Insert each block's table at its OWN unique marker, so document order is
+// guaranteed no matter how the Docs API resolves same-index inserts. Replace the
+// placeholder with one marker per table (each on its own line); then, from the
+// LAST marker to the FIRST (so inserting a table never shifts a not-yet-processed
+// marker), insert each table at its marker, style the empty cells (Arial 10) + set
+// column widths + fill the cells, and delete the marker. Each block is
 // { rows: string[][], widths: [{col, pt}, …] }. A small per-table delay keeps us
 // under the Docs write quota; onProgress(done, total) drives the progress bar.
 async function insertTablesForPlaceholder(docId, placeholder, blocks, token, onProgress) {
   const clearReq = { replaceAllText: { containsText: { text: placeholder, matchCase: true }, replaceText: '' } };
   if (!blocks.length) { await docsBatchUpdate(docId, [clearReq], token); return; }
-  let doc = await docsGet(docId, token);
-  let anchor = paragraphEndContaining(doc, placeholder);
-  if (anchor == null) return;
-  // Insert with the anchor FIXED at the placeholder. One-at-a-time same-index
-  // inserts APPEND (each new table lands after the previous), so forward
-  // iteration yields forward document order — and because the anchor never
-  // advances, inserts never walk into (and split) the template's surrounding text.
-  for (let bi = 0; bi < blocks.length; bi++) {
+  const mark = (i) => `⁣SYT${i}END⁣`; // unique, findable, invisible-ish token per table
+  // 1) replace the placeholder with one marker per table, each on its own line
+  await docsBatchUpdate(docId, [{ replaceAllText: { containsText: { text: placeholder, matchCase: true },
+    replaceText: blocks.map((_, i) => mark(i)).join('\n') } }], token);
+  // 2) place tables LAST marker → FIRST
+  for (let bi = blocks.length - 1; bi >= 0; bi--) {
     const rows = blocks[bi].rows;
     const nCols = rows.reduce((m, r) => Math.max(m, r.length), 1);
-    // 1) insert ONE table at the fixed placeholder anchor
-    await docsBatchUpdate(docId, [{ insertTable: { rows: rows.length, columns: nCols, location: { index: anchor } } }], token);
-    // 2) locate the just-inserted table = the first EMPTY table at/after the anchor
-    //    (already-filled tables carry text; the new one doesn't) — robust whether
-    //    the insert prepended or appended.
+    const mk = mark(bi);
+    let doc = await docsGet(docId, token);
+    // find this marker's character index
+    let mkIdx = null;
+    for (const el of (doc.body && doc.body.content) || []) {
+      if (!el.paragraph) continue;
+      for (const pe of (el.paragraph.elements || [])) {
+        const c = pe.textRun && pe.textRun.content;
+        if (c && c.indexOf(mk) !== -1) { mkIdx = pe.startIndex + c.indexOf(mk); break; }
+      }
+      if (mkIdx != null) break;
+    }
+    if (mkIdx == null) continue;
+    // insert the table at the marker (the marker text is pushed just after it)
+    await docsBatchUpdate(docId, [{ insertTable: { rows: rows.length, columns: nCols, location: { index: mkIdx } } }], token);
+    // locate the just-inserted (empty) table = first table at/after the marker
     doc = await docsGet(docId, token);
     let tbl = null;
-    for (const el of (doc.body && doc.body.content) || []) {
-      if (!el.table || el.startIndex < anchor) continue;
-      const fc = el.table.tableRows && el.table.tableRows[0] && el.table.tableRows[0].tableCells
-        && el.table.tableRows[0].tableCells[0] && el.table.tableRows[0].tableCells[0].content
-        && el.table.tableRows[0].tableCells[0].content[0];
-      const hasText = fc && fc.paragraph && (fc.paragraph.elements || []).some(pe => pe.textRun && pe.textRun.content && pe.textRun.content.replace(/\s/g, '').length);
-      if (!hasText) { tbl = el; break; }
-    }
+    for (const el of (doc.body && doc.body.content) || []) { if (el.table && el.startIndex >= mkIdx) { tbl = el; break; } }
     if (!tbl) continue;
     const trs = tbl.table.tableRows || [];
     const nActual = (trs[0] && trs[0].tableCells) ? trs[0].tableCells.length : nCols;
@@ -2225,7 +2228,7 @@ async function insertTablesForPlaceholder(docId, placeholder, blocks, token, onP
         fields: 'width,widthType',
       } });
     }
-    // fill cells (descending index so positions stay valid), LAST
+    // fill cells (descending index so positions stay valid)
     const fills = [];
     for (let r = 0; r < trs.length && r < rows.length; r++) {
       const cells = trs[r].tableCells || [];
@@ -2239,12 +2242,12 @@ async function insertTablesForPlaceholder(docId, placeholder, blocks, token, onP
     }
     fills.sort((a, b) => b.index - a.index);
     for (const f of fills) reqs.push({ insertText: { location: { index: f.index }, text: f.text } });
+    // delete this marker's leftover text (now sits just after the table)
+    reqs.push({ replaceAllText: { containsText: { text: mk, matchCase: true }, replaceText: '' } });
     await docsBatchUpdate(docId, reqs, token);
-    // 3) anchor stays FIXED — never advance (advancing split the template text)
     if (onProgress) onProgress(blocks.length - bi, blocks.length);
     await new Promise(res => setTimeout(res, 1600)); // pace writes under the Docs quota
   }
-  await docsBatchUpdate(docId, [clearReq], token); // remove placeholder LAST
 }
 function syllabusSemesterTransition(semester, year) {
   const s = String(semester || '').toLowerCase(); const y = parseInt(year, 10);
