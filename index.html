@@ -2178,9 +2178,10 @@ async function insertTablesForPlaceholder(docId, placeholder, blocks, token) {
   let doc = await docsGet(docId, token);
   const anchor = paragraphEndContaining(doc, placeholder);
   if (anchor == null) return;
-  // A) insert all table structures
+  // A) insert all table structures in FORWARD order (same-index inserts append,
+  //    so block0..blockN end up in document order block0..blockN).
   const insertReqs = [];
-  for (let i = blocks.length - 1; i >= 0; i--) {
+  for (let i = 0; i < blocks.length; i++) {
     const rows = blocks[i].rows;
     const nCols = rows.reduce((m, r) => Math.max(m, r.length), 1);
     insertReqs.push({ insertTable: { rows: rows.length, columns: nCols, location: { index: anchor } } });
@@ -2199,9 +2200,14 @@ async function insertTablesForPlaceholder(docId, placeholder, blocks, token) {
   // C) style (Arial 10, non-bold) + fixed column widths. Neither op shifts
   //    character indices, so both are safe to send together from a fresh read.
   doc = await docsGet(docId, token);
+  const _allT = [];
+  for (const el of (doc.body && doc.body.content) || []) if (el.table) _allT.push({ s: el.startIndex, c: tableColCount(el), after: el.startIndex >= anchor });
+  console.log('[syllabus]', placeholder, 'anchor=', anchor, 'blocks=', blocks.length,
+    'wantCols=', JSON.stringify(blocks.map(b => b.rows.reduce((m, r) => Math.max(m, r.length), 1))),
+    'ALLtables(start,cols,afterAnchor)=', JSON.stringify(_allT));
   tables = matchBlockTables(doc, anchor, blocks);
-  console.log('[syllabus]', placeholder, 'blocks=', blocks.length, 'matchedCols=',
-    tables.map(t => t ? ((t.table.tableRows && t.table.tableRows[0] && t.table.tableRows[0].tableCells.length) || t.table.columns) : null));
+  console.log('[syllabus]', placeholder, 'matchedCols=',
+    JSON.stringify(tables.map(t => t ? tableColCount(t) : null)));
   const styleReqs = [];
   for (let i = 0; i < blocks.length; i++) {
     const t = tables[i];
