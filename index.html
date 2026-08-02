@@ -2050,8 +2050,13 @@ function getDocsToken() {
     } catch (e) { reject(e); }
   });
 }
-async function gapiFetch(url, opts, token) {
+async function gapiFetch(url, opts, token, _attempt) {
   const res = await fetch(url, { ...opts, headers: { Authorization: `Bearer ${token}`, ...(opts && opts.headers) } });
+  // Rate-limit / transient backstop: wait and retry (429 = Docs write quota).
+  if ((res.status === 429 || res.status === 500 || res.status === 503) && (_attempt || 0) < 4) {
+    await new Promise(r => setTimeout(r, [1500, 4000, 9000, 18000][_attempt || 0]));
+    return gapiFetch(url, opts, token, (_attempt || 0) + 1);
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err.error && (err.error.message || err.error.status)) || `HTTP ${res.status}`);
@@ -2129,25 +2134,41 @@ function buildTableFill(tableEl, rows) {
 // Insert `blocks` (ordered 2D string arrays, one per table) right after the
 // paragraph containing `placeholder`, then clear the placeholder text. No-op if
 // the template lacks that placeholder.
-async function insertTablesForPlaceholder(docId, placeholder, blocks, token, onEach) {
-  const clearReq = [{ replaceAllText: { containsText: { text: placeholder, matchCase: true }, replaceText: '' } }];
-  if (!blocks.length) { await docsBatchUpdate(docId, clearReq, token); return; }
-  let doc = await docsGet(docId, token);
-  let anchor = paragraphEndContaining(doc, placeholder);
-  if (anchor == null) return;
-  for (let bi = 0; bi < blocks.length; bi++) {
-    const rows = blocks[bi];
-    const nCols = rows.reduce((m, r) => Math.max(m, r.length), 1);
-    await docsBatchUpdate(docId, [{ insertTable: { rows: rows.length, columns: nCols, location: { index: anchor } } }], token);
-    doc = await docsGet(docId, token);
-    const tbl = tableAtOrAfter(doc, anchor);
-    if (!tbl) throw new Error('Inserted table not found while building syllabus.');
-    const { requests, inserted } = buildTableFill(tbl, rows);
-    await docsBatchUpdate(docId, requests, token);
-    anchor = tbl.endIndex + inserted;
-    if (onEach) onEach();
+function collectTablesAfter(doc, anchor, count) {
+  const content = (doc.body && doc.body.content) || [];
+  const out = [];
+  for (const el of content) {
+    if (el.table && el.startIndex >= anchor) { out.push(el); if (out.length >= count) break; }
   }
-  await docsBatchUpdate(docId, clearReq, token);
+  return out;
+}
+// Insert every block's table for one placeholder in a SINGLE batchUpdate, then
+// fill all their cells in a SINGLE batchUpdate — ~2 write calls per placeholder
+// instead of ~2 per table, to stay well under the Docs write quota.
+// All tables are inserted at the same anchor index in REVERSE order; because
+// each same-index insert prepends, the final document order is block0..blockN.
+async function insertTablesForPlaceholder(docId, placeholder, blocks, token) {
+  const clearReq = { replaceAllText: { containsText: { text: placeholder, matchCase: true }, replaceText: '' } };
+  if (!blocks.length) { await docsBatchUpdate(docId, [clearReq], token); return; }
+  let doc = await docsGet(docId, token);
+  const anchor = paragraphEndContaining(doc, placeholder);
+  if (anchor == null) return;
+  const insertReqs = [];
+  for (let i = blocks.length - 1; i >= 0; i--) {
+    const rows = blocks[i];
+    const nCols = rows.reduce((m, r) => Math.max(m, r.length), 1);
+    insertReqs.push({ insertTable: { rows: rows.length, columns: nCols, location: { index: anchor } } });
+  }
+  await docsBatchUpdate(docId, insertReqs, token);
+  doc = await docsGet(docId, token);
+  const tables = collectTablesAfter(doc, anchor, blocks.length);
+  let fillReqs = [];
+  for (let i = 0; i < tables.length && i < blocks.length; i++) {
+    fillReqs = fillReqs.concat(buildTableFill(tables[i], blocks[i]).requests);
+  }
+  fillReqs.sort((a, b) => b.insertText.location.index - a.insertText.location.index);
+  fillReqs.push(clearReq); // remove the placeholder text last, after all inserts
+  await docsBatchUpdate(docId, fillReqs, token);
 }
 function syllabusSemesterTransition(semester, year) {
   const s = String(semester || '').toLowerCase(); const y = parseInt(year, 10);
@@ -2294,11 +2315,8 @@ async function makeSyllabusDocument(offeringId) {
       const rds = readingsByLesson[String(s.item)] || [];
       if (rds.length) schedBlocks.push([['Category', 'Reading Title', 'URL Link'], ...rds.map(r => [r.category, r.reading_title, r.url_link])]);
     }
-    let schedDone = 0;
-    await insertTablesForPlaceholder(docId, '{{Course Schedule}}', schedBlocks, token, () => {
-      schedDone++;
-      setSyllabusProgress(70 + Math.round((schedDone / Math.max(1, schedBlocks.length)) * 22), 'Building schedule…');
-    });
+    await insertTablesForPlaceholder(docId, '{{Course Schedule}}', schedBlocks, token);
+    setSyllabusProgress(92, 'Building schedule…');
 
     setSyllabusProgress(95, 'Saving link…');
     const url = `https://docs.google.com/document/d/${docId}/edit`;
