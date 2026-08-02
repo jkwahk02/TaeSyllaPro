@@ -773,6 +773,24 @@ let courseDetailCache = {}; // { [offeringId]: { [tabKey]: rows | {error} } }
 
 // Returns the loaded rows (awaitable), so ensureEditRowsForTab() can build editRowsByTab[tab]
 // from whatever is already cached without duplicating the fetch logic.
+// Comparator that restores a detail tab's intended row order despite unreliable
+// DB insertion order. Lesson-based tabs natural-sort by their "Lesson N" number;
+// the rest fall back to id descending (they were synced in reverse). This is a
+// stopgap — the real fix is to re-insert child data in logical order (see notes).
+const _lessonNum = (s) => { const m = String(s || '').match(/\d+/); return m ? parseInt(m[0], 10) : 1e9; };
+const _readingCatRank = (c) => { const s = String(c || '').trim().toLowerCase(); return s === 'pre' ? 0 : s === 'post' ? 1 : s === 'optional' ? 2 : 3; };
+const _tlearnCatRank = (c) => { const s = String(c || '').toLowerCase().replace(/[^a-z]/g, ''); return s.startsWith('pre') ? 0 : s.startsWith('post') ? 2 : s.startsWith('in') ? 1 : 3; };
+function detailRowSorter(tabKey) {
+  if (tabKey === 'readings') {
+    // Lesson 1→N, then Pre → Post → Optional within each lesson.
+    return (a, b) => _lessonNum(a.lesson) - _lessonNum(b.lesson) || _readingCatRank(a.category) - _readingCatRank(b.category) || (Number(a.id) || 0) - (Number(b.id) || 0);
+  }
+  if (tabKey === 'activities') {
+    // Lesson 1→N, then Pre-class → In-class → Post-class within each lesson.
+    return (a, b) => _lessonNum(a.item) - _lessonNum(b.item) || _tlearnCatRank(a.category) - _tlearnCatRank(b.category) || (Number(a.id) || 0) - (Number(b.id) || 0);
+  }
+  return (a, b) => (Number(b.id) || 0) - (Number(a.id) || 0);
+}
 async function loadCourseDetailTab(offeringId, tabKey) {
   const spec = CP_DETAIL_TABLES[tabKey];
   if (!spec) return [];
@@ -785,10 +803,13 @@ async function loadCourseDetailTab(offeringId, tabKey) {
   cache[tabKey] = 'loading';
   try {
     const rows = await sbGet(spec.table, `offering_id=eq.${offeringId}&select=${spec.cols}&order=id.asc`);
-    // The sync inserted child rows in REVERSE logical order, so the lowest id is
-    // the LAST item (e.g. Lesson 30). Sort by id DESCENDING so rows display in
-    // their intended order (Lesson 1 / first assessment item first).
-    if (Array.isArray(rows)) rows.sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
+    // DB row order is unreliable (the sync inserted child rows in different
+    // orders per table), so re-sort into the intended order per tab:
+    //  - readings/activities carry a "Lesson N" field → natural-sort by that
+    //    number, then id (they group multiple rows per lesson).
+    //  - schedule/assessment/communication have no clean lesson field but were
+    //    inserted in reverse, so id DESCENDING restores their intended order.
+    if (Array.isArray(rows)) rows.sort(detailRowSorter(tabKey));
     cache[tabKey] = rows;
   } catch (e) {
     cache[tabKey] = { error: e.message };
@@ -2347,7 +2368,11 @@ async function makeSyllabusDocument(offeringId) {
       sbGet('course_communications', `offering_id=eq.${encodeURIComponent(offeringId)}&select=id,method,description&order=id.asc`),
       sbGet('course_schedule', `offering_id=eq.${encodeURIComponent(offeringId)}&select=id,item,topic_title,learning_objectives&order=id.asc`),
       sbGet('course_readings', `offering_id=eq.${encodeURIComponent(offeringId)}&select=id,lesson,category,reading_title,url_link&order=id.asc`),
-    ].map(p => p.then(rows => Array.isArray(rows) ? rows.sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0)) : rows)));
+    ].map((p, i) => p.then(rows => {
+      if (!Array.isArray(rows)) return rows;
+      if (i === 3) return rows.sort((a, b) => _lessonNum(a.lesson) - _lessonNum(b.lesson) || _readingCatRank(a.category) - _readingCatRank(b.category) || (Number(a.id) || 0) - (Number(b.id) || 0));
+      return rows.sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
+    })));
 
     setSyllabusProgress(15, 'Preparing folder…');
     const templateId = extractDriveId(getSyllabusTemplateUrl()) || SYLLABUS_TEMPLATE_DEFAULT_ID;
