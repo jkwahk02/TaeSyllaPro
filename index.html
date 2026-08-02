@@ -2142,33 +2142,58 @@ function collectTablesAfter(doc, anchor, count) {
   }
   return out;
 }
-// Insert every block's table for one placeholder in a SINGLE batchUpdate, then
-// fill all their cells in a SINGLE batchUpdate — ~2 write calls per placeholder
-// instead of ~2 per table, to stay well under the Docs write quota.
-// All tables are inserted at the same anchor index in REVERSE order; because
-// each same-index insert prepends, the final document order is block0..blockN.
+// Insert every block's table for one placeholder in batched write calls (to stay
+// under the Docs write quota), fill all cells, then apply Apps-Script-parity
+// styling (Arial 10, non-bold) and fixed column widths. Each block is
+// { rows: string[][], widths: [{col, pt}, …] }. All tables are inserted at the
+// same anchor in REVERSE order; because each same-index insert prepends, the
+// final document order ends up block0..blockN.
 async function insertTablesForPlaceholder(docId, placeholder, blocks, token) {
   const clearReq = { replaceAllText: { containsText: { text: placeholder, matchCase: true }, replaceText: '' } };
   if (!blocks.length) { await docsBatchUpdate(docId, [clearReq], token); return; }
   let doc = await docsGet(docId, token);
   const anchor = paragraphEndContaining(doc, placeholder);
   if (anchor == null) return;
+  // A) insert all table structures
   const insertReqs = [];
   for (let i = blocks.length - 1; i >= 0; i--) {
-    const rows = blocks[i];
+    const rows = blocks[i].rows;
     const nCols = rows.reduce((m, r) => Math.max(m, r.length), 1);
     insertReqs.push({ insertTable: { rows: rows.length, columns: nCols, location: { index: anchor } } });
   }
   await docsBatchUpdate(docId, insertReqs, token);
+  // B) fill cells + clear placeholder
   doc = await docsGet(docId, token);
-  const tables = collectTablesAfter(doc, anchor, blocks.length);
+  let tables = collectTablesAfter(doc, anchor, blocks.length);
   let fillReqs = [];
   for (let i = 0; i < tables.length && i < blocks.length; i++) {
-    fillReqs = fillReqs.concat(buildTableFill(tables[i], blocks[i]).requests);
+    fillReqs = fillReqs.concat(buildTableFill(tables[i], blocks[i].rows).requests);
   }
   fillReqs.sort((a, b) => b.insertText.location.index - a.insertText.location.index);
-  fillReqs.push(clearReq); // remove the placeholder text last, after all inserts
+  fillReqs.push(clearReq);
   await docsBatchUpdate(docId, fillReqs, token);
+  // C) style (Arial 10, non-bold) + fixed column widths. Neither op shifts
+  //    character indices, so both are safe to send together from a fresh read.
+  doc = await docsGet(docId, token);
+  tables = collectTablesAfter(doc, anchor, blocks.length);
+  const styleReqs = [];
+  for (let i = 0; i < tables.length && i < blocks.length; i++) {
+    const t = tables[i];
+    styleReqs.push({ updateTextStyle: {
+      range: { startIndex: t.startIndex, endIndex: t.endIndex },
+      textStyle: { weightedFontFamily: { fontFamily: 'Arial' }, fontSize: { magnitude: 10, unit: 'PT' }, bold: false },
+      fields: 'weightedFontFamily,fontSize,bold',
+    } });
+    for (const w of (blocks[i].widths || [])) {
+      styleReqs.push({ updateTableColumnProperties: {
+        tableStartLocation: { index: t.startIndex },
+        columnIndices: [w.col],
+        tableColumnProperties: { widthType: 'FIXED_WIDTH', width: { magnitude: w.pt, unit: 'PT' } },
+        fields: 'width,widthType',
+      } });
+    }
+  }
+  if (styleReqs.length) await docsBatchUpdate(docId, styleReqs, token);
 }
 function syllabusSemesterTransition(semester, year) {
   const s = String(semester || '').toLowerCase(); const y = parseInt(year, 10);
@@ -2297,11 +2322,11 @@ async function makeSyllabusDocument(offeringId) {
     })), token);
 
     setSyllabusProgress(50, 'Building assessment table…');
-    const assessBlock = [['Items', 'Ratio (%)', 'Description'], ...(assess || []).map(a => [a.item, a.ratio_pct, a.description])];
+    const assessBlock = { rows: [['Items', 'Ratio (%)', 'Description'], ...(assess || []).map(a => [a.item, a.ratio_pct, a.description])], widths: [{ col: 0, pt: 120 }, { col: 1, pt: 40 }] };
     await insertTablesForPlaceholder(docId, '{{Course Assessment}}', (assess && assess.length) ? [assessBlock] : [], token);
 
     setSyllabusProgress(60, 'Building communication table…');
-    const commBlock = [['Method', 'Description'], ...(comm || []).map(m => [m.method, m.description])];
+    const commBlock = { rows: [['Method', 'Description'], ...(comm || []).map(m => [m.method, m.description])], widths: [{ col: 0, pt: 120 }] };
     await insertTablesForPlaceholder(docId, '{{Course Communication}}', (comm && comm.length) ? [commBlock] : [], token);
 
     setSyllabusProgress(70, 'Building schedule…');
@@ -2309,11 +2334,11 @@ async function makeSyllabusDocument(offeringId) {
     for (const rd of (reads || [])) { const k = String(rd.lesson); (readingsByLesson[k] = readingsByLesson[k] || []).push(rd); }
     const schedBlocks = [];
     for (const s of (sched || [])) {
-      schedBlocks.push([[s.item, s.topic_title]]);
+      schedBlocks.push({ rows: [[s.item, s.topic_title]], widths: [{ col: 0, pt: 60 }] });
       if (s.learning_objectives && String(s.learning_objectives).trim())
-        schedBlocks.push([['Learning Objectives'], [s.learning_objectives]]);
+        schedBlocks.push({ rows: [['Learning Objectives'], [s.learning_objectives]], widths: [] });
       const rds = readingsByLesson[String(s.item)] || [];
-      if (rds.length) schedBlocks.push([['Category', 'Reading Title', 'URL Link'], ...rds.map(r => [r.category, r.reading_title, r.url_link])]);
+      if (rds.length) schedBlocks.push({ rows: [['Category', 'Reading Title', 'URL Link'], ...rds.map(r => [r.category, r.reading_title, r.url_link])], widths: [{ col: 0, pt: 60 }, { col: 1, pt: 210 }] });
     }
     await insertTablesForPlaceholder(docId, '{{Course Schedule}}', schedBlocks, token);
     setSyllabusProgress(92, 'Building schedule…');
