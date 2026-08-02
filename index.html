@@ -2065,10 +2065,12 @@ async function gapiFetch(url, opts, token, _attempt) {
   const txt = await res.text();
   return txt ? JSON.parse(txt) : null;
 }
-async function driveCopyTemplate(templateId, name, token) {
+async function driveCopyTemplate(templateId, name, token, folderId) {
+  const body = { name };
+  if (folderId) body.parents = [folderId]; // copy straight into the target folder
   const data = await gapiFetch(
     `https://www.googleapis.com/drive/v3/files/${templateId}/copy?supportsAllDrives=true&fields=id`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) }, token);
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, token);
   return data.id;
 }
 async function driveGetOrCreateFolder(name, token) {
@@ -2145,6 +2147,11 @@ function collectTablesAfter(doc, anchor, count) {
 // Align the tables we just inserted to their source blocks by matching column
 // count in document order — skips any pre-existing template table whose column
 // count differs, so fills/styles never land on (or over-address) the wrong table.
+function tableColCount(t) {
+  const trs = t.table && t.table.tableRows;
+  if (trs && trs[0] && trs[0].tableCells) return trs[0].tableCells.length;
+  return (t.table && t.table.columns) || 0;
+}
 function matchBlockTables(doc, anchor, blocks) {
   const all = [];
   for (const el of (doc.body && doc.body.content) || []) if (el.table && el.startIndex >= anchor) all.push(el);
@@ -2154,7 +2161,7 @@ function matchBlockTables(doc, anchor, blocks) {
     const want = blocks[bi].rows.reduce((m, r) => Math.max(m, r.length), 1);
     while (ti < all.length) {
       const t = all[ti++];
-      if (((t.table && t.table.columns) || 0) === want) { out[bi] = t; break; }
+      if (tableColCount(t) === want) { out[bi] = t; break; }
     }
   }
   return out;
@@ -2193,16 +2200,25 @@ async function insertTablesForPlaceholder(docId, placeholder, blocks, token) {
   //    character indices, so both are safe to send together from a fresh read.
   doc = await docsGet(docId, token);
   tables = matchBlockTables(doc, anchor, blocks);
+  console.log('[syllabus]', placeholder, 'blocks=', blocks.length, 'matchedCols=',
+    tables.map(t => t ? ((t.table.tableRows && t.table.tableRows[0] && t.table.tableRows[0].tableCells.length) || t.table.columns) : null));
   const styleReqs = [];
   for (let i = 0; i < blocks.length; i++) {
     const t = tables[i];
     if (!t) continue;
-    const nActual = (t.table && (t.table.columns || ((t.table.tableRows && t.table.tableRows[0] && t.table.tableRows[0].tableCells.length) || 0))) || 0;
-    styleReqs.push({ updateTextStyle: {
-      range: { startIndex: t.startIndex, endIndex: t.endIndex },
-      textStyle: { weightedFontFamily: { fontFamily: 'Arial' }, fontSize: { magnitude: 10, unit: 'PT' }, bold: false },
-      fields: 'weightedFontFamily,fontSize,bold',
-    } });
+    const trs = (t.table && t.table.tableRows) || [];
+    const nActual = (trs[0] && trs[0].tableCells) ? trs[0].tableCells.length : ((t.table && t.table.columns) || 0);
+    // Style text per CELL — a single table-spanning range does not reliably
+    // restyle text inside cells, so walk each cell's paragraph ranges.
+    for (const tr of trs) for (const cell of (tr.tableCells || [])) for (const se of (cell.content || [])) {
+      if (se.startIndex != null && se.endIndex != null && se.endIndex > se.startIndex) {
+        styleReqs.push({ updateTextStyle: {
+          range: { startIndex: se.startIndex, endIndex: se.endIndex },
+          textStyle: { weightedFontFamily: { fontFamily: 'Arial' }, fontSize: { magnitude: 10, unit: 'PT' }, bold: false },
+          fields: 'weightedFontFamily,fontSize,bold',
+        } });
+      }
+    }
     for (const w of (blocks[i].widths || [])) {
       if (w.col >= nActual) continue; // guard: never address a column the table doesn't have
       styleReqs.push({ updateTableColumnProperties: {
@@ -2213,6 +2229,7 @@ async function insertTablesForPlaceholder(docId, placeholder, blocks, token) {
       } });
     }
   }
+  console.log('[syllabus]', placeholder, 'styleReqs=', styleReqs.length);
   if (styleReqs.length) await docsBatchUpdate(docId, styleReqs, token);
 }
 function syllabusSemesterTransition(semester, year) {
@@ -2311,15 +2328,23 @@ async function makeSyllabusDocument(offeringId) {
       sbGet('course_readings', `offering_id=eq.${encodeURIComponent(offeringId)}&select=lesson,category,reading_title,url_link&order=id.asc`),
     ]);
 
-    setSyllabusProgress(15, 'Copying template…');
+    setSyllabusProgress(15, 'Preparing folder…');
     const templateId = extractDriveId(getSyllabusTemplateUrl()) || SYLLABUS_TEMPLATE_DEFAULT_ID;
-    const docId = await driveCopyTemplate(templateId, `${course.code} Syllabus for ${course.semester}`, token);
-
-    setSyllabusProgress(22, 'Filing in course folder…');
+    const docName = `${course.code} Syllabus for ${course.semester}`;
+    // Create/find the course folder FIRST, then copy the template straight into
+    // it — a separate move can fail when the template lives in a shared folder
+    // the professor can't detach the copy from.
+    let folderId = null;
+    try { folderId = await driveGetOrCreateFolder(`${course.code} ${course.title}`, token); }
+    catch (e) { console.warn('Folder step failed (non-fatal):', e); }
+    setSyllabusProgress(20, 'Copying template…');
+    let docId;
     try {
-      const folderId = await driveGetOrCreateFolder(`${course.code} ${course.title}`, token);
-      await driveMoveToFolder(docId, folderId, token);
-    } catch (e) { console.warn('Folder step failed (non-fatal):', e); }
+      docId = await driveCopyTemplate(templateId, docName, token, folderId);
+    } catch (e) {
+      if (folderId) { console.warn('Copy into folder failed, copying to My Drive instead:', e); docId = await driveCopyTemplate(templateId, docName, token, null); }
+      else throw e;
+    }
 
     setSyllabusProgress(28, 'Setting sharing…');
     try { await driveShareAnyone(docId, token); } catch (e) { console.warn('Share step failed (non-fatal):', e); }
@@ -2341,31 +2366,47 @@ async function makeSyllabusDocument(offeringId) {
       replaceAllText: { containsText: { text: k, matchCase: true }, replaceText: (v == null ? '' : String(v)) },
     })), token);
 
-    setSyllabusProgress(50, 'Building assessment table…');
-    const assessBlock = { rows: [['Items', 'Ratio (%)', 'Description'], ...(assess || []).map(a => [a.item, a.ratio_pct, a.description])], widths: [{ col: 0, pt: 120 }, { col: 1, pt: 40 }] };
-    await insertTablesForPlaceholder(docId, '{{Course Assessment}}', (assess && assess.length) ? [assessBlock] : [], token);
+    // Tables are best-effort: the document (with all text filled) already exists,
+    // so a table-building error must NOT block writing the link back / updating UI.
+    let tableWarn = '';
+    try {
+      setSyllabusProgress(50, 'Building assessment table…');
+      const assessBlock = { rows: [['Items', 'Ratio (%)', 'Description'], ...(assess || []).map(a => [a.item, a.ratio_pct, a.description])], widths: [{ col: 0, pt: 120 }, { col: 1, pt: 40 }] };
+      await insertTablesForPlaceholder(docId, '{{Course Assessment}}', (assess && assess.length) ? [assessBlock] : [], token);
 
-    setSyllabusProgress(60, 'Building communication table…');
-    const commBlock = { rows: [['Method', 'Description'], ...(comm || []).map(m => [m.method, m.description])], widths: [{ col: 0, pt: 120 }] };
-    await insertTablesForPlaceholder(docId, '{{Course Communication}}', (comm && comm.length) ? [commBlock] : [], token);
+      setSyllabusProgress(60, 'Building communication table…');
+      const commBlock = { rows: [['Method', 'Description'], ...(comm || []).map(m => [m.method, m.description])], widths: [{ col: 0, pt: 120 }] };
+      await insertTablesForPlaceholder(docId, '{{Course Communication}}', (comm && comm.length) ? [commBlock] : [], token);
 
-    setSyllabusProgress(70, 'Building schedule…');
-    const readingsByLesson = {};
-    for (const rd of (reads || [])) { const k = String(rd.lesson); (readingsByLesson[k] = readingsByLesson[k] || []).push(rd); }
-    const schedBlocks = [];
-    for (const s of (sched || [])) {
-      schedBlocks.push({ rows: [[s.item, s.topic_title]], widths: [{ col: 0, pt: 60 }] });
-      if (s.learning_objectives && String(s.learning_objectives).trim())
-        schedBlocks.push({ rows: [['Learning Objectives'], [s.learning_objectives]], widths: [] });
-      const rds = readingsByLesson[String(s.item)] || [];
-      if (rds.length) schedBlocks.push({ rows: [['Category', 'Reading Title', 'URL Link'], ...rds.map(r => [r.category, r.reading_title, r.url_link])], widths: [{ col: 0, pt: 60 }, { col: 1, pt: 210 }] });
+      setSyllabusProgress(70, 'Building schedule…');
+      const readingsByLesson = {};
+      for (const rd of (reads || [])) { const k = String(rd.lesson); (readingsByLesson[k] = readingsByLesson[k] || []).push(rd); }
+      const schedBlocks = [];
+      for (const s of (sched || [])) {
+        schedBlocks.push({ rows: [[s.item, s.topic_title]], widths: [{ col: 0, pt: 60 }] });
+        if (s.learning_objectives && String(s.learning_objectives).trim())
+          schedBlocks.push({ rows: [['Learning Objectives'], [s.learning_objectives]], widths: [] });
+        const rds = readingsByLesson[String(s.item)] || [];
+        if (rds.length) schedBlocks.push({ rows: [['Category', 'Reading Title', 'URL Link'], ...rds.map(r => [r.category, r.reading_title, r.url_link])], widths: [{ col: 0, pt: 60 }, { col: 1, pt: 210 }] });
+      }
+      await insertTablesForPlaceholder(docId, '{{Course Schedule}}', schedBlocks, token);
+      setSyllabusProgress(92, 'Building schedule…');
+    } catch (e) {
+      console.error('Table build issue (document still saved):', e);
+      tableWarn = ' — but a table step failed: ' + (e.message || e);
     }
-    await insertTablesForPlaceholder(docId, '{{Course Schedule}}', schedBlocks, token);
-    setSyllabusProgress(92, 'Building schedule…');
 
     setSyllabusProgress(95, 'Saving link…');
     const url = `https://docs.google.com/document/d/${docId}/edit`;
     await sbPatch(TBL_OFFERINGS, `offering_id=eq.${encodeURIComponent(offeringId)}`, { syllabus_link: url });
+    // Verify the write actually persisted (catches silent RLS / 0-row updates).
+    try {
+      const chk = await sbGet(TBL_OFFERINGS, `offering_id=eq.${encodeURIComponent(offeringId)}&select=syllabus_link`);
+      if (!(chk && chk[0] && chk[0].syllabus_link === url)) {
+        console.warn('syllabus_link did NOT persist for offering', offeringId, '->', chk);
+        tableWarn += ' — link may not have saved (DB write did not stick)';
+      }
+    } catch (e) { console.warn('link verify failed:', e); }
     course.syllabusLink = url;
     course.ownSyllabusLink = url;
     const viewArea = document.getElementById('syl-view-area');
