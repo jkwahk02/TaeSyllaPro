@@ -987,7 +987,7 @@ async function ensureEditRowsForTab(tabKey) {
       const isLesson = /^(lesson|l)\s*\d+/i.test(String(r.item || '').trim());
       if (!isLesson) return;
       const computed = dates[li++];
-      if (computed && !(r.class_date && String(r.class_date).trim())) r.class_date = classDateInputValue(computed);
+      if (computed && !(r.class_date && String(r.class_date).trim())) r.class_date = `${classDateInputValue(computed)}${computed.timezone ? ' ' + computed.timezone : ''}`;
     });
   }
   editRowsByTab[tabKey] = arr;
@@ -2881,11 +2881,15 @@ function formatClassDateLabel(d) {
   if (d.note) s += ` (${d.note})`;      // e.g. "(Make-up day for Chuseok)"
   return s;
 }
-// ── Per-lesson Class Date override (editable; date+time, pattern timezone kept) ──
-// Builds a class-date object from an override string 'YYYY-MM-DDTHH:MM'. Time zone
-// and duration come from the offering's meeting pattern (not editable).
+// ── Per-lesson Class Date override (editable; date + time + timezone) ──
+// Stored in one text column as 'YYYY-MM-DDTHH:MM <IANA>' (timezone optional).
+function parseOverride(str) {
+  const parts = String(str || '').trim().split(/\s+/);
+  return { datetime: parts[0] || '', tz: parts[1] || '' };
+}
 function overrideDateObj(overrideStr, fallbackTz, offeringId) {
-  const [datePart, timePart] = String(overrideStr || '').split('T');
+  const { datetime, tz } = parseOverride(overrideStr);
+  const [datePart, timePart] = datetime.split('T');
   if (!datePart) return null;
   const startTime = (timePart || '00:00').slice(0, 5);
   const periods = periodsCache[offeringId] || [];
@@ -2893,7 +2897,7 @@ function overrideDateObj(overrideStr, fallbackTz, offeringId) {
   const [sh, sm] = startTime.split(':').map(Number);
   const [eh, em] = addMinutes(sh, sm, dur);
   const endTime = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
-  return { isoDate: datePart, startTime, endTime, timezone: fallbackTz || (periods[0] && periods[0].timezone) || '', note: '' };
+  return { isoDate: datePart, startTime, endTime, timezone: tz || fallbackTz || (periods[0] && periods[0].timezone) || '', note: '' };
 }
 // Effective date for a lesson row: the professor's override wins, else the computed date.
 function effectiveLessonDate(r, computed, offeringId) {
@@ -2903,10 +2907,21 @@ function effectiveLessonDate(r, computed, offeringId) {
 function classDateInputValue(d) {
   return (d && d.isoDate) ? `${d.isoDate}T${(d.startTime || '00:00').slice(0, 5)}` : '';
 }
-function setClassDateOverride(ri, value) {
+// Edit handlers: the date/time input and the timezone select each rewrite the
+// combined 'datetime tz' string, preserving the other part.
+function setClassDateDateTime(ri, dt) {
   const rows = editRowsByTab[courseTab];
   if (!rows || !rows[ri]) return;
-  rows[ri].class_date = value ? value : null;   // empty clears the override → back to computed
+  if (!dt) { rows[ri].class_date = null; return; }   // cleared → back to computed
+  const cur = parseOverride(rows[ri].class_date);
+  rows[ri].class_date = cur.tz ? `${dt} ${cur.tz}` : dt;
+}
+function setClassDateTz(ri, tz) {
+  const rows = editRowsByTab[courseTab];
+  if (!rows || !rows[ri]) return;
+  const cur = parseOverride(rows[ri].class_date);
+  if (!cur.datetime) return;   // no date yet — set the date first
+  rows[ri].class_date = tz ? `${cur.datetime} ${tz}` : cur.datetime;
 }
 // One Schedule-grid "Class Date" cell. `cd` is null for non-lesson rows (Units),
 // or { computed } for a lesson (computed may be null when no calendar is set yet).
@@ -2915,9 +2930,10 @@ function classDateCellHtml(cd, r, ri, editing, offeringId) {
   const eff = effectiveLessonDate(r, cd.computed, offeringId);
   const edited = !!(r && r.class_date && String(r.class_date).trim());
   if (editing) {
-    const tz = (eff && eff.timezone) ? tzLabel(eff.timezone) : '';
-    return `<td class="grid-computed-cell"><input type="datetime-local" class="grid-input" value="${esc(classDateInputValue(eff))}" onchange="setClassDateOverride(${ri}, this.value)"/>` +
-      `<div style="font-size:12px;color:var(--text3);margin-top:2px;">${tz ? esc(tz) : 'set date/time to override'}${edited ? ' · edited' : ''}</div></td>`;
+    const curTz = (eff && eff.timezone) || (periodsCache[offeringId] && periodsCache[offeringId][0] && periodsCache[offeringId][0].timezone) || '';
+    const tzSelect = `<select class="grid-input" style="margin-top:4px;" onchange="setClassDateTz(${ri}, this.value)">${TIMEZONE_OPTIONS.map(t => `<option value="${t.iana}" ${curTz === t.iana ? 'selected' : ''}>${esc(t.label)}</option>`).join('')}</select>`;
+    return `<td class="grid-computed-cell"><input type="datetime-local" class="grid-input" value="${esc(classDateInputValue(eff))}" onchange="setClassDateDateTime(${ri}, this.value)"/>${tzSelect}` +
+      `${edited ? '<div style="font-size:12px;color:var(--text3);margin-top:2px;">edited</div>' : ''}</td>`;
   }
   return `<td class="grid-computed-cell">${eff ? esc(formatClassDateLabel(eff)) : '<span style="color:var(--text3);font-style:italic;">—</span>'}${(eff && edited) ? ' <span style="color:var(--blue);font-size:12px;">(edited)</span>' : ''}</td>`;
 }
