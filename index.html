@@ -1427,7 +1427,10 @@ function renderCpMainShared(c, editing) {
 
     <div class="cp-card">
       <div class="cp-card-title">Syllabus document</div>
-      <div class="cp-field" style="margin-bottom:20px;">
+      <div id="syl-view-area">${syllabusViewHtml(c.ownSyllabusLink)}</div>
+      <div class="cp-field" id="syl-url-area" style="margin-top:16px;">${syllabusUrlAreaHtml(c.ownSyllabusLink)}</div>
+      <div style="border-top:1px solid var(--border);margin:24px 0 18px;"></div>
+      <div class="cp-field" style="margin-bottom:14px;">
         <span class="cp-label">Syllabus Template URL</span>
         <div style="display:flex;gap:10px;align-items:center;">
           <input id="syl-template" class="cp-input" value="${esc(getSyllabusTemplateUrl())}" oninput="onSyllabusTemplateInput()"/>
@@ -1435,10 +1438,9 @@ function renderCpMainShared(c, editing) {
         </div>
         <span style="font-size:14px;color:var(--text3);margin-top:5px;">The Google Doc copied for each syllabus. A default template is built in; edit to override (saved on this browser).</span>
       </div>
-      <div id="syl-make-slot" style="margin-bottom:20px;">
-        <button class="btn btn-primary" style="width:100%;height:52px;font-size:19px;" onclick="makeSyllabusDocument(${c.id})">Make Syllabus Document</button>
+      <div id="syl-make-slot">
+        <button class="btn" onclick="makeSyllabusDocument(${c.id})">${c.ownSyllabusLink ? 'Re-make Syllabus Document' : 'Make Syllabus Document'}</button>
       </div>
-      <div class="cp-field" id="syl-url-area">${syllabusUrlAreaHtml(d.syllabusLink)}</div>
     </div>
   `;
 }
@@ -2162,18 +2164,26 @@ function syllabusTimeText(weekdayTime, secondWeekdayTime, semester, year) {
 }
 // HTML for the "Syllabus URL" area — a guidance box before anything is generated,
 // or the read-only link + Open button once a document exists.
-function syllabusUrlAreaHtml(link) {
-  if (link) {
-    return `<span class="cp-label">Syllabus URL</span>
-      <div style="display:flex;gap:10px;align-items:center;" id="syl-url-row">
-        <input id="syl-url" class="cp-input" readonly value="${esc(link)}" title="Open syllabus document" style="cursor:pointer;color:var(--blue);" onclick="openSyllabusUrl()"/>
-        <button id="syl-open-btn" class="btn" style="min-width:104px;" onclick="openSyllabusUrl()">Open ↗</button>
-      </div>`;
+// Embedded read-only preview of the existing syllabus (Google Docs /preview),
+// or a guidance empty-state that nudges the professor to generate one.
+function syllabusViewHtml(link) {
+  const id = link ? extractDriveId(link) : '';
+  if (id) {
+    return `<iframe src="https://docs.google.com/document/d/${id}/preview" title="Syllabus document preview" loading="lazy"
+      style="display:block;width:100%;height:560px;border:1px solid var(--border);border-radius:8px;background:#fff;"></iframe>`;
   }
-  return `<span class="cp-label">Syllabus URL</span>
-    <div style="padding:14px 16px;background:var(--surface2);border:1px dashed var(--border-em);border-radius:8px;color:var(--text2);font-size:16px;line-height:1.55;">
+  return `<div style="padding:26px 20px;background:var(--surface2);border:1px dashed var(--border-em);border-radius:8px;color:var(--text2);font-size:16px;line-height:1.55;text-align:center;">
       No syllabus document yet.
-      <div style="color:var(--text3);font-size:15px;margin-top:4px;">1) Check the Syllabus Template URL above &nbsp;→&nbsp; 2) click <b>Make Syllabus Document</b>. The link will appear here.</div>
+      <div style="color:var(--text3);font-size:15px;margin-top:6px;">Use <b>Make Syllabus Document</b> below to generate one — it will appear here.</div>
+    </div>`;
+}
+// Read-only URL + Open, shown only once a document exists (empty otherwise).
+function syllabusUrlAreaHtml(link) {
+  if (!link) return '';
+  return `<span class="cp-label">Syllabus URL</span>
+    <div style="display:flex;gap:10px;align-items:center;" id="syl-url-row">
+      <input id="syl-url" class="cp-input" readonly value="${esc(link)}" title="Open syllabus document" style="cursor:pointer;color:var(--blue);" onclick="openSyllabusUrl()"/>
+      <button id="syl-open-btn" class="btn" style="min-width:104px;" onclick="openSyllabusUrl()">Open ↗</button>
     </div>`;
 }
 function setSyllabusProgress(pct, label) {
@@ -2188,7 +2198,7 @@ function setSyllabusProgress(pct, label) {
 function restoreSyllabusMakeButton(offeringId, done) {
   const slot = document.getElementById('syl-make-slot');
   if (!slot) return;
-  slot.innerHTML = `<button class="btn btn-primary" style="width:100%;height:52px;font-size:19px;" onclick="makeSyllabusDocument(${offeringId})">${done ? 'Re-make Syllabus Document' : 'Make Syllabus Document'}</button>`;
+  slot.innerHTML = `<button class="btn" onclick="makeSyllabusDocument(${offeringId})">${done ? 'Re-make Syllabus Document' : 'Make Syllabus Document'}</button>`;
 }
 function onSyllabusTemplateInput() {
   const inp = document.getElementById('syl-template'); const btn = document.getElementById('syl-template-save');
@@ -2289,6 +2299,9 @@ async function makeSyllabusDocument(offeringId) {
     const url = `https://docs.google.com/document/d/${docId}/edit`;
     await sbPatch(TBL_OFFERINGS, `offering_id=eq.${encodeURIComponent(offeringId)}`, { syllabus_link: url });
     course.syllabusLink = url;
+    course.ownSyllabusLink = url;
+    const viewArea = document.getElementById('syl-view-area');
+    if (viewArea) viewArea.innerHTML = syllabusViewHtml(url);
     const area = document.getElementById('syl-url-area');
     if (area) {
       area.innerHTML = syllabusUrlAreaHtml(url);
@@ -2923,6 +2936,10 @@ function mapCourse(r) {
     category: ovT('category') || '',
     shortDescription: ovT('short_description') || '',
     syllabusLink: ovT('syllabus_link') || '',
+    // The offering's OWN generated syllabus (no catalog fallback). The Syllabus
+    // document card keys off this so an offering that hasn't generated its own
+    // shows the empty/create state instead of inheriting the base course's doc.
+    ownSyllabusLink: r.syllabus_link || '',
     newCurriculum: (r.new_curriculum ?? catalog.new_curriculum) !== false,
     competencies,
     competenciesRaw,
