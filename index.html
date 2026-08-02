@@ -2179,15 +2179,28 @@ async function insertTablesForPlaceholder(docId, placeholder, blocks, token, onP
   let doc = await docsGet(docId, token);
   let anchor = paragraphEndContaining(doc, placeholder);
   if (anchor == null) return;
-  for (let bi = 0; bi < blocks.length; bi++) {
+  // Insert in REVERSE with the anchor FIXED at the placeholder. One-at-a-time
+  // same-index inserts PREPEND, so reverse iteration yields forward document
+  // order — and because the anchor never advances, table inserts never walk into
+  // (and split) the template's surrounding sentences.
+  for (let bi = blocks.length - 1; bi >= 0; bi--) {
     const rows = blocks[bi].rows;
     const nCols = rows.reduce((m, r) => Math.max(m, r.length), 1);
-    // 1) insert ONE table at the current anchor
+    // 1) insert ONE table at the fixed placeholder anchor
     await docsBatchUpdate(docId, [{ insertTable: { rows: rows.length, columns: nCols, location: { index: anchor } } }], token);
-    // 2) locate it: first table at/after the anchor (everything before is already placed)
+    // 2) locate the just-inserted table = the first EMPTY table at/after the anchor
+    //    (already-filled tables carry text; the new one doesn't) — robust whether
+    //    the insert prepended or appended.
     doc = await docsGet(docId, token);
     let tbl = null;
-    for (const el of (doc.body && doc.body.content) || []) { if (el.table && el.startIndex >= anchor) { tbl = el; break; } }
+    for (const el of (doc.body && doc.body.content) || []) {
+      if (!el.table || el.startIndex < anchor) continue;
+      const fc = el.table.tableRows && el.table.tableRows[0] && el.table.tableRows[0].tableCells
+        && el.table.tableRows[0].tableCells[0] && el.table.tableRows[0].tableCells[0].content
+        && el.table.tableRows[0].tableCells[0].content[0];
+      const hasText = fc && fc.paragraph && (fc.paragraph.elements || []).some(pe => pe.textRun && pe.textRun.content && pe.textRun.content.replace(/\s/g, '').length);
+      if (!hasText) { tbl = el; break; }
+    }
     if (!tbl) continue;
     const trs = tbl.table.tableRows || [];
     const nActual = (trs[0] && trs[0].tableCells) ? trs[0].tableCells.length : nCols;
@@ -2214,7 +2227,6 @@ async function insertTablesForPlaceholder(docId, placeholder, blocks, token, onP
     }
     // fill cells (descending index so positions stay valid), LAST
     const fills = [];
-    let insertedChars = 0;
     for (let r = 0; r < trs.length && r < rows.length; r++) {
       const cells = trs[r].tableCells || [];
       for (let c = 0; c < cells.length && c < rows[r].length; c++) {
@@ -2222,15 +2234,14 @@ async function insertTablesForPlaceholder(docId, placeholder, blocks, token, onP
         if (!text) continue;
         const idx = cells[c].content && cells[c].content[0] ? cells[c].content[0].startIndex : null;
         if (idx == null) continue;
-        fills.push({ index: idx, text }); insertedChars += text.length;
+        fills.push({ index: idx, text });
       }
     }
     fills.sort((a, b) => b.index - a.index);
     for (const f of fills) reqs.push({ insertText: { location: { index: f.index }, text: f.text } });
     await docsBatchUpdate(docId, reqs, token);
-    // 3) advance the anchor past this now-filled table
-    anchor = tbl.endIndex + insertedChars;
-    if (onProgress) onProgress(bi + 1, blocks.length);
+    // 3) anchor stays FIXED — never advance (advancing split the template text)
+    if (onProgress) onProgress(blocks.length - bi, blocks.length);
     await new Promise(res => setTimeout(res, 1600)); // pace writes under the Docs quota
   }
   await docsBatchUpdate(docId, [clearReq], token); // remove placeholder LAST
