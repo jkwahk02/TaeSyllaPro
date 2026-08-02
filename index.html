@@ -2179,11 +2179,11 @@ async function insertTablesForPlaceholder(docId, placeholder, blocks, token, onP
   let doc = await docsGet(docId, token);
   let anchor = paragraphEndContaining(doc, placeholder);
   if (anchor == null) return;
-  // Insert in REVERSE with the anchor FIXED at the placeholder. One-at-a-time
-  // same-index inserts PREPEND, so reverse iteration yields forward document
-  // order — and because the anchor never advances, table inserts never walk into
-  // (and split) the template's surrounding sentences.
-  for (let bi = blocks.length - 1; bi >= 0; bi--) {
+  // Insert with the anchor FIXED at the placeholder. One-at-a-time same-index
+  // inserts APPEND (each new table lands after the previous), so forward
+  // iteration yields forward document order — and because the anchor never
+  // advances, inserts never walk into (and split) the template's surrounding text.
+  for (let bi = 0; bi < blocks.length; bi++) {
     const rows = blocks[bi].rows;
     const nCols = rows.reduce((m, r) => Math.max(m, r.length), 1);
     // 1) insert ONE table at the fixed placeholder anchor
