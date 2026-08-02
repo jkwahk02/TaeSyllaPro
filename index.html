@@ -2195,11 +2195,13 @@ async function insertTablesForPlaceholder(docId, placeholder, blocks, token) {
     if (tables[i]) fillReqs = fillReqs.concat(buildTableFill(tables[i], blocks[i].rows).requests);
   }
   fillReqs.sort((a, b) => b.insertText.location.index - a.insertText.location.index);
-  fillReqs.push(clearReq);
   await docsBatchUpdate(docId, fillReqs, token);
-  // C) style (Arial 10, non-bold) + fixed column widths. Neither op shifts
-  //    character indices, so both are safe to send together from a fresh read.
+  // C) style (Arial 10, non-bold) + fixed column widths. The placeholder is still
+  //    present (we clear it LAST, in D) so the earlier fill did not shift indices —
+  //    recompute a fresh anchor here so matching stays aligned.
   doc = await docsGet(docId, token);
+  anchor = paragraphEndContaining(doc, placeholder);
+  if (anchor == null) return;
   const _allT = [];
   for (const el of (doc.body && doc.body.content) || []) if (el.table) _allT.push({ s: el.startIndex, c: tableColCount(el), after: el.startIndex >= anchor });
   console.log('[syllabus]', placeholder, 'anchor=', anchor, 'blocks=', blocks.length,
@@ -2237,6 +2239,8 @@ async function insertTablesForPlaceholder(docId, placeholder, blocks, token) {
   }
   console.log('[syllabus]', placeholder, 'styleReqs=', styleReqs.length);
   if (styleReqs.length) await docsBatchUpdate(docId, styleReqs, token);
+  // D) remove the placeholder text LAST — only now is it safe to shift indices.
+  await docsBatchUpdate(docId, [clearReq], token);
 }
 function syllabusSemesterTransition(semester, year) {
   const s = String(semester || '').toLowerCase(); const y = parseInt(year, 10);
