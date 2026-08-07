@@ -47,15 +47,23 @@ button,input{font-family:inherit;}
 
 /* SHELL */
 .shell{display:flex;min-height:calc(100vh - 66px);}
-.rail{width:66px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:20px 0;gap:10px;position:relative;z-index:60;}
-.rail-btn{position:relative;width:46px;height:46px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;color:var(--text3);}
+/* The rail is just a 66px gutter that reserves space; the visible panel
+   (.rail-inner) is absolutely positioned inside it so it can EXPAND on hover
+   without reflowing the main content — it slides out over the page. */
+.rail{width:66px;flex-shrink:0;position:relative;z-index:60;}
+.rail-inner{position:absolute;top:0;left:0;height:100%;width:66px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:stretch;padding:20px 10px;gap:10px;overflow:hidden;transition:width .18s ease,box-shadow .18s ease;}
+/* Hover anywhere over the rail widens the panel so every icon + its menu label
+   are visible together, and drops a soft shadow to lift it above the page. */
+.rail:hover .rail-inner{width:232px;box-shadow:6px 0 28px rgba(0,0,0,0.10);}
+.rail-btn{width:100%;height:46px;border-radius:var(--r);display:flex;align-items:center;justify-content:flex-start;gap:14px;padding:0 12px;border:none;background:transparent;cursor:pointer;color:var(--text3);white-space:nowrap;overflow:hidden;}
+.rail-btn svg{flex-shrink:0;}
 .rail-btn:hover{background:var(--surface2);}
 .rail-btn.active{background:var(--blue-l);color:var(--blue);}
-/* Rail label — hidden pill that slides/fades in only on hover, so the rail
-   itself stays compact (icons only) but each icon's meaning is still one
-   hover away. Absolutely positioned so it never affects layout/reflow. */
-.rail-label{position:absolute;left:100%;top:50%;margin-left:10px;transform:translateY(-50%) translateX(-6px);background:var(--text);color:#fff;font-size:13px;font-weight:500;padding:6px 11px;border-radius:7px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s ease,transform .15s ease;box-shadow:0 4px 12px rgba(0,0,0,0.18);}
-.rail-btn:hover .rail-label{opacity:1;transform:translateY(-50%) translateX(0);}
+/* Inline menu label — icons-only (label faded out) until the rail is hovered,
+   then it fades in as the panel widens. The panel's overflow:hidden clips it
+   while collapsed, so it never affects the 66px gutter. */
+.rail-label{font-size:17px;font-weight:500;color:inherit;white-space:nowrap;opacity:0;transition:opacity .15s ease;}
+.rail:hover .rail-label{opacity:1;}
 .main{flex:1;min-width:0;width:100%;padding:40px clamp(24px,4vw,72px) 80px;}
 
 /* HEADER */
@@ -313,7 +321,9 @@ button,input{font-family:inherit;}
   .ph-greeting{font-size:28px;}
   .kpi-grid,.course-grid{grid-template-columns:1fr;}
   .rail{width:56px;}
-  .rail-btn{width:42px;height:42px;}
+  .rail-inner{width:56px;padding:16px 8px;}
+  .rail:hover .rail-inner{width:220px;}
+  .rail-btn{height:42px;padding:0 10px;}
   .topbar{padding:0 14px;height:60px;}
   .kpi-card{padding:18px 20px;}
   .kpi-value{font-size:36px;}
@@ -410,6 +420,7 @@ button,input{font-family:inherit;}
 
 <div class="shell">
   <div class="rail">
+    <div class="rail-inner">
     <button class="rail-btn active" id="rail-home" onclick="location.hash=''">
       <svg width="20" height="20" viewBox="0 0 16 16" fill="none"><path d="M2 7.2 8 2l6 5.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.3 6.5V13a.7.7 0 0 0 .7.7h8a.7.7 0 0 0 .7-.7V6.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span class="rail-label">Home</span>
@@ -426,6 +437,7 @@ button,input{font-family:inherit;}
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       <span class="rail-label">Settings</span>
     </button>
+    </div>
   </div>
 
   <div class="main">
