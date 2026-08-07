@@ -581,6 +581,10 @@ function clockSvg() {
 function calendarSvg() {
   return '<svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2.2" y="3.4" width="11.6" height="10.4" rx="1.4" stroke="currentColor" stroke-width="1.3"/><path d="M2.2 6.4h11.6M5.4 2.1v2.4M10.6 2.1v2.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
 }
+// Person icon for the Professor line on course cards.
+function personSvg() {
+  return '<svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="2.6" stroke="currentColor" stroke-width="1.3"/><path d="M3.2 13c.6-2.3 2.5-3.4 4.8-3.4S12.2 10.7 12.8 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+}
 // ── COURSE PAGE (in-page navigation, not a popup) ──
 let currentCourseId = null;
 let courseTab = 'main';
@@ -3284,7 +3288,10 @@ function mapCourse(r) {
     status: r.status === 'published' ? 'published' : 'draft',
     officeHours: r.office_hours || '',
     professor: r.professor || PROFESSOR.name,
-    program: ovT('program') || '',
+    // Prefer the catalog's single lead_program (one clean value, one of the 5
+    // programs). The offering's own `program` column is a combined "A, B, C"
+    // string for cross-listed courses, so only fall back to its FIRST entry.
+    program: String(catalog.lead_program || '').trim() || String(ovT('program') || '').split(',')[0].trim(),
     // Cross-listed programs live on the catalog (courses.cross_listed_programs),
     // stored as a comma-separated string — parse into a clean array for display.
     crossListed: String(catalog.cross_listed_programs || '').split(',').map(s => s.trim()).filter(Boolean),
@@ -3316,7 +3323,7 @@ async function loadData() {
       // Per-offering override columns (inherit from courses when null). See mapCourse ovT/ovN.
       `title,description,prerequisites,learning_objectives,required_text,classification,credits,category,short_description,syllabus_link,new_curriculum,program,` +
       `competency_critical_thinking,competency_creative_thinking,competency_self_directed_learning,competency_communication,competency_diversity_empathy,competency_global_harmony,` +
-      `courses(code,title,credits,classification,description,prerequisites,program,cross_listed_programs,` +
+      `courses(code,title,credits,classification,description,prerequisites,program,lead_program,cross_listed_programs,` +
       `competency_critical_thinking,competency_creative_thinking,competency_self_directed_learning,` +
       `competency_communication,competency_diversity_empathy,competency_global_harmony,` +
       `learning_objectives,required_text,category,short_description,syllabus_link,new_curriculum)`
@@ -3483,6 +3490,7 @@ function courseCardHtml(c) {
         <span class="badge ${c.status === 'published' ? 'badge-published' : 'badge-draft'}">${c.status === 'published' ? 'Published' : 'Draft'}</span>
       </div>
       <div class="cc-title">${esc(c.title)}</div>
+      ${c.professor ? `<div class="cc-meta">${personSvg()} ${esc(c.professor)}</div>` : ''}
       ${c.program ? `<div class="cc-meta">${esc(c.program)}</div>` : ''}
       ${c.crossListed && c.crossListed.length ? `<div class="cc-meta">Cross-listed: ${esc(c.crossListed.join(', '))}</div>` : ''}
       <div class="cc-meta">${calendarSvg()} ${esc(c.semester)}</div>
@@ -3521,6 +3529,15 @@ function findCourseById(id) {
       || catalogCourses.find(x => String(x.id) === String(id))
       || null;
 }
+// A course's full program set = its (clean) lead program plus any cross-listings,
+// each an individual program — never a combined "A, B, C" string. Used for both
+// the Program dropdown options and the Program filter so both stay to the 5.
+function courseProgramSet(c) {
+  const set = new Set();
+  String(c.program || '').split(',').forEach(p => { p = p.trim(); if (p) set.add(p); });
+  (c.crossListed || []).forEach(p => { p = String(p).trim(); if (p) set.add(p); });
+  return set;
+}
 function backToList() {
   confirmDiscardIfDirty(() => {
     clearEditState();
@@ -3541,7 +3558,7 @@ async function loadFinderData() {
       `mon,tue,wed,thu,fri,sat,sun,class_time,weekday_time,second_weekday_time,office_hours,status,professor,` +
       `title,description,prerequisites,learning_objectives,required_text,classification,credits,category,short_description,syllabus_link,new_curriculum,program,` +
       `competency_critical_thinking,competency_creative_thinking,competency_self_directed_learning,competency_communication,competency_diversity_empathy,competency_global_harmony,` +
-      `courses(code,title,credits,classification,description,prerequisites,program,cross_listed_programs,` +
+      `courses(code,title,credits,classification,description,prerequisites,program,lead_program,cross_listed_programs,` +
       `competency_critical_thinking,competency_creative_thinking,competency_self_directed_learning,` +
       `competency_communication,competency_diversity_empathy,competency_global_harmony,` +
       `learning_objectives,required_text,category,short_description,syllabus_link,new_curriculum)` +
@@ -3587,8 +3604,13 @@ function renderFinder() {
   }
   // Filter options come straight from the data actually present.
   const progSet = new Set();
-  catalogCourses.forEach(c => { if (c.program) progSet.add(c.program); (c.crossListed || []).forEach(p => progSet.add(p)); });
-  const programs = [...progSet].sort();
+  catalogCourses.forEach(c => courseProgramSet(c).forEach(p => progSet.add(p)));
+  // Order by the canonical PROGRAM_OPTIONS list (Innovation Foundations first …
+  // Business Innovation last); anything not in that list falls to the end.
+  const programs = [...progSet].sort((a, b) => {
+    const ia = PROGRAM_OPTIONS.indexOf(a), ib = PROGRAM_OPTIONS.indexOf(b);
+    return (ia === -1 ? 1e9 : ia) - (ib === -1 ? 1e9 : ib) || a.localeCompare(b);
+  });
   const semesters = [...new Set(catalogCourses.map(c => c.semester).filter(Boolean))].sort((a, b) => semesterSortKey(b) - semesterSortKey(a));
   const profs = [...new Set(catalogCourses.map(c => c.professor).filter(Boolean))].sort();
   const opt = (v, cur) => `<option value="${esc(v)}" ${cur === v ? 'selected' : ''}>${esc(v)}</option>`;
@@ -3635,7 +3657,7 @@ function renderFinder() {
 function applyFinder() {
   const s = finderState;
   let rows = catalogCourses.filter(c => {
-    const progs = [c.program, ...(c.crossListed || [])].filter(Boolean);
+    const progs = [...courseProgramSet(c)];                          // individual programs only
     if (s.program && !progs.includes(s.program)) return false;       // matches lead OR a cross-listing
     if (s.semester && c.semester !== s.semester) return false;
     if (s.professor && c.professor !== s.professor) return false;
