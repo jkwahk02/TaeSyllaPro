@@ -3287,7 +3287,10 @@ function mapCourse(r) {
     secondClassTimezone,
     status: r.status === 'published' ? 'published' : 'draft',
     officeHours: r.office_hours || '',
-    professor: r.professor || PROFESSOR.name,
+    // Unassigned offerings must NOT inherit the signed-in user's name (that made
+    // every professor-less course in the Course Finder read as the viewer). Show
+    // an explicit "TBD" placeholder instead.
+    professor: r.professor || 'TBD',
     // Prefer the catalog's single lead_program (one clean value, one of the 5
     // programs). The offering's own `program` column is a combined "A, B, C"
     // string for cross-listed courses, so only fall back to its FIRST entry.
