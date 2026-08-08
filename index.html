@@ -703,7 +703,7 @@ function handleRoute() {
     renderCoursePage();
     // A course can be reached from Home or the Course Finder — keep that
     // section's rail active and send "Back" there (see backToList).
-    setRailActive(lastListRoute === 'finder' ? 'rail-finder' : 'rail-home');
+    setRailActive(courseOrigin().rail);
     // Land at the top of the course page rather than wherever the home page
     // (which can be long/scrolled) happened to be scrolled to.
     if (isNewCourse) window.scrollTo(0, 0);
@@ -723,7 +723,7 @@ function handleRoute() {
     renderSettingsPage();
     setRailActive('rail-settings');
   } else {
-    lastListRoute = '';
+    lastListRoute = 'home';
     document.getElementById('page-course').style.display = 'none';
     document.getElementById('page-settings').style.display = 'none';
     document.getElementById('page-finder').style.display = 'none';
@@ -889,7 +889,7 @@ function renderCoursePage() {
       return;
     }
     el.innerHTML = `
-      <button class="cp-back" onclick="backToList()">${chevronSvg()} Back to ${lastListRoute === 'finder' ? 'Course Finder' : 'courses'}</button>
+      <button class="cp-back" onclick="backToList()">${chevronSvg()} Back to ${courseOrigin().label}</button>
       <div class="cp-empty">Course not found.</div>`;
     return;
   }
@@ -931,16 +931,24 @@ function renderCoursePage() {
   // are reading, so it can't be changed underneath them. Unpublish first, edit,
   // then publish again — the same draft/published cycle the status badge shows.
   const isPublished = c.status === 'published';
-  const actions = editMode
-    ? `<button class="btn" onclick="cancelEdit()">Cancel</button><button class="btn btn-primary" id="cp-save-btn" onclick="saveCourseEdits()"><i></i>Save changes</button>`
-    : isPublished
-      ? `<button class="btn" onclick="setCoursePublished(false)">Unpublish</button>` +
-        `<button class="btn" disabled title="Unpublish first to make changes">Edit</button>`
-      : `<button class="btn" onclick="enterEditMode()">Edit</button>` +
-        `<button class="btn btn-primary" onclick="setCoursePublished(true)">Publish</button>`;
+  // Only the owner (this offering is in the signed-in user's own `courses`, i.e.
+  // professor_email = their email) can edit/publish. For anyone else — e.g. a
+  // course opened from the Course Finder — hide those actions and show it as
+  // read-only. (RLS would block their writes anyway; this just removes the
+  // buttons that would fail.)
+  const owned = courses.some(x => String(x.id) === String(currentCourseId));
+  const actions = !owned
+    ? `<span style="font-size:16px;color:var(--text3);font-weight:600;">View only</span>`
+    : editMode
+      ? `<button class="btn" onclick="cancelEdit()">Cancel</button><button class="btn btn-primary" id="cp-save-btn" onclick="saveCourseEdits()"><i></i>Save changes</button>`
+      : isPublished
+        ? `<button class="btn" onclick="setCoursePublished(false)">Unpublish</button>` +
+          `<button class="btn" disabled title="Unpublish first to make changes">Edit</button>`
+        : `<button class="btn" onclick="enterEditMode()">Edit</button>` +
+          `<button class="btn btn-primary" onclick="setCoursePublished(true)">Publish</button>`;
 
   el.innerHTML = `
-    <button class="cp-back" onclick="backToList()">${chevronSvg()} Back to ${lastListRoute === 'finder' ? 'Course Finder' : 'courses'}</button>
+    <button class="cp-back" onclick="backToList()">${chevronSvg()} Back to ${courseOrigin().label}</button>
     <div class="cp-header">
       <div class="cp-title-row">
         <span class="chip-code">${esc(c.code)}</span>
@@ -3520,7 +3528,17 @@ function courseListRowHtml(c) {
 // ── COURSE FINDER (full catalog: every program, professor, semester) ──
 // Reuses Home's course card / list row so the two views stay identical; the
 // only behavioural difference is that "Back" returns here (see backToList).
-let lastListRoute = '';                 // '' = Home, 'finder' = Course Finder
+// Pages a course can be opened FROM. The course page's "Back" button names and
+// returns to whichever one the user came from, and that page's rail icon stays
+// active. To add another such page later (e.g. a Dashboard that lists courses),
+// add ONE entry here and set `lastListRoute` in that route's branch — the back
+// label, back navigation, and active rail all follow automatically.
+const COURSE_ORIGINS = {
+  home:   { hash: '',       label: 'Home',          rail: 'rail-home' },
+  finder: { hash: 'finder', label: 'Course Finder', rail: 'rail-finder' },
+};
+let lastListRoute = 'home';             // key into COURSE_ORIGINS
+function courseOrigin() { return COURSE_ORIGINS[lastListRoute] || COURSE_ORIGINS.home; }
 let catalogCourses = [];                // all offerings, mapped like `courses`
 let catalogLoaded = false, catalogLoading = false, catalogError = null;
 const finderState = { q: '', program: '', semester: '', professor: '', status: '', sort: 'code', view: 'grid' };
@@ -3550,7 +3568,7 @@ function courseProfessorList(c) {
 function backToList() {
   confirmDiscardIfDirty(() => {
     clearEditState();
-    location.hash = lastListRoute === 'finder' ? 'finder' : '';
+    location.hash = courseOrigin().hash;
   });
 }
 
