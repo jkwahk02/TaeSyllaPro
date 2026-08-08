@@ -3541,6 +3541,12 @@ function courseProgramSet(c) {
   (c.crossListed || []).forEach(p => { p = String(p).trim(); if (p) set.add(p); });
   return set;
 }
+// A co-taught offering stores its professors as a comma-joined string
+// ("Seongkyu Park, James Ostler"). Split into individual names so the Professor
+// dropdown/filter deal in unique people, never a combined "A, B" entry.
+function courseProfessorList(c) {
+  return String(c.professor || '').split(',').map(s => s.trim()).filter(Boolean);
+}
 function backToList() {
   confirmDiscardIfDirty(() => {
     clearEditState();
@@ -3615,7 +3621,11 @@ function renderFinder() {
     return (ia === -1 ? 1e9 : ia) - (ib === -1 ? 1e9 : ib) || a.localeCompare(b);
   });
   const semesters = [...new Set(catalogCourses.map(c => c.semester).filter(Boolean))].sort((a, b) => semesterSortKey(b) - semesterSortKey(a));
-  const profs = [...new Set(catalogCourses.map(c => c.professor).filter(Boolean))].sort();
+  // Real names A→Z, with the "TBD" placeholder always pinned to the very end.
+  const profSet = new Set();
+  catalogCourses.forEach(c => courseProfessorList(c).forEach(p => profSet.add(p)));
+  // Unique individual names A→Z, with "TBD" pinned to the very end.
+  const profs = [...profSet].sort((a, b) => (a === 'TBD') - (b === 'TBD') || a.localeCompare(b));
   const opt = (v, cur) => `<option value="${esc(v)}" ${cur === v ? 'selected' : ''}>${esc(v)}</option>`;
   const s = finderState;
 
@@ -3663,7 +3673,7 @@ function applyFinder() {
     const progs = [...courseProgramSet(c)];                          // individual programs only
     if (s.program && !progs.includes(s.program)) return false;       // matches lead OR a cross-listing
     if (s.semester && c.semester !== s.semester) return false;
-    if (s.professor && c.professor !== s.professor) return false;
+    if (s.professor && !courseProfessorList(c).includes(s.professor)) return false;  // co-taught: match any listed professor
     if (s.status && c.status !== s.status) return false;
     if (s.q) {
       const hay = [c.code, c.title, c.professor, progs.join(' '), c.description].join(' ').toLowerCase();
