@@ -607,6 +607,7 @@ const CP_TABS = [
   { key: 'schedule', label: 'Schedule' },
   { key: 'readings', label: 'Readings' },
   { key: 'activities', label: 'T-Learning Activities' },
+  { key: 'lessonplans', label: 'Lesson Plans' },
 ];
 
 // ── Unsaved-changes guard ──
@@ -904,7 +905,9 @@ function renderCoursePage() {
   }
 
   let tabContent;
-  if (courseTab === 'main') {
+  if (courseTab === 'lessonplans') {
+    tabContent = renderLessonPlansTab(c);
+  } else if (courseTab === 'main') {
     tabContent = renderCpMainShared(c, editMode);
   } else if (editMode) {
     const rows = editRowsByTab[courseTab];
@@ -2590,6 +2593,219 @@ async function makeSyllabusDocument(offeringId) {
   }
 }
 
+// ══ Lesson Plans tab ══════════════════════════════════════════════════════
+// A per-course Drive folder (Syllabus + lesson-plan/lecture files live together)
+// plus "clone a previous semester" — copies every file from a prior offering's
+// folder into this one. Folder is resolved by: stored course_offerings
+// .lp_target_folder (sync_11) -> name search `code. title (semester)`. All LP
+// reads are lazy + guarded, so a not-yet-run migration (missing lp_target_folder
+// column) never breaks the rest of the app.
+let lpCache = {};   // { [offeringId]: {status:'loading'|'ready'|'error', folderId, folderName, files, sources, error} }
+let lpBusy = false;
+
+function lpFolderName(c) { return `${c.code}. ${c.title} (${c.semester})`; }
+function renderIfLp(id) { if (String(currentCourseId) === String(id) && courseTab === 'lessonplans') renderCoursePage(); }
+
+async function driveFindFolder(name, token) {
+  const q = `mimeType='application/vnd.google-apps.folder' and name='${String(name).replace(/'/g, "\\'")}' and trashed=false`;
+  const r = await gapiFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)&spaces=drive`, {}, token);
+  return (r.files && r.files.length) ? r.files[0].id : null;
+}
+async function driveListFolder(folderId, token) {
+  const q = `'${folderId}' in parents and trashed=false`;
+  const r = await gapiFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,mimeType,webViewLink)&orderBy=name_natural&pageSize=1000&supportsAllDrives=true&includeItemsFromAllDrives=true`, {}, token);
+  return r.files || [];
+}
+// Stored LP Target Folder id for an offering (sync_11) — guarded: a missing
+// column just yields null instead of throwing.
+async function lpStoredFolderId(offeringId) {
+  try {
+    const rows = await sbGet(TBL_OFFERINGS, `offering_id=eq.${encodeURIComponent(offeringId)}&select=lp_target_folder`);
+    const link = rows && rows[0] && rows[0].lp_target_folder;
+    return link ? extractDriveId(link) : null;
+  } catch (e) { return null; }
+}
+// Clone-source candidates: this course's other offerings + former-code/name
+// offerings via course_lineages (read-all RLS lets us see others' offerings).
+async function lpLoadSources(c) {
+  const bases = new Set([c.courseBaseId].filter(Boolean));
+  try {
+    const lin = await sbGet('course_lineages', `course_base_id=eq.${encodeURIComponent(c.courseBaseId)}&select=lineage_id`);
+    const ids = [...new Set((lin || []).map(r => r.lineage_id))];
+    if (ids.length) {
+      const mem = await sbGet('course_lineages', `lineage_id=in.(${ids.map(encodeURIComponent).join(',')})&select=course_base_id`);
+      (mem || []).forEach(m => bases.add(m.course_base_id));
+    }
+  } catch (e) { /* no lineage table yet — just this course */ }
+  if (!bases.size) return [];
+  const inList = [...bases].map(encodeURIComponent).join(',');
+  let rows = [];
+  try {
+    rows = await sbGet(TBL_OFFERINGS, `course_base_id=in.(${inList})&select=offering_id,course_id,course_base_id,semester_year,year,semester,lp_target_folder&order=year.desc`);
+  } catch (e) {
+    rows = await sbGet(TBL_OFFERINGS, `course_base_id=in.(${inList})&select=offering_id,course_id,course_base_id,semester_year,year,semester&order=year.desc`);
+  }
+  return (rows || [])
+    .filter(r => String(r.offering_id) !== String(c.id))
+    .map(r => ({
+      offeringId: r.offering_id, courseId: r.course_id, base: r.course_base_id,
+      semYear: r.semester_year || [r.semester, r.year].filter(Boolean).join(' '),
+      folderId: r.lp_target_folder ? extractDriveId(r.lp_target_folder) : null,
+      same: r.course_base_id === c.courseBaseId,
+    }));
+}
+async function loadLessonPlans(c) {
+  const id = c.id;
+  lpCache[id] = { status: 'loading' };
+  renderIfLp(id);
+  try {
+    const token = await getDocsToken();
+    let folderId = await lpStoredFolderId(id);
+    if (!folderId) folderId = await driveFindFolder(lpFolderName(c), token);
+    const files = folderId ? await driveListFolder(folderId, token) : [];
+    const sources = await lpLoadSources(c);
+    lpCache[id] = { status: 'ready', folderId, folderName: lpFolderName(c), files, sources };
+  } catch (e) {
+    lpCache[id] = { status: 'error', error: e.message || String(e) };
+  }
+  renderIfLp(id);
+}
+function lpReload(id) { delete lpCache[id]; renderIfLp(id); }
+
+function renderLessonPlansTab(c) {
+  const owned = courses.some(x => String(x.id) === String(currentCourseId));
+  if (!owned) return `<div class="cp-card"><div class="cp-card-title">Lesson Plans</div><div class="cp-empty">Available to the course owner.</div></div>`;
+  const st = lpCache[c.id];
+  if (!st || st.status === 'loading') { if (!st) loadLessonPlans(c); return lpShell(`<div class="cp-empty">Loading…</div>`); }
+  if (st.status === 'error') return lpShell(`<div class="cp-empty">Couldn't load: ${esc(st.error)}<div class="cp-empty-hint"><button class="btn" onclick="lpReload(${c.id})">Retry</button></div></div>`);
+  const bar = lpFolderBar(c, st);
+  const body = st.files.length ? lpFileList(c, st) : lpEmptyBody(c, st);
+  return lpShell(bar + body);
+}
+function lpShell(inner) {
+  return `<div class="cp-card">
+    <div class="cp-card-title">Lesson Plans</div>
+    <div style="font-size:14px;color:var(--text3);line-height:1.55;margin-top:-12px;margin-bottom:18px;">Lesson plans and lecture files live in the course folder — the same folder your syllabus was saved to.</div>
+    ${inner}
+  </div>`;
+}
+function lpFolderBar(c, st) {
+  const name = `<div style="font-family:'DM Mono',monospace;font-size:15px;line-height:1.4;word-break:break-word;">${esc(st.folderName)}</div>`;
+  if (st.folderId) {
+    const url = `https://drive.google.com/drive/folders/${st.folderId}`;
+    const n = st.files.length;
+    const sub = n ? `${n} file${n > 1 ? 's' : ''}` : 'No lesson plan files yet';
+    return `<span class="cp-label">Course folder</span>
+      <div style="display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-top:8px;">
+        <div style="flex:1;min-width:0;">${name}<div style="font-size:13px;color:var(--text3);margin-top:3px;">${sub}</div></div>
+        <a href="${url}" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600;text-decoration:none;white-space:nowrap;">Open in Drive ↗</a>
+      </div>`;
+  }
+  return `<span class="cp-label">Course folder</span>
+    <div style="display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px dashed var(--border-em);border-radius:var(--r);padding:12px 14px;margin-top:8px;">
+      <div style="flex:1;min-width:0;">${name}<div style="font-size:13px;color:var(--text3);margin-top:3px;">This folder doesn't exist yet.</div></div>
+      <button class="btn" onclick="lpSetupFolder(${c.id})">Set up folder</button>
+    </div>`;
+}
+function lpFileList(c, st) {
+  const rows = st.files.map(f => `
+    <div style="display:flex;align-items:center;gap:11px;padding:10px 14px;border-bottom:1px solid var(--border);font-size:15px;">
+      <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(f.name)}</span>
+      <a href="${f.webViewLink || ('https://drive.google.com/file/d/' + f.id)}" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600;text-decoration:none;">Open</a>
+    </div>`).join('');
+  return `<div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);margin:18px 0 8px;">Files in this folder</div>
+    <div style="border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;">${rows}</div>
+    ${lpCloneBlock(c, st, false)}`;
+}
+function lpEmptyBody(c, st) {
+  return lpCloneBlock(c, st, true) +
+    `<div style="text-align:center;font-size:13px;color:var(--text3);margin-top:14px;">Or add files to the course folder in Drive — they'll show up here.</div>`;
+}
+function lpSourceOptions(c, st) {
+  const src = st.sources || [];
+  const same = src.filter(s => s.same), former = src.filter(s => !s.same);
+  const opt = s => {
+    const label = `${s.semYear || '—'}${s.same ? '' : ' · ' + s.courseId}`;
+    return s.folderId
+      ? `<option value="f:${s.folderId}">${esc(label)}</option>`
+      : `<option value="" disabled>${esc(label)} (no folder)</option>`;
+  };
+  let html = `<option value="">Choose a semester…</option>`;
+  if (same.length) html += `<optgroup label="This course">${same.map(opt).join('')}</optgroup>`;
+  if (former.length) html += `<optgroup label="Former code / name">${former.map(opt).join('')}</optgroup>`;
+  html += `<optgroup label="&nbsp;"><option value="manual">Find a folder manually…</option></optgroup>`;
+  return html;
+}
+function lpCloneBlock(c, st, prominent) {
+  const box = prominent
+    ? 'background:var(--blue-l);border:1px solid var(--blue-b);border-radius:var(--r-lg);padding:15px 16px;margin-top:16px;'
+    : 'border-top:1px solid var(--border);margin-top:18px;padding-top:16px;';
+  const lbl = prominent ? 'Start from a previous semester' : 'Clone from another semester';
+  return `<div style="${box}">
+    <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:${prominent ? 'var(--blue)' : 'var(--text3)'};margin-bottom:9px;">${lbl}</div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <select id="lp-src-${c.id}" class="cp-select" style="flex:1;" onchange="lpSrcChange(${c.id})">${lpSourceOptions(c, st)}</select>
+      <button class="btn btn-primary" onclick="lpClone(${c.id})">Copy</button>
+    </div>
+    <div id="lp-manual-wrap-${c.id}" style="display:none;margin-top:10px;">
+      <input id="lp-manual-${c.id}" class="cp-input" placeholder="Paste a Google Drive folder link"/>
+      <div style="font-size:12px;color:var(--text3);margin-top:5px;">Any Drive folder — another year, a shared template, anything.</div>
+    </div>
+  </div>`;
+}
+function lpSrcChange(id) {
+  const sel = document.getElementById('lp-src-' + id), w = document.getElementById('lp-manual-wrap-' + id);
+  if (w) w.style.display = (sel && sel.value === 'manual') ? 'block' : 'none';
+}
+async function lpSetupFolder(id) {
+  const c = courses.find(x => String(x.id) === String(id)); if (!c) return;
+  try {
+    const token = await getDocsToken();
+    const fid = await driveGetOrCreateFolder(lpFolderName(c), token);
+    try { await sbPatch(TBL_OFFERINGS, `offering_id=eq.${encodeURIComponent(id)}`, { lp_target_folder: `https://drive.google.com/drive/folders/${fid}` }); } catch (e) {}
+    lpReload(id);
+    showToast('✓ Folder ready');
+  } catch (e) { showToast('Could not create folder: ' + (e.message || e)); }
+}
+// Always-copy clone (no skip — same-named files may be different versions). If
+// the target already has files, confirm before adding copies alongside them.
+async function lpClone(id) {
+  if (lpBusy) return;
+  const c = courses.find(x => String(x.id) === String(id)); if (!c) return;
+  const sel = document.getElementById('lp-src-' + id);
+  const val = sel ? sel.value : '';
+  let srcFolderId = null;
+  if (val === 'manual') {
+    const link = (document.getElementById('lp-manual-' + id) || {}).value || '';
+    srcFolderId = extractDriveId(link);
+    if (!srcFolderId) { showToast('Paste a valid Google Drive folder link.'); return; }
+  } else if (val.indexOf('f:') === 0) {
+    srcFolderId = val.slice(2);
+  } else { showToast('Choose a semester to copy from.'); return; }
+  lpBusy = true;
+  try {
+    const token = await getDocsToken();
+    const st = lpCache[id] || {};
+    let targetId = st.folderId || await lpStoredFolderId(id) || await driveGetOrCreateFolder(lpFolderName(c), token);
+    const srcFiles = (await driveListFolder(srcFolderId, token)).filter(f => f.mimeType !== 'application/vnd.google-apps.folder');
+    if (!srcFiles.length) { showToast('That folder has no files to copy.'); lpBusy = false; return; }
+    const existing = await driveListFolder(targetId, token);
+    if (existing.length && !confirm(`This folder already has ${existing.length} file(s). Copy ${srcFiles.length} more alongside them? Existing files are kept, not replaced.`)) { lpBusy = false; return; }
+    showToast(`Copying ${srcFiles.length} file(s)…`);
+    let ok = 0;
+    for (const f of srcFiles) {
+      try { await driveCopyTemplate(f.id, f.name, token, targetId); ok++; }
+      catch (e) { console.warn('LP copy failed for', f.name, e); }
+    }
+    try { await sbPatch(TBL_OFFERINGS, `offering_id=eq.${encodeURIComponent(id)}`, { lp_target_folder: `https://drive.google.com/drive/folders/${targetId}` }); } catch (e) {}
+    lpReload(id);
+    showToast(`✓ Copied ${ok} of ${srcFiles.length} file(s)`);
+  } catch (e) {
+    console.error('LP clone failed:', e);
+    showToast('Clone failed: ' + (e.message || e));
+  } finally { lpBusy = false; }
+}
+
 // ── DATA ──
 // PostgREST embeds the linked `courses` catalog row automatically via the
 // course_offerings.course_base_id -> courses.course_id foreign key.
@@ -3278,6 +3494,7 @@ function mapCourse(r) {
     courseBaseId: r.course_base_id,
     code: fullCode,
     section: r.section || null,
+    courseBaseId: r.course_base_id || null,
     // Prefer a section-specific title stored on the offering (e.g. DA200-1 vs
     // DA200-2); fall back to the base course's catalog title.
     title: ovT('title') || (catalogMissing ? '(catalog data unavailable — check RLS)' : '(untitled)'),
