@@ -851,6 +851,39 @@ function detailRowSorter(tabKey) {
   }
   return (a, b) => (Number(b.id) || 0) - (Number(a.id) || 0);
 }
+// Schedule order is semantic, not id-based: ids are unreliable (most courses were
+// synced in reverse, some partly forward — e.g. DA321's Unit 1 has the lowest id —
+// and rows added in the app get new, higher ids). Lessons go in number order; each
+// "Unit N" sits right before the first lesson whose `unit` column is N, falling back
+// to the lesson that followed it in the legacy id-DESC order. Any other row
+// (Midterm, Holiday, …) stays right after the row that preceded it in that order.
+const _unitItemNum = (s) => { const m = /^\s*unit\s*(\d+)/i.exec(String(s || '')); return m ? parseInt(m[1], 10) : null; };
+const _lessonItemNum = (s) => { const m = /^\s*(?:lesson|l)\s*(\d+)/i.exec(String(s || '')); return m ? parseInt(m[1], 10) : null; };
+function sortScheduleRows(rows) {
+  // Baseline = id order in whichever direction the lessons mostly run (legacy is DESC).
+  const asc = [...rows].sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
+  const ls = asc.map(r => _lessonItemNum(r.item)).filter(n => n !== null);
+  let up = 0;
+  for (let i = 1; i < ls.length; i++) up += Math.sign(ls[i] - ls[i - 1]);
+  const base = up > 0 ? asc : asc.reverse();
+  const firstLessonOfUnit = {};
+  base.forEach(r => {
+    const l = _lessonItemNum(r.item), u = parseInt(r.unit, 10);
+    if (l !== null && !isNaN(u) && (firstLessonOfUnit[u] === undefined || l < firstLessonOfUnit[u])) firstLessonOfUnit[u] = l;
+  });
+  const keys = base.map(r => _lessonItemNum(r.item));
+  base.forEach((r, i) => {
+    const u = _unitItemNum(r.item);
+    if (u === null) return;
+    let next = firstLessonOfUnit[u];
+    for (let j = i + 1; next === undefined && j < base.length; j++) next = _lessonItemNum(base[j].item) ?? undefined;
+    if (next === undefined) next = u === 1 ? 0 : 1e9;
+    keys[i] = next - 0.5;
+  });
+  let prev = -1;
+  base.forEach((r, i) => { if (keys[i] === null) keys[i] = prev + 0.001; prev = keys[i]; });
+  return base.map((r, i) => ({ r, k: keys[i], i })).sort((a, b) => a.k - b.k || a.i - b.i).map(x => x.r);
+}
 async function loadCourseDetailTab(offeringId, tabKey) {
   const spec = CP_DETAIL_TABLES[tabKey];
   if (!spec) return [];
@@ -869,8 +902,9 @@ async function loadCourseDetailTab(offeringId, tabKey) {
     //    number, then id (they group multiple rows per lesson).
     //  - schedule/assessment/communication have no clean lesson field but were
     //    inserted in reverse, so id DESCENDING restores their intended order.
-    if (Array.isArray(rows)) rows.sort(detailRowSorter(tabKey));
-    cache[tabKey] = rows;
+    cache[tabKey] = !Array.isArray(rows) ? rows
+      : tabKey === 'schedule' ? sortScheduleRows(rows)
+      : rows.sort(detailRowSorter(tabKey));
   } catch (e) {
     cache[tabKey] = { error: e.message };
   }
@@ -2483,10 +2517,11 @@ async function makeSyllabusDocument(offeringId) {
     const [assess, comm, sched, reads] = await Promise.all([
       sbGet('course_assessments', `offering_id=eq.${encodeURIComponent(offeringId)}&select=id,item,ratio_pct,description&order=id.asc`),
       sbGet('course_communications', `offering_id=eq.${encodeURIComponent(offeringId)}&select=id,method,description&order=id.asc`),
-      sbGet('course_schedule', `offering_id=eq.${encodeURIComponent(offeringId)}&select=id,item,topic_title,learning_objectives&order=id.asc`),
+      sbGet('course_schedule', `offering_id=eq.${encodeURIComponent(offeringId)}&select=id,item,topic_title,learning_objectives,unit&order=id.asc`),
       sbGet('course_readings', `offering_id=eq.${encodeURIComponent(offeringId)}&select=id,lesson,category,reading_title,url_link&order=id.asc`),
     ].map((p, i) => p.then(rows => {
       if (!Array.isArray(rows)) return rows;
+      if (i === 2) return sortScheduleRows(rows);
       if (i === 3) return rows.sort((a, b) => _lessonNum(a.lesson) - _lessonNum(b.lesson) || _readingCatRank(a.category) - _readingCatRank(b.category) || (Number(a.id) || 0) - (Number(b.id) || 0));
       return rows.sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
     })));
