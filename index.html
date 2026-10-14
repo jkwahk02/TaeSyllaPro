@@ -352,7 +352,172 @@ button,input{font-family:inherit;}
   .kpi-value{font-size:36px;}
   .course-card{padding:18px 20px;}
 }
+/* ── Learning Outcomes tab ── */
+.lo-sub{font-size:17px;color:var(--text2);margin:-4px 0 18px;line-height:1.45;}
+.lo-draft{background:var(--amber-l);color:var(--amber-d,#633806);border-radius:var(--r);padding:12px 16px;font-size:16px;margin-bottom:16px;}
+.lo-wrap{overflow-x:auto;margin:0 -6px;padding:0 6px;}
+.lo-matrix{width:100%;border-collapse:separate;border-spacing:0;min-width:880px;table-layout:fixed;}
+.lo-matrix th{font-size:15px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);padding:0 6px 12px;text-align:center;vertical-align:bottom;border-bottom:1px solid var(--border);}
+.lo-matrix th.lo-clo-h{text-align:left;padding-left:0;}
+.lo-plo-code{display:block;font-family:'DM Mono',monospace;font-size:16px;color:var(--text);letter-spacing:0;text-transform:none;}
+.lo-plo-name{display:block;font-size:13px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--text3);margin-top:3px;line-height:1.25;}
+.lo-matrix td{border-bottom:1px solid var(--border);padding:14px 6px;vertical-align:middle;}
+.lo-matrix tfoot td{border-top:1px solid var(--border-em);border-bottom:none;}
+.lo-pm td{background:var(--surface2);padding:10px 6px;border-bottom:1px solid var(--border-em);}
+.lo-pm td:first-child{border-radius:var(--r) 0 0 var(--r);padding-left:12px;}
+.lo-pm td:last-child{border-radius:0 var(--r) var(--r) 0;}
+.lo-pm-l{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text2);}
+.lo-pm-cell{display:flex;align-items:center;justify-content:center;min-height:38px;border-radius:6px;font-size:14px;color:var(--text3);border:1px dashed var(--border-em);background:var(--surface);}
+.lo-pm-cell.on{border-style:solid;}
+.lo-lvs{display:inline-flex;gap:3px;}
+.lo-lvs span{width:22px;height:20px;border-radius:4px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text3);opacity:.55;}
+.lo-lvs span.on.I{background:#F1F6FC;color:var(--blue);border:1px solid var(--blue-b);opacity:1;}
+.lo-lvs span.on.R{background:var(--blue-b);color:#0d3f6e;opacity:1;}
+.lo-lvs span.on.A{background:var(--blue);color:#fff;opacity:1;}
+.lo-clo-cell{display:flex;gap:14px;align-items:flex-start;padding-right:14px;}
+.lo-clo-text{flex:1;min-width:0;font-size:18px;line-height:1.45;color:var(--text);}
+.lo-clo-text .lo-ta{width:100%;}
+.lo-no{font-family:'DM Mono',monospace;font-size:16px;font-weight:500;background:var(--surface2);color:var(--text2);border-radius:5px;padding:3px 8px;flex-shrink:0;margin-top:1px;}
+.lo-drag{flex-shrink:0;width:22px;height:32px;margin:0 -4px 0 -8px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:18px;cursor:grab;border-radius:5px;user-select:none;}
+.lo-drag:hover,.lo-drag:focus{background:var(--surface2);color:var(--text);outline:none;}
+.lo-row.drop-before td{box-shadow:inset 0 3px 0 var(--blue);}
+.lo-row.drop-after td{box-shadow:inset 0 -3px 0 var(--blue);}
+.lo-cell{width:100%;min-width:74px;height:50px;border-radius:var(--r);border:1px dashed transparent;background:transparent;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;font-family:inherit;cursor:default;}
+.lo-matrix.editing .lo-cell{border-color:var(--border-em);cursor:pointer;}
+.lo-matrix.editing .lo-cell:hover{background:var(--surface2);}
+.lo-cell.P{background:var(--blue);border:1px solid var(--blue);color:#fff;}
+.lo-cell.S{background:#F1F6FC;border:1px solid var(--blue-b);color:var(--blue);font-weight:500;}
+.lo-cell.sel{outline:3px solid var(--amber-b,#EF9F27);outline-offset:2px;}
+.lo-plus{color:var(--text3);font-size:20px;font-weight:400;}
+.lo-del-td{text-align:right;padding-right:0 !important;}
+.lo-del{height:34px;padding:0 12px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--text3);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;}
+.lo-row:hover .lo-del{color:var(--red);border-color:#e9c4c4;}
+.lo-del:hover{background:var(--red-l);}
+.lo-cov{font-size:13px;line-height:1.3;text-align:center;color:var(--text2);}
+.lo-cov.ok{color:var(--green);font-weight:600;}
+.lo-cov.warn{color:var(--amber);font-weight:600;}
+.lo-add{width:100%;height:52px;margin-top:12px;border:2px dashed var(--blue-b);border-radius:var(--r);background:var(--blue-l);color:var(--blue);font-size:17px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;}
+.lo-add span{font-size:24px;line-height:1;}
+.lo-legend{display:flex;align-items:center;gap:8px;font-size:16px;color:var(--text2);margin-top:18px;}
+.lo-empty{text-align:center;padding:30px 20px;border:2px dashed var(--border-em);border-radius:var(--r-lg);background:var(--surface2);}
+.lo-empty-h{font-size:20px;font-weight:600;color:var(--text);margin-bottom:12px;}
+.lo-paste{max-width:640px;margin:0 auto;text-align:left;}
+.lo-paste textarea{width:100%;min-height:150px;border:1px solid var(--border-em);border-radius:var(--r);padding:12px;font-size:16px;font-family:inherit;line-height:1.5;resize:vertical;}
+.lo-paste-b{display:flex;justify-content:flex-end;gap:8px;margin-top:8px;}
+.lo-pop{position:absolute;z-index:200;width:380px;background:var(--surface);border:1px solid var(--border-em);border-radius:var(--r-lg);box-shadow:0 12px 36px rgba(0,0,0,0.16);padding:18px;display:none;}
+.lo-pop.show{display:block;}
+.lo-pop h4{font-size:17px;font-weight:600;margin-bottom:3px;}
+.lo-ctx{font-size:14px;color:var(--text3);margin-bottom:14px;}
+.lo-opt{display:flex;flex-direction:column;gap:6px;margin:4px 0 14px;}
+.lo-opt button{display:flex;align-items:center;gap:12px;text-align:left;border:1px solid var(--border-em);background:var(--surface);border-radius:var(--r);padding:9px 12px;cursor:pointer;font-family:inherit;}
+.lo-opt button:hover{background:var(--surface2);}
+.lo-opt button.on{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-b);}
+.lo-opt .d{font-size:13px;color:var(--text2);line-height:1.35;}
+.lo-sw{min-width:112px;height:26px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;padding:0 10px;flex-shrink:0;}
+.lo-sw.P{background:var(--blue);color:#fff;}
+.lo-sw.S{background:#F1F6FC;border:1px solid var(--blue-b);color:var(--blue);font-weight:500;}
+.lo-sw.none{border:1px dashed var(--border-em);color:var(--text3);font-weight:500;}
+.lo-cons-row{display:grid;grid-template-columns:minmax(200px,1.3fr) 2fr minmax(170px,auto);gap:16px;align-items:center;padding:11px 0;border-bottom:1px solid var(--border);font-size:17px;}
+.lo-cons-row:last-child{border-bottom:none;}
+.lo-cons-row.head{font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);padding-top:0;}
+.lo-mono{font-family:'DM Mono',monospace;font-weight:500;}
+.lo-cons-bars{display:flex;flex-direction:column;gap:5px;}
+.lo-cons-bar{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text3);}
+.lo-cons-bar > span:first-child{width:62px;}
+.lo-cons-bar .track{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+.lo-cons-bar .fill{height:100%;border-radius:4px;}
+.lo-cons-bar .fill.w{background:var(--violet,#534AB7);}
+.lo-cons-bar .fill.m{background:var(--blue);}
+.lo-cons-bar .v{width:44px;text-align:right;font-family:'DM Mono',monospace;}
+.lo-pill{font-size:14px;font-weight:600;padding:4px 11px;border-radius:11px;white-space:nowrap;justify-self:start;}
+.lo-pill.ok{background:var(--green-l);color:var(--green);}
+.lo-pill.warn{background:var(--amber-l);color:var(--amber);}
+@media (max-width:760px){ .lo-cons-row{grid-template-columns:1fr;gap:8px;} .lo-cons-row.head{display:none;} }
+/* ── Rubrics tab ── */
+.rb-pts{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 18px;}
+.rb-pt{height:40px;padding:0 16px;border-radius:20px;border:1px solid var(--border-em);background:var(--surface);font-size:16px;font-weight:500;color:var(--text2);cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-family:inherit;}
+.rb-pt:hover{background:var(--surface2);}
+.rb-pt.on{background:var(--blue-l);border-color:var(--blue);color:var(--blue);font-weight:600;}
+.rb-pt.orphan{border-style:dashed;}
+.rb-pt-pct{font-family:'DM Mono',monospace;font-size:13px;opacity:.75;}
+.rb-pt-st{font-size:12px;font-weight:600;color:var(--text3);background:var(--surface2);padding:1px 7px;border-radius:8px;}
+.rb-pt-st.bad{color:var(--red);background:var(--red-l);}
+.rb-head{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:16px;}
+.rb-sum{font-size:16px;color:var(--text2);display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.rb-exp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.rb-xl{flex-shrink:0;}
+.rb-sel{height:32px;padding:0 6px;border:1px solid var(--border-em);border-radius:6px;background:var(--surface);font-size:14px;font-family:inherit;}
+.rb-sc{margin-top:6px;color:var(--text3);}
+.rb-sc.own{color:var(--violet);border-color:#c9c5f3;background:var(--violet-l);font-weight:600;}
+.rb-sc-badge{display:inline-block;margin-top:6px;font-size:12px;font-weight:700;padding:2px 8px;border-radius:9px;background:var(--violet-l);color:var(--violet);}
+.rb-wrap{overflow-x:auto;}
+.rb-grid{width:100%;border-collapse:collapse;min-width:1040px;table-layout:fixed;}
+.rb-grid th{font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--text3);padding:0 8px 10px;border-bottom:1px solid var(--border-em);text-align:left;vertical-align:bottom;}
+.rb-grid th.num,.rb-grid td.num{text-align:center;}
+.rb-grid td{padding:12px 8px;border-bottom:1px solid var(--border);vertical-align:top;font-size:15px;line-height:1.45;}
+.rb-grid td.rb-lv{color:var(--text2);}
+.rb-lvh span{display:inline-flex;width:20px;height:20px;border-radius:4px;align-items:center;justify-content:center;font-size:12px;margin-right:6px;color:#fff;}
+.rb-lvh.l4 span{background:var(--teal);} .rb-lvh.l3 span{background:var(--blue);} .rb-lvh.l2 span{background:var(--amber-b);} .rb-lvh.l1 span{background:var(--red);}
+.rb-ccode{display:inline-block;font-family:'DM Mono',monospace;font-size:13px;color:var(--text3);margin-right:6px;}
+.rb-cname{font-weight:600;font-size:16px;}
+.rb-grp td{background:var(--surface2);padding:9px 10px;font-size:15px;}
+.rb-gk{display:inline-flex;width:24px;height:24px;border-radius:5px;background:var(--text);color:#fff;font-size:13px;font-weight:700;align-items:center;justify-content:center;margin-right:10px;}
+.rb-gsub{float:right;font-family:'DM Mono',monospace;font-size:14px;color:var(--text2);}
+.rb-g-in{display:inline-block;width:auto;min-width:320px;height:32px;font-weight:600;}
+.rb-g-del{float:right;font-size:14px;margin-right:16px;color:var(--red);}
+.rb-in{border:1px solid var(--border-em);border-radius:6px;padding:0 8px;font-size:15px;font-family:inherit;background:var(--surface);color:var(--text);}
+.rb-grid .rb-name{width:100%;padding:8px;min-height:40px;}
+.rb-num{width:54px;height:36px;text-align:center;padding:0 4px;}
+.rb-grid .rb-ta{width:100%;min-height:64px;font-size:14px;padding:8px;}
+.rb-none{font-size:14px;color:var(--text3);font-style:italic;}
+.rb-clo{display:inline-block;font-family:'DM Mono',monospace;font-size:13px;padding:3px 8px;border-radius:6px;background:var(--teal-l);color:var(--teal);font-weight:500;margin:0 3px 3px 0;}
+.rb-clo-btn{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:36px;width:100%;padding:4px 6px;border:1px dashed var(--border-em);border-radius:6px;background:var(--surface);cursor:pointer;text-align:left;font-family:inherit;}
+.rb-clo-btn:hover{background:var(--surface2);border-style:solid;}
+.rb-clo-btn.sel{outline:3px solid var(--amber-b);outline-offset:1px;}
+.rb-clo-btn .rb-clo{margin:0;}
+.rb-clo-add{font-size:14px;font-weight:600;color:var(--blue);}
+.rb-cpk{display:flex;flex-direction:column;gap:6px;margin:4px 0 14px;max-height:360px;overflow:auto;}
+.rb-cpk-row{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;font-size:14px;line-height:1.4;}
+.rb-cpk-row:hover{background:var(--surface2);}
+.rb-cpk-row.on{border-color:var(--teal);background:var(--teal-l);}
+.rb-cpk-row input{margin-top:3px;accent-color:var(--teal);}
+.rb-cpk-t{flex:1;color:var(--text);}
+.rb-sug{display:inline-block;font-size:12px;font-weight:700;color:var(--violet);background:var(--violet-l);padding:1px 7px;border-radius:8px;margin-left:4px;white-space:nowrap;}
+.rb-row.drop-before td{box-shadow:inset 0 3px 0 var(--blue);}
+.rb-row.drop-after td{box-shadow:inset 0 -3px 0 var(--blue);}
+.rb-drag{width:22px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:18px;cursor:grab;border-radius:5px;user-select:none;}
+.rb-drag:hover,.rb-drag:focus{background:var(--surface2);color:var(--text);outline:none;}
+.rb-del-td{text-align:right;}
+.rb-del{height:34px;padding:0 10px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--text3);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;}
+.rb-row:hover .rb-del{color:var(--red);border-color:#e9c4c4;}
+.rb-del:hover{background:var(--red-l);}
+.rb-add-tr td{border-bottom:none;padding:8px 0 4px;}
+.rb-add{width:100%;height:40px;border:2px dashed var(--blue-b);border-radius:var(--r);background:var(--blue-l);color:var(--blue);font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;}
+.rb-add span{font-size:20px;line-height:1;}
+.rb-grid tfoot td{border-top:1px solid var(--border-em);border-bottom:none;font-size:16px;}
+.rb-under{margin-top:12px;}
+.rb-empty{text-align:center;padding:30px 20px;border:2px dashed var(--border-em);border-radius:var(--r-lg);background:var(--surface2);}
+.rb-empty.quiet{border-style:solid;}
+.rb-empty-h{font-size:20px;font-weight:600;color:var(--text);margin-bottom:12px;}
+.rb-empty-p{font-size:16px;color:var(--text2);margin-bottom:14px;}
+.rb-empty-b{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.rb-suggest{display:inline-flex;align-items:center;gap:12px;margin:2px auto 18px;padding:10px 12px 10px 16px;border-radius:24px;background:linear-gradient(90deg,var(--violet-l),var(--blue-l));border:1px solid #d6d3f7;font-size:16px;color:var(--text);text-align:left;}
+.rb-spark{color:var(--violet);font-size:18px;animation:rbspark 2.4s ease-in-out infinite;}
+@keyframes rbspark{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.55;transform:scale(.85);}}
+@media (prefers-reduced-motion:reduce){ .rb-spark{animation:none;} }
+.rb-cov td{vertical-align:middle;}
+.rb-chip{display:inline-flex;align-items:center;gap:5px;font-size:14px;padding:3px 10px;border-radius:12px;background:var(--teal-l);color:var(--teal);font-weight:500;margin:2px 6px 2px 0;border:none;cursor:pointer;font-family:inherit;}
+.rb-chip span{font-family:'DM Mono',monospace;font-size:12px;opacity:.8;}
+.cp-tab-new{font-size:12px;font-weight:700;background:var(--violet-l);color:var(--violet);padding:2px 7px;border-radius:9px;margin-left:6px;vertical-align:2px;}
+.btn[aria-disabled="true"]{opacity:.45;cursor:not-allowed;}
+.btn[aria-disabled="true"]:hover{background:var(--surface);}
+.xl-ic{flex-shrink:0;}
+.cp-tab-nav{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-top:20px;padding:10px 12px;background:var(--surface2);border-radius:var(--r-lg);}
+.cp-tab-nav-here{font-size:15px;font-weight:600;color:var(--blue);text-align:center;display:flex;align-items:center;gap:8px;}
+.cp-tab-nav-here::before,.cp-tab-nav-here::after{content:"";width:18px;height:2px;background:var(--blue);border-radius:1px;}
+@media (max-width:760px){ .cp-tab-nav{grid-template-columns:1fr 1fr;} .cp-tab-nav-here{display:none;} }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -602,7 +767,9 @@ let editSnapshot = null; // JSON baseline captured right after edit data loads, 
 let periodsCache = {}; // { [offeringId]: mapped period rows already saved in the DB }
 const CP_TABS = [
   { key: 'main', label: 'Main' },
+  { key: 'outcomes', label: 'Learning Outcomes', isNew: true },
   { key: 'assessment', label: 'Assessment' },
+  { key: 'rubrics', label: 'Rubrics', isNew: true },
   { key: 'communication', label: 'Communication' },
   { key: 'schedule', label: 'Schedule' },
   { key: 'readings', label: 'Readings' },
@@ -743,8 +910,12 @@ function setRailActive(id) {
 // Switching tabs no longer exits edit mode — Edit applies to the whole
 // course. If the tab being switched to is a detail tab whose draft rows
 // haven't been loaded yet this edit session, kick that off now.
+// "NEW" on tabs added in 2026-10: shown until the professor opens the tab once (per browser).
+function tabSeen(key) { try { return (JSON.parse(localStorage.getItem('taesylla_seen_tabs') || '[]')).includes(key); } catch (e) { return true; } }
+function markTabSeen(key) { try { const a = JSON.parse(localStorage.getItem('taesylla_seen_tabs') || '[]'); if (!a.includes(key)) { a.push(key); localStorage.setItem('taesylla_seen_tabs', JSON.stringify(a)); } } catch (e) {} }
 function setCourseTab(tab) {
   courseTab = tab;
+  if ((CP_TABS.find(t => t.key === tab) || {}).isNew) markTabSeen(tab);
   if (editMode && tab !== 'main' && !editRowsByTab[tab]) {
     ensureEditRowsForTab(tab); // fire-and-forget; re-renders once loaded
   }
@@ -931,6 +1102,7 @@ function renderCoursePage() {
 
   // Periods (Class meeting times) back both the Main tab and the Schedule
   // tab's computed Class Date column, so load them lazily for either.
+  if (!outcomeCache[c.id]) loadOutcomes(c); // fire-and-forget: the Learning Outcomes tab, and Main's objectives lock
   if ((courseTab === 'main' || courseTab === 'schedule') && !periodsCache[c.id]) loadPeriodsIfNeeded(c.id); // fire-and-forget, re-renders on arrival
   // The Schedule tab's Class Date column also needs the cohort's academic
   // calendar (holidays / breaks / make-up days / timezone switch).
@@ -943,6 +1115,10 @@ function renderCoursePage() {
     tabContent = renderLessonPlansTab(c);
   } else if (courseTab === 'main') {
     tabContent = renderCpMainShared(c, editMode);
+  } else if (courseTab === 'outcomes') {
+    tabContent = renderOutcomesTab(c);
+  } else if (courseTab === 'rubrics') {
+    tabContent = renderRubricsTab(c);
   } else if (editMode) {
     const rows = editRowsByTab[courseTab];
     if (!rows) {
@@ -979,8 +1155,8 @@ function renderCoursePage() {
     : editMode
       ? `<button class="btn" onclick="cancelEdit()">Cancel</button><button class="btn btn-primary" id="cp-save-btn" onclick="saveCourseEdits()"><i></i>Save changes</button>`
       : isPublished
-        ? `<button class="btn" onclick="setCoursePublished(false)">Unpublish</button>` +
-          `<button class="btn" disabled title="Unpublish first to make changes">Edit</button>`
+        ? `<button class="btn" aria-disabled="true" title="Unpublish first to make changes" onclick="showToast('Unpublish first to make changes')">Edit</button>` +
+          `<button class="btn" onclick="setCoursePublished(false)">Unpublish</button>`
         : `<button class="btn" onclick="enterEditMode()">Edit</button>` +
           `<button class="btn btn-primary" onclick="setCoursePublished(true)">Publish</button>`;
 
@@ -996,11 +1172,15 @@ function renderCoursePage() {
       <p class="cp-meta">${esc(c.semester)} · ${creditsText(c.credits)} · ${esc(c.classification)}</p>
     </div>
     <div class="cp-tabs">
-      ${CP_TABS.map(t => `<button class="cp-tab ${courseTab === t.key ? 'active' : ''}" onclick="setCourseTab('${t.key}')">${esc(t.label)}</button>`).join('')}
+      ${CP_TABS.map(t => `<button class="cp-tab ${courseTab === t.key ? 'active' : ''}" onclick="setCourseTab('${t.key}')">${esc(t.label)}${t.isNew && !tabSeen(t.key) ? '<span class="cp-tab-new">NEW</span>' : ''}</button>`).join('')}
     </div>
     <div id="cp-tab-body">${tabContent}</div>
+    ${cpTabNavHtml()}
   `;
   document.querySelectorAll('#cp-tab-body textarea.cp-textarea, #cp-tab-body textarea.grid-input').forEach(autoGrowTextarea);
+  if (courseTab !== 'rubrics' && rbPickK !== null) { rbPickK = null; const p = document.getElementById('rb-pop'); if (p) p.classList.remove('show'); }
+  document.querySelectorAll('#cp-tab-body textarea.rb-ta, #cp-tab-body textarea.rb-name').forEach(autoGrowTextarea);
+  if (courseTab !== 'outcomes' && loPickKey) { loPickKey = null; const p = document.getElementById('lo-pop'); if (p) p.classList.remove('show'); }
 }
 
 // Grows a textarea to fit its content (view mode included, so long saved
@@ -1081,6 +1261,8 @@ async function enterEditMode() {
 // detail tab). Safe to call repeatedly — a no-op once that tab is loaded.
 async function ensureEditRowsForTab(tabKey) {
   if (editRowsByTab[tabKey]) return editRowsByTab[tabKey];
+  if (tabKey === 'outcomes') return ensureOutcomeDraft();
+  if (tabKey === 'rubrics') return ensureRubricDraft();
   const c = courses.find(x => String(x.id) === String(currentCourseId));
   if (!c) return [];
   const rows = await loadCourseDetailTab(c.id, tabKey);
@@ -1336,11 +1518,15 @@ async function saveCourseEdits() {
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
   try {
     if (editDraft) await saveMainEditsInner(c);
+    let sentToChair = 0;
+    if (editRowsByTab.outcomes) sentToChair = await saveOutcomesInner(c, editRowsByTab.outcomes) || 0;
     for (const tabKey of Object.keys(editRowsByTab)) {
+      if (tabKey === 'outcomes' || tabKey === 'rubrics') continue;
       await saveDetailTabInner(c, tabKey, editRowsByTab[tabKey]);
     }
+    if (editRowsByTab.rubrics) await saveRubricsInner(c, editRowsByTab.rubrics);   // after the assessment rows
     clearEditState();
-    showToast('Changes saved');
+    showToast(sentToChair ? `Changes saved. ${sentToChair} PLO difference${sentToChair > 1 ? 's' : ''} sent to the program chair.` : 'Changes saved');
     await loadData(); // refreshes `courses` from the DB and re-renders via handleRoute()
     return true;
   } catch (e) {
@@ -1580,7 +1766,7 @@ function renderCpMainShared(c, editing) {
         <div class="cp-field full"><span class="cp-label">Course Description</span><textarea class="cp-textarea" rows="1" ${dis} ${oi('editDraft.description=this.value;autoGrowTextarea(this)')}>${esc(d.description)}</textarea></div>
         <div class="cp-field full"><span class="cp-label">Why This Course?</span><textarea class="cp-textarea" rows="1" ${dis} ${oi('editDraft.shortDescription=this.value;autoGrowTextarea(this)')}>${esc(d.shortDescription)}</textarea></div>
         <div class="cp-field full"><span class="cp-label">Prerequisite(s)</span><textarea class="cp-textarea" rows="1" ${dis} ${oi('editDraft.prerequisites=this.value;autoGrowTextarea(this)')}>${esc(d.prerequisites)}</textarea></div>
-        <div class="cp-field full"><span class="cp-label">Course Learning Objectives</span><textarea class="cp-textarea" rows="1" ${dis} ${oi('editDraft.learningObjectives=this.value;autoGrowTextarea(this)')}>${esc(d.learningObjectives)}</textarea></div>
+        <div class="cp-field full"><span class="cp-label">Course Learning Objectives</span><textarea class="cp-textarea" rows="1" ${dis || (outcomeCache[c.id] && outcomeCache[c.id].clos && outcomeCache[c.id].clos.length ? 'disabled' : '')} ${oi('editDraft.learningObjectives=this.value;autoGrowTextarea(this)')}>${esc(d.learningObjectives)}</textarea></div>
         <div class="cp-field full"><span class="cp-label">Required Text</span><textarea class="cp-textarea" rows="1" ${dis} ${oi('editDraft.requiredText=this.value;autoGrowTextarea(this)')}>${esc(d.requiredText)}</textarea></div>
       </div>
     </div>
@@ -1775,9 +1961,9 @@ function renderDetailTabShared(tabKey, rows, editing) {
   }
   return `
     <div class="cp-card">
-      <div class="cp-card-title" style="display:flex;align-items:center;gap:14px;">
+      <div class="cp-card-title" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
         <span>${esc(CP_TAB_TITLES[tabKey])}</span>
-        ${headerExtra}
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${headerExtra}${gridXlButtonsHtml(tabKey, rows)}</div>
       </div>
       ${tabKey === 'schedule' ? scheduleExportStatusHtml() : ''}
       <div id="grid-editor-inner">${detailGridHtml(tabKey, rows, editing)}</div>
@@ -1827,6 +2013,892 @@ function handleGridPaste(e, ri, ci) {
 }
 
 // ── SUPABASE HELPERS ──
+// ── LEARNING OUTCOMES TAB (outcome_* tables, see Assessment Toolkit/db/outcome_schema_v1.sql) ──
+// CLOs are rows in outcome_clos; course_offerings.learning_objectives is regenerated
+// from them by a DB trigger (and protected from other writes once rows exist).
+// Each CLO links to PLOs as Primary or Also supports (outcome_clo_plo_map).
+// The course row of the program curriculum map is shown read-only; on save,
+// PLOs that differ from it are sent to the program chair (outcome_save_alignment).
+let outcomeCache = {};   // { [offeringId]: {status:'loading'|'ready'|'error', error, clos, map, cmap, plos, prefilled} }
+let outcomePlosAll = null;
+let loPickKey = null;     // open Primary / Also supports popover
+const LO_ROLE = { P: 'Primary', S: 'Also supports' };
+const LO_LVL = { I: 'Introduced', R: 'Reinforced', A: 'Assessed' };
+const PROGRAM_CODES = { 'Data Science and Artificial Intelligence': 'DA' };
+
+function loParseNumbered(t) {
+  const out = [];
+  const seen = new Set();
+  for (const m of String(t || '').replace(/\r/g, '').matchAll(/(?:^|\n)[ \t]*(?:CLO[ \t]*)?\(?(\d{1,2})[.):][ \t]*([^\n]+)/gi)) {
+    if (seen.has(m[1])) continue;
+    seen.add(m[1]);
+    // drop a trailing PLO tag such as "(PLO1 Critical Thinking)": the links live in the PLO columns
+    let s = m[2].trim();
+    const i = s.lastIndexOf(' (PLO');
+    if (i > 0 && s.endsWith(')')) s = s.slice(0, i).trim();
+    out.push(s);
+  }
+  return out;
+}
+
+async function loadOutcomes(c) {
+  const id = c.id;
+  if (outcomeCache[id] && outcomeCache[id].status !== 'error') return outcomeCache[id];
+  outcomeCache[id] = { status: 'loading' };
+  try {
+    if (!outcomePlosAll) outcomePlosAll = await sbGet('outcome_plos', 'is_active=eq.true&select=plo_id,program_code,plo_code,title&order=plo_code.asc');
+    const [clos, cmap, st] = await Promise.all([
+      sbGet('outcome_clos', `offering_id=eq.${id}&is_active=eq.true&select=clo_id,sort_order,text&order=sort_order.asc,clo_id.asc`),
+      c.courseBaseId ? sbGet('outcome_curriculum_map', `course_base_id=eq.${encodeURIComponent(c.courseBaseId)}&select=plo_id,levels,tagged_clo_numbers,assessed_via`) : [],
+      sbGet('outcome_alignment_status', `offering_id=eq.${id}&select=prefilled`),
+    ]);
+    const map = {};
+    if (clos.length) {
+      const rows = await sbGet('outcome_clo_plo_map', `clo_id=in.(${clos.map(x => x.clo_id).join(',')})&select=clo_id,plo_id,role`);
+      rows.forEach(r => { map[`${r.clo_id}|${r.plo_id}`] = r.role === 'primary' ? 'P' : 'S'; });
+    }
+    // The program: from this course's curriculum-map cells, else from the offering's program name.
+    const fromMap = cmap.map(r => (outcomePlosAll.find(p => p.plo_id === r.plo_id) || {}).program_code).find(Boolean);
+    const programCode = fromMap || PROGRAM_CODES[c.program] || null;
+    outcomeCache[id] = {
+      status: 'ready', clos, map, programCode,
+      plos: outcomePlosAll.filter(p => p.program_code === programCode),
+      cmap: Object.fromEntries(cmap.map(r => [r.plo_id, r])),
+      prefilled: !!(st[0] && st[0].prefilled),
+    };
+  } catch (e) {
+    outcomeCache[id] = { status: 'error', error: e.message };
+  }
+  if (String(currentCourseId) === String(id)) renderCoursePage();
+  return outcomeCache[id];
+}
+
+// Draft shape shared by view and edit: { clos:[{key, clo_id, text}], map:{'key|plo_id': 'P'|'S'}, fromText, prefilled }
+// With no CLO rows yet, the numbered Learning Objectives text becomes the CLOs and the
+// links are pre-filled from the CLO numbers tagged in the curriculum map.
+let loKeySeq = 0;
+function loDraftFrom(c, oc) {
+  if (oc.clos.length) {
+    return {
+      clos: oc.clos.map(x => ({ key: String(x.clo_id), clo_id: x.clo_id, text: x.text })),
+      map: { ...oc.map }, fromText: false, prefilled: oc.prefilled,
+    };
+  }
+  const text = editMode && editDraft ? editDraft.learningObjectives : c.learningObjectives;
+  const lines = loParseNumbered(text);
+  const clos = lines.map(t => ({ key: 'n' + (++loKeySeq), clo_id: null, text: t }));
+  const map = {};
+  Object.values(oc.cmap).forEach(cell => {
+    (cell.tagged_clo_numbers || []).forEach(n => {
+      const x = clos[n - 1];
+      if (x) map[`${x.key}|${cell.plo_id}`] = cell.levels.includes('A') ? 'P' : 'S';
+    });
+  });
+  return { clos, map, fromText: true, prefilled: clos.length > 0 && Object.keys(map).length > 0, unnumbered: !lines.length && String(text || '').trim() ? text : '' };
+}
+
+async function ensureOutcomeDraft() {
+  if (editRowsByTab.outcomes) return editRowsByTab.outcomes;
+  const c = courses.find(x => String(x.id) === String(currentCourseId));
+  if (!c) return null;
+  const oc = await loadOutcomes(c);
+  if (oc.status !== 'ready') return null;
+  editRowsByTab.outcomes = loDraftFrom(c, oc);
+  captureEditSnapshot();
+  if (editMode && courseTab === 'outcomes') renderCoursePage();
+  return editRowsByTab.outcomes;
+}
+
+function renderOutcomesTab(c) {
+  const oc = outcomeCache[c.id];
+  if (!oc || oc.status === 'loading') { if (!oc) loadOutcomes(c); return `<div class="cp-card"><div class="cp-empty">Loading…</div></div>`; }
+  if (oc.status === 'error') return `<div class="cp-card"><div class="cp-empty">Unable to load: ${esc(oc.error)}</div></div>`;
+  if (!oc.plos.length) return `<div class="cp-card"><div class="cp-empty">No PLOs are defined for this course's program yet.</div></div>`;
+  let d = editMode ? editRowsByTab.outcomes : loDraftFrom(c, oc);
+  if (!d) { ensureOutcomeDraft(); return `<div class="cp-card"><div class="cp-empty">Loading…</div></div>`; }
+  return `
+    <div class="cp-card">
+      <div class="cp-card-title">Learning outcomes</div>
+      <div class="lo-sub">Link each CLO to the PLOs it addresses: <b>Primary</b> or <b>Also supports</b>.</div>
+      ${d.prefilled && editMode ? `<div class="lo-draft"><b>Pre-filled from the curriculum map.</b> Edit and save to confirm.</div>` : ''}
+      ${loMatrixHtml(c, oc, d)}
+    </div>
+`;  // Competency weights check: removed until there is a basis for scoring the mapped share (2026-10-13)
+}
+
+const loLevels = v => `<span class="lo-lvs" title="${[...v].map(l => LO_LVL[l]).join(', ')}">${['I', 'R', 'A'].map(l => `<span class="${v.includes(l) ? 'on ' + l : ''}">${l}</span>`).join('')}</span>`;
+
+function loMatrixHtml(c, oc, d) {
+  const ed = editMode;
+  if (!d.clos.length) {
+    if (!ed) return `<div class="lo-empty"><div class="lo-empty-h">${d.unnumbered ? 'Learning objectives are not numbered yet' : 'No learning objectives yet'}</div></div>`;
+    return `<div class="lo-empty">
+      <div class="lo-empty-h">${d.unnumbered ? 'Objectives found, but not numbered' : 'No learning objectives yet'}</div>
+      <div class="lo-paste"><textarea id="lo-paste-ta" placeholder="1. Analyze …&#10;2. Design …">${esc(d.unnumbered || '')}</textarea>
+        <div class="lo-paste-b"><button class="btn" onclick="loAddClo()">+ Add first CLO</button><button class="btn btn-primary" onclick="loSplitPaste()">Split into CLOs</button></div></div>
+    </div>`;
+  }
+  const plos = oc.plos;
+  const lab = i => 'CLO' + (i + 1);
+  let h = `<div class="lo-wrap"><table class="lo-matrix ${ed ? 'editing' : ''}"><colgroup><col style="width:${ed ? 40 : 38}%">${plos.map(() => `<col>`).join('')}${ed ? '<col style="width:92px">' : ''}</colgroup>
+    <thead><tr><th class="lo-clo-h">Course learning objective</th>${plos.map(p => `<th><span class="lo-plo-code">${esc(p.plo_code)}</span><span class="lo-plo-name">${esc(p.title)}</span></th>`).join('')}${ed ? '<th></th>' : ''}</tr>
+    <tr class="lo-pm"><td><span class="lo-pm-l">Program curriculum map</span></td>${plos.map(p => {
+      const cell = oc.cmap[p.plo_id];
+      const v = cell ? cell.levels : '';
+      return `<td><div class="lo-pm-cell ${v ? 'on' : ''}">${v ? loLevels(v) : '&mdash;'}</div></td>`;
+    }).join('')}${ed ? '<td></td>' : ''}</tr></thead><tbody>`;
+  d.clos.forEach((x, i) => {
+    h += `<tr class="lo-row" ${ed ? `ondragover="loDragOver(event)" ondrop="loDrop(event,${i})"` : ''}><td><div class="lo-clo-cell">
+      ${ed ? `<span class="lo-drag" draggable="true" tabindex="0" title="Drag to reorder (or Alt+&uarr;/&darr;)" ondragstart="loDragStart(event,${i})" ondragend="loDragEnd()" onkeydown="loKey(event,${i})">&#10303;</span>` : ''}
+      <span class="lo-no">${lab(i)}</span>
+      <div class="lo-clo-text">${ed ? `<textarea class="cp-textarea lo-ta" rows="1" placeholder="Start with an action verb, e.g. Analyze, Design, Evaluate…" oninput="editRowsByTab.outcomes.clos[${i}].text=this.value;autoGrowTextarea(this)">${esc(x.text)}</textarea>` : esc(x.text)}</div></div></td>`;
+    plos.forEach(p => {
+      const k = `${x.key}|${p.plo_id}`, v = d.map[k];
+      h += `<td><button class="lo-cell ${v || ''} ${loPickKey === k ? 'sel' : ''}" data-k="${k}" ${ed ? '' : 'tabindex="-1"'} onclick="loOpenPick(event,'${k}')" aria-label="${lab(i)} to ${esc(p.plo_code)}: ${v ? LO_ROLE[v] : 'not linked'}">${v ? LO_ROLE[v] : (ed ? '<span class="lo-plus">+</span>' : '')}</button></td>`;
+    });
+    if (ed) h += `<td class="lo-del-td"><button class="lo-del" onclick="loRemoveClo(${i})" aria-label="Delete ${lab(i)}">&#10005; Delete</button></td>`;
+    h += `</tr>`;
+  });
+  h += `</tbody><tfoot><tr><td><span class="cp-label">PLO coverage</span></td>${plos.map(p => {
+    const vals = d.clos.map(x => d.map[`${x.key}|${p.plo_id}`]).filter(Boolean);
+    const pr = vals.filter(v => v === 'P').length, su = vals.length - pr;
+    const cell = oc.cmap[p.plo_id];
+    const inMap = !!cell, here = vals.length > 0, common = !here && !!(cell && cell.assessed_via);   // program-common (Learning Journaling)
+    const txt = common ? 'Program-<br>common' : here && inMap ? (pr ? `Primary in<br>${pr} CLO${pr > 1 ? 's' : ''}` : `Supported by<br>${su} CLO${su > 1 ? 's' : ''}`)
+      : here ? 'Not in the<br>program map' : inMap ? 'In the program<br>map, no CLO' : '&mdash;';
+    return `<td><div class="lo-cov ${common || (here && inMap && pr) ? 'ok' : here === inMap ? '' : 'warn'}">${txt}</div></td>`;
+  }).join('')}${ed ? '<td></td>' : ''}</tr></tfoot></table></div>
+  ${ed ? `<button class="lo-add" onclick="loAddClo()"><span>+</span> Add CLO</button>` : ''}
+  <div class="lo-legend">${loLevels('IRA')} Introduced &middot; Reinforced &middot; Assessed</div>`;
+  return h;
+}
+
+function loConsHtml(oc, d) {
+  const comps = (editMode && editDraft ? editDraft.competencies : (findCourseById(currentCourseId) || {}).competenciesRaw) || [];
+  const W = { P: 1, S: 0.5 }, score = {};
+  let total = 0;
+  // A PLO the curriculum map has assessed through the program-common Learning Journaling counts as one Primary link.
+  const viaProgram = p => !!(oc.cmap[p.plo_id] && oc.cmap[p.plo_id].assessed_via);
+  oc.plos.forEach(p => { score[p.plo_id] = d.clos.reduce((a, x) => a + (W[d.map[`${x.key}|${p.plo_id}`]] || 0), 0) + (viaProgram(p) ? 1 : 0); total += score[p.plo_id]; });
+  return `<div class="lo-cons-row head"><span>PLO</span><span>Competency weight vs mapped share</span><span>Check</span></div>` +
+    oc.plos.map((p, i) => {
+      const w = Number((comps[i] || {}).pct || 0), m = total ? score[p.plo_id] / total * 100 : 0, gap = Math.abs(w - m);
+      const pill = (w > 0 && m === 0) ? `<span class="lo-pill warn">Weighted, no CLO</span>`
+        : (w === 0 && m > 0) ? `<span class="lo-pill warn">Mapped, no weight</span>`
+        : gap >= 12 ? `<span class="lo-pill warn">Gap ${Math.round(gap)} pts</span>` : `<span class="lo-pill ok">Consistent</span>`;
+      return `<div class="lo-cons-row"><span><b class="lo-mono">${esc(p.plo_code)}</b> ${esc(p.title)}</span>
+        <div class="lo-cons-bars">
+          <div class="lo-cons-bar"><span>Weight</span><div class="track"><div class="fill w" style="width:${w}%"></div></div><span class="v">${Math.round(w)}%</span></div>
+          <div class="lo-cons-bar"><span>Mapped</span><div class="track"><div class="fill m" style="width:${m}%"></div></div><span class="v">${Math.round(m)}%</span></div>
+        </div>${pill}</div>`;
+    }).join('');
+}
+
+// ── edit actions ──
+function loRerender() { renderCoursePage(); document.querySelectorAll('#cp-tab-body textarea.lo-ta').forEach(autoGrowTextarea); }
+function loAddClo(text = '') {
+  const d = editRowsByTab.outcomes; if (!d) return;
+  d.clos.push({ key: 'n' + (++loKeySeq), clo_id: null, text });
+  d.unnumbered = '';
+  loRerender();
+  setTimeout(() => { const t = [...document.querySelectorAll('.lo-ta')].pop(); if (t) t.focus(); }, 0);
+}
+function loSplitPaste() {
+  const d = editRowsByTab.outcomes; if (!d) return;
+  const t = (document.getElementById('lo-paste-ta') || {}).value || '';
+  const items = loParseNumbered(t);
+  const list = items.length ? items : t.split('\n').map(s => s.trim()).filter(Boolean);
+  if (!list.length) { showToast('Nothing to split'); return; }
+  d.clos = list.map(s => ({ key: 'n' + (++loKeySeq), clo_id: null, text: s }));
+  d.unnumbered = '';
+  loRerender();
+  showToast(`Created ${list.length} CLOs. Check them, then Save.`);
+}
+function loRemoveClo(i) {
+  const d = editRowsByTab.outcomes, x = d.clos[i];
+  const links = Object.keys(d.map).filter(k => k.startsWith(x.key + '|')).length;
+  if (x.clo_id && !confirm(`Delete CLO${i + 1}?\n\nIts PLO links${links ? ` (${links})` : ''} and any rubric tags for it are removed when you save. Later CLOs move up one number.`)) return;
+  d.clos.splice(i, 1);
+  Object.keys(d.map).forEach(k => { if (k.startsWith(x.key + '|')) delete d.map[k]; });
+  loRerender();
+}
+let loDragFrom = null;
+function loDragStart(e, i) { loDragFrom = i; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(i)); }
+function loDragOver(e) {
+  if (loDragFrom === null) return;
+  e.preventDefault();
+  const tr = e.currentTarget, r = tr.getBoundingClientRect(), after = (e.clientY - r.top) > r.height / 2;
+  document.querySelectorAll('.lo-row.drop-before, .lo-row.drop-after').forEach(x => x.classList.remove('drop-before', 'drop-after'));
+  tr.classList.add(after ? 'drop-after' : 'drop-before');
+  tr.dataset.after = after ? '1' : '';
+}
+function loDrop(e, i) {
+  e.preventDefault();
+  if (loDragFrom === null) return;
+  const a = editRowsByTab.outcomes.clos;
+  let to = i + (e.currentTarget.dataset.after ? 1 : 0);
+  const [moved] = a.splice(loDragFrom, 1);
+  if (loDragFrom < to) to--;
+  a.splice(to, 0, moved);
+  loDragFrom = null; loRerender();
+}
+function loDragEnd() { loDragFrom = null; document.querySelectorAll('.lo-row.drop-before, .lo-row.drop-after').forEach(x => x.classList.remove('drop-before', 'drop-after')); }
+function loKey(e, i) {
+  if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+  e.preventDefault();
+  const a = editRowsByTab.outcomes.clos, d = e.key === 'ArrowUp' ? -1 : 1;
+  if (i + d < 0 || i + d >= a.length) return;
+  [a[i], a[i + d]] = [a[i + d], a[i]]; loRerender();
+  document.querySelectorAll('.lo-drag')[i + d]?.focus();
+}
+
+// Primary / Also supports popover
+function loPop() {
+  let p = document.getElementById('lo-pop');
+  if (!p) { p = document.createElement('div'); p.id = 'lo-pop'; p.className = 'lo-pop'; document.body.appendChild(p); }
+  return p;
+}
+function loOpenPick(ev, k) {
+  ev.stopPropagation();
+  if (!editMode) {
+    const c = findCourseById(currentCourseId);
+    if (c && c.status === 'published' && courses.some(x => String(x.id) === String(c.id))) showToast('Unpublish first to make changes');
+    return;
+  }
+  loPickKey = k; loRerender();
+  const d = editRowsByTab.outcomes, v = d.map[k];
+  const [key, ploId] = k.split('|');
+  const oc = outcomeCache[currentCourseId], p = oc.plos.find(x => String(x.plo_id) === ploId);
+  const i = d.clos.findIndex(x => x.key === key);
+  const pop = loPop();
+  pop.innerHTML = `<h4>CLO${i + 1} &rarr; ${esc(p.plo_code)}</h4><div class="lo-ctx">${esc(p.title)}</div>
+    <div class="lo-opt">
+      <button class="${!v ? 'on' : ''}" onclick="loSetRole('${k}',null)"><span class="lo-sw none">Not linked</span><span class="d">This CLO does not address the PLO.</span></button>
+      <button class="${v === 'P' ? 'on' : ''}" onclick="loSetRole('${k}','P')"><span class="lo-sw P">Primary</span><span class="d">The PLO this CLO mainly develops.</span></button>
+      <button class="${v === 'S' ? 'on' : ''}" onclick="loSetRole('${k}','S')"><span class="lo-sw S">Also supports</span><span class="d">The CLO contributes to this PLO as well.</span></button>
+    </div>
+    <div style="display:flex;justify-content:flex-end"><button class="btn" onclick="loClosePick()">Done</button></div>`;
+  const b = document.querySelector(`.lo-cell[data-k="${k}"]`).getBoundingClientRect();
+  const left = Math.max(12, Math.min(b.left + window.scrollX + b.width / 2 - 190, window.scrollX + document.documentElement.clientWidth - 392));
+  pop.style.left = left + 'px'; pop.style.top = (b.bottom + window.scrollY + 8) + 'px';
+  pop.classList.add('show');
+}
+function loSetRole(k, v) {
+  const d = editRowsByTab.outcomes;
+  if (v) d.map[k] = v; else delete d.map[k];
+  loOpenPick({ stopPropagation() {} }, k);
+}
+function loClosePick() { loPickKey = null; loPop().classList.remove('show'); renderCoursePage(); }
+document.addEventListener('click', e => { const p = document.getElementById('lo-pop'); if (loPickKey && p && !p.contains(e.target)) loClosePick(); });
+
+// ── save (called from saveCourseEdits after Main) ──
+async function saveOutcomesInner(c, d) {
+  const oc = outcomeCache[c.id];
+  if (!oc || oc.status !== 'ready') return;
+  const clos = d.clos.filter(x => String(x.text || '').trim());
+  const keepIds = clos.filter(x => x.clo_id).map(x => x.clo_id);
+  const removed = oc.clos.map(x => x.clo_id).filter(id => !keepIds.includes(id));
+  if (removed.length) {
+    await sbDelete('outcome_criterion_clo_map', `clo_id=in.(${removed.join(',')})`);
+    await sbDelete('outcome_clos', `clo_id=in.(${removed.join(',')})`);          // Map 2 rows cascade
+  }
+  const orig = Object.fromEntries(oc.clos.map(x => [x.clo_id, x]));
+  for (let i = 0; i < clos.length; i++) {
+    const x = clos[i], sort = i + 1, text = x.text.trim();
+    if (x.clo_id) {
+      const o = orig[x.clo_id];
+      if (o.text !== text || o.sort_order !== sort) await sbPatch('outcome_clos', `clo_id=eq.${x.clo_id}`, { text, sort_order: sort });
+    } else {
+      const [row] = await sbInsert('outcome_clos', [{ offering_id: c.id, sort_order: sort, text }]);
+      x.clo_id = row.clo_id;
+    }
+  }
+  const ids = clos.map(x => x.clo_id);
+  if (ids.length) await sbDelete('outcome_clo_plo_map', `clo_id=in.(${ids.join(',')})`);
+  const links = [];
+  clos.forEach(x => oc.plos.forEach(p => {
+    const v = d.map[`${x.key}|${p.plo_id}`];
+    if (v) links.push({ clo_id: x.clo_id, plo_id: p.plo_id, role: v === 'P' ? 'primary' : 'supports' });
+  }));
+  if (links.length) await sbInsert('outcome_clo_plo_map', links);
+  const sent = await sbWrite('POST', 'rpc/outcome_save_alignment', '', { p_offering_id: c.id });
+  delete outcomeCache[c.id];
+  return sent;
+}
+
+// ── RUBRICS TAB (outcome_rubrics / _groups / _criteria / outcome_criterion_clo_map) ──
+// One rubric per assessment item, linked by item name. While editing, the item list is
+// the Assessment tab's draft rows, so an added / renamed / deleted item shows here at once;
+// rubrics follow their item by row (id, or a temporary key for new rows) and are saved
+// after the assessment rows. Criteria x four levels, optional groups A–H, several CLOs per
+// criterion, points may be blank, Team / Individual per rubric with per-criterion exceptions.
+// Building or revising a rubric is meant to go through Excel (Export -> edit -> Import);
+// on-screen editing is for small fixes.
+let rubricCache = {};       // { [offeringId]: {status, error, rubrics:[...], programRubric} }
+let rbSel = null;           // selected item key ('id:12', 'rk:3') or orphan ('o0')
+let rbPickK = null;         // criterion index whose CLO picker is open
+let rbRkSeq = 0;
+const RB_LV = [['4', 'Exemplary'], ['3', 'Proficient'], ['2', 'Developing'], ['1', 'Needs Improvement']];
+const RB_LK = ['E', 'P', 'D', 'NI'];
+const RB_XL_HEAD = ['Group', 'Group name', 'Criterion', 'Points', 'CLOs', 'Scored', 'Exemplary (4)', 'Proficient (3)', 'Developing (2)', 'Needs Improvement (1)'];
+const RB_XL = `<svg class="rb-xl" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><rect x="1" y="1" width="16" height="16" rx="3" fill="#1D6F42"/><path d="M5.2 5.2l7.6 7.6M12.8 5.2l-7.6 7.6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>`;
+
+async function loadRubrics(c) {
+  const id = c.id;
+  if (rubricCache[id] && rubricCache[id].status !== 'error') return rubricCache[id];
+  rubricCache[id] = { status: 'loading' };
+  try {
+    const oc = await loadOutcomes(c);
+    const rs = await sbGet('outcome_rubrics', `offering_id=eq.${id}&select=rubric_id,assessment_item,default_scope,uses_program_rubric_id&order=rubric_id.asc`);
+    const ids = rs.map(r => r.rubric_id);
+    const [groups, crits] = ids.length ? await Promise.all([
+      sbGet('outcome_rubric_groups', `rubric_id=in.(${ids.join(',')})&select=rubric_id,group_key,name,sort_order&order=sort_order.asc`),
+      sbGet('outcome_rubric_criteria', `rubric_id=in.(${ids.join(',')})&select=criterion_id,rubric_id,group_key,sort_order,name,points,scope_override,descriptors&order=sort_order.asc`),
+    ]) : [[], []];
+    const m1 = crits.length ? await sbGet('outcome_criterion_clo_map', `criterion_id=in.(${crits.map(x => x.criterion_id).join(',')})&select=criterion_id,clo_id`) : [];
+    const prog = oc && oc.programCode ? await sbGet('outcome_rubrics', `program_code=eq.${encodeURIComponent(oc.programCode)}&offering_id=is.null&select=rubric_id,name`) : [];
+    rubricCache[id] = {
+      status: 'ready',
+      programRubric: prog.find(r => /journal/i.test(r.name || '')) || null,
+      rubrics: rs.map(r => ({
+        rubric_id: r.rubric_id, item: r.assessment_item, scope: r.default_scope, programId: r.uses_program_rubric_id,
+        groups: groups.filter(g => g.rubric_id === r.rubric_id).sort((a, b) => a.sort_order - b.sort_order).map(g => ({ key: g.group_key, name: g.name })),
+        criteria: crits.filter(x => x.rubric_id === r.rubric_id).sort((a, b) => a.sort_order - b.sort_order).map(x => ({
+          g: x.group_key, name: x.name, pts: x.points === null ? null : Number(x.points), scope: x.scope_override,
+          lv: RB_LK.map(k => (x.descriptors || {})[k] || ''),
+          clos: m1.filter(m => m.criterion_id === x.criterion_id).map(m => String(m.clo_id)),
+        })),
+      })),
+    };
+  } catch (e) {
+    rubricCache[id] = { status: 'error', error: e.message };
+  }
+  if (String(currentCourseId) === String(id)) renderCoursePage();
+  return rubricCache[id];
+}
+
+// Assessment rows the rubric tab works from: the Assessment draft while editing, else the saved rows.
+const rbItemKey = r => r.id !== undefined && r.id !== null && r.id !== '' ? 'id:' + r.id : 'rk:' + (r._rk || (r._rk = ++rbRkSeq));
+function rbRows(c) {
+  if (editMode) return (editRowsByTab.assessment || []).filter(r => String(r.item || '').trim());
+  const rows = (courseDetailCache[c.id] || {}).assessment;
+  return Array.isArray(rows) ? rows.filter(r => String(r.item || '').trim()) : null;
+}
+const rbClone = o => JSON.parse(JSON.stringify(o));
+function rbDraftFrom(rc, rows) {
+  const byKey = {}, orphans = [];
+  rc.rubrics.forEach(r => {
+    const row = rows.find(x => String(x.item || '').trim() === String(r.item || '').trim());
+    const dr = { rubric_id: r.rubric_id, origItem: r.item, program: !!r.programId, programId: r.programId, scope: r.scope, groups: rbClone(r.groups), criteria: rbClone(r.criteria) };
+    dr._orig = JSON.stringify({ scope: dr.scope, program: dr.program, groups: dr.groups, criteria: dr.criteria });
+    if (row && !byKey[rbItemKey(row)]) byKey[rbItemKey(row)] = dr; else orphans.push(dr);
+  });
+  return { byKey, orphans, deleted: [] };
+}
+async function ensureRubricDraft() {
+  if (editRowsByTab.rubrics) return editRowsByTab.rubrics;
+  const c = courses.find(x => String(x.id) === String(currentCourseId));
+  if (!c) return null;
+  const [rc] = await Promise.all([loadRubrics(c), ensureEditRowsForTab('assessment')]);
+  if (!rc || rc.status !== 'ready' || !editMode) return null;
+  const saved = (courseDetailCache[c.id] || {}).assessment;
+  editRowsByTab.rubrics = rbDraftFrom(rc, Array.isArray(saved) ? saved : []);
+  captureEditSnapshot();
+  if (courseTab === 'rubrics') renderCoursePage();
+  return editRowsByTab.rubrics;
+}
+
+// CLOs the criteria can be tagged with: the Learning Outcomes draft if it is being edited, else the saved rows.
+function rbClos(c) {
+  if (editMode && editRowsByTab.outcomes) return editRowsByTab.outcomes.clos.filter(x => String(x.text || '').trim()).map(x => ({ key: x.key, text: x.text }));
+  const oc = outcomeCache[c.id];
+  return oc && oc.clos ? oc.clos.map(x => ({ key: String(x.clo_id), text: x.text })) : [];
+}
+
+function renderRubricsTab(c) {
+  const rc = rubricCache[c.id];
+  if (!rc || rc.status === 'loading') { if (!rc) loadRubrics(c); return `<div class="cp-card"><div class="cp-empty">Loading…</div></div>`; }
+  if (rc.status === 'error') return `<div class="cp-card"><div class="cp-empty">Unable to load: ${esc(rc.error)}</div></div>`;
+  if (editMode && !editRowsByTab.assessment) { ensureRubricDraft(); return `<div class="cp-card"><div class="cp-empty">Loading…</div></div>`; }
+  const rows = rbRows(c);
+  if (!rows) { loadCourseDetailTab(c.id, 'assessment').then(() => { if (courseTab === 'rubrics' && String(currentCourseId) === String(c.id)) renderCoursePage(); }); return `<div class="cp-card"><div class="cp-empty">Loading…</div></div>`; }
+  let d = editMode ? editRowsByTab.rubrics : rbDraftFrom(rc, rows);
+  if (!d) { ensureRubricDraft(); return `<div class="cp-card"><div class="cp-empty">Loading…</div></div>`; }
+  // An item deleted on the Assessment tab during this edit leaves its rubric under "removed".
+  if (editMode) {
+    const live = new Set(rows.map(rbItemKey));
+    Object.keys(d.byKey).forEach(k => { if (!live.has(k)) { const r = d.byKey[k]; delete d.byKey[k]; if (r.rubric_id || r.criteria.length) d.orphans.push(r); } });
+  }
+  if (!rows.length && !d.orphans.length) return `<div class="cp-card"><div class="cp-empty">Add assessment items on the Assessment tab first.</div></div>`;
+  const keys = rows.map(rbItemKey);
+  if (!rbSel || (!keys.includes(rbSel) && !(rbSel[0] === 'o' && d.orphans[+rbSel.slice(1)]))) rbSel = keys[0] || 'o0';
+  const tag = k => !d.byKey[k] ? '<span class="rb-pt-st">no rubric</span>' : d.byKey[k].program ? '<span class="rb-pt-st">program</span>' : '';
+  const pills = rows.map(r => { const k = rbItemKey(r); return `<button class="rb-pt ${rbSel === k ? 'on' : ''}" onclick="rbSel='${k}';rbPickK=null;renderCoursePage()">${esc(r.item)} <span class="rb-pt-pct">${r.ratio_pct ?? ''}${r.ratio_pct !== null && r.ratio_pct !== '' ? '%' : ''}</span>${tag(k)}</button>`; }).join('') +
+    d.orphans.map((o, i) => `<button class="rb-pt orphan ${rbSel === 'o' + i ? 'on' : ''}" onclick="rbSel='o${i}';renderCoursePage()">${esc(o.origItem)}<span class="rb-pt-st bad">removed</span></button>`).join('');
+  const body = rbSel[0] === 'o' ? rbOrphanHtml(c, d, rows, +rbSel.slice(1)) : rbBodyHtml(c, rc, d, rows.find(r => rbItemKey(r) === rbSel));
+  return `<span class="cp-label">Assessment item</span><div class="rb-pts">${pills}</div>${body}
+    <div class="cp-card"><div class="cp-card-title" style="margin-bottom:14px">CLO coverage</div>${rbCoverageHtml(c, d, rows)}</div>`;
+}
+
+const rbOwned = c => courses.some(x => String(x.id) === String(c.id));
+const rbCanEdit = c => rbOwned(c) && c.status !== 'published';
+const rbDim = c => rbCanEdit(c) ? '' : 'aria-disabled="true" title="Unpublish first to make changes"';
+function rbCode(r, k) {
+  const x = r.criteria[k];
+  if (!r.groups.length || !x.g) return String(k + 1);
+  return x.g + r.criteria.slice(0, k + 1).filter(y => y.g === x.g).length;
+}
+const rbAnyPts = cs => cs.some(x => x.pts !== null && x.pts !== '' && x.pts !== undefined);
+const rbSum = cs => cs.reduce((a, x) => a + (x.pts === null || x.pts === '' || x.pts === undefined ? 0 : Number(x.pts)), 0);
+
+function rbBodyHtml(c, rc, d, row) {
+  const key = rbItemKey(row), r = d.byKey[key], ed = editMode && rbCanEdit(c);
+  if (r && r.program) {
+    return `<div class="cp-card"><div class="rb-empty quiet"><div class="rb-empty-h">${esc(row.item)} uses the program Learning Journaling rubric</div>
+      ${ed ? `<div class="rb-empty-b"><button class="btn" onclick="rbUnsetProgram()">Use a course rubric instead</button></div>` : ''}</div></div>`;
+  }
+  if (!r || !r.criteria.length) {
+    const canStart = rbCanEdit(c);
+    return `<div class="cp-card"><div class="rb-empty ${canStart ? '' : 'quiet'}">
+      <div class="rb-empty-h">No rubric for ${esc(row.item)} yet</div>
+      ${canStart ? `<div class="rb-empty-b">
+        <button class="btn btn-primary" onclick="rbNew()">+ Add first criterion</button>
+        <button class="btn" onclick="rbImport()">${RB_XL}Import from Excel</button>
+        <button class="btn" onclick="rbExport()">${RB_XL}Export template</button></div>` : ''}
+    </div></div>`;
+  }
+  const hasPts = rbAnyPts(r.criteria), total = rbSum(r.criteria), clos = rbClos(c);
+  const cloLab = k => { const i = clos.findIndex(x => x.key === k); return i < 0 ? null : 'CLO' + (i + 1); };
+  const ncol = 3 + RB_LV.length + (ed ? 2 : 0);
+  let h = `<div class="rb-head"><div><div class="cp-card-title" style="margin-bottom:4px">${esc(row.item)}</div>
+      <div class="rb-sum">${row.ratio_pct ?? ''}${row.ratio_pct !== null && row.ratio_pct !== '' ? '% &middot; ' : ''}${ed ? `<select class="rb-sel" onchange="rbCur().scope=this.value;renderCoursePage()"><option ${r.scope === 'Team' ? 'selected' : ''}>Team</option><option ${r.scope === 'Individual' ? 'selected' : ''}>Individual</option></select>` : esc(r.scope)}${hasPts ? ` &middot; ${total} points` : ''}</div></div>
+      ${!editMode ? `<div class="rb-exp"><button class="btn" onclick="rbExport()">${RB_XL}Export</button><button class="btn" ${rbDim(c)} onclick="rbImport()">${RB_XL}Import</button></div>` : ''}
+    </div>
+    <div class="rb-wrap"><table class="rb-grid ${ed ? 'editing' : ''}"><colgroup>${ed ? '<col style="width:30px">' : ''}<col style="width:19%"><col style="width:62px"><col style="width:13%">${RB_LV.map(() => '<col>').join('')}${ed ? '<col style="width:84px">' : ''}</colgroup>
+    <thead><tr>${ed ? '<th></th>' : ''}<th>Criterion</th><th class="num">Pts</th><th>CLO</th>${RB_LV.map(([n, t]) => `<th class="rb-lvh l${n}"><span>${n}</span>${t}</th>`).join('')}${ed ? '<th></th>' : ''}</tr></thead><tbody>`;
+  const groups = r.groups.length ? r.groups : [{ key: null, name: null }];
+  for (const g of groups) {
+    const ks = r.criteria.map((x, k) => k).filter(k => (r.groups.length ? r.criteria[k].g === g.key : true));
+    if (g.key) {
+      const gc = ks.map(k => r.criteria[k]);
+      h += `<tr class="rb-grp" ${ed ? `ondragover="rbDragOver(event)" ondrop="rbDropGroup(event,'${g.key}')"` : ''}><td colspan="${ncol}"><span class="rb-gk">${g.key}</span>${ed ? `<input class="rb-in rb-g-in" value="${esc(g.name)}" oninput="rbCur().groups.find(x=>x.key==='${g.key}').name=this.value" aria-label="Group ${g.key} name">` : `<b>${esc(g.name)}</b>`}
+        ${rbAnyPts(gc) ? `<span class="rb-gsub">${rbSum(gc)} pts</span>` : ''}${ed ? `<button class="link rb-g-del" onclick="rbRemoveGroup('${g.key}')">Remove group</button>` : ''}</td></tr>`;
+    }
+    for (const k of ks) {
+      const x = r.criteria[k], code = rbCode(r, k), own = x.scope && x.scope !== r.scope;
+      const tags = x.clos.map(cloLab).filter(Boolean);
+      h += `<tr class="rb-row" ${ed ? `ondragover="rbDragOver(event)" ondrop="rbDrop(event,${k})"` : ''}>
+        ${ed ? `<td><span class="rb-drag" draggable="true" tabindex="0" title="Drag to reorder (or Alt+&uarr;/&darr;)" ondragstart="rbDragStart(event,${k})" ondragend="rbDragEnd()" onkeydown="rbKey(event,${k})">&#10303;</span></td>` : ''}
+        <td><span class="rb-ccode">${code}</span>${ed ? `<textarea class="cp-textarea rb-in rb-name" rows="1" placeholder="Criterion" oninput="rbCur().criteria[${k}].name=this.value;autoGrowTextarea(this)">${esc(x.name)}</textarea>` : `<b class="rb-cname">${esc(x.name)}</b>`}
+          <div>${ed ? `<select class="rb-sel rb-sc ${own ? 'own' : ''}" onchange="rbSetScope(${k},this.value)" aria-label="Scoring for ${code}">${['Team', 'Individual'].map(s => `<option ${(x.scope || r.scope) === s ? 'selected' : ''}>${s}</option>`).join('')}</select>` : (own ? `<span class="rb-sc-badge">${esc(x.scope)}</span>` : '')}</div></td>
+        <td class="num">${ed ? `<input class="rb-in rb-num" type="number" min="0" value="${x.pts ?? ''}" placeholder="–" onchange="rbSetPts(${k},this.value)" aria-label="Points for ${code}">` : (x.pts ?? '<span class="rb-none">–</span>')}</td>
+        <td>${ed ? `<button class="rb-clo-btn ${rbPickK === k ? 'sel' : ''}" data-pk="${k}" onclick="rbOpenPick(event,${k})" aria-label="Choose CLOs for ${code}">${tags.length ? tags.map(t => `<span class="rb-clo on">${t}</span>`).join('') : '<span class="rb-clo-add">+ CLO</span>'}</button>`
+                 : (tags.length ? tags.map(t => `<span class="rb-clo on">${t}</span>`).join(' ') : '<span class="rb-none">no CLO</span>')}</td>
+        ${x.lv.map((t, j) => `<td class="rb-lv">${ed ? `<textarea class="cp-textarea rb-ta" rows="2" placeholder="${RB_LV[j][1]}" oninput="rbCur().criteria[${k}].lv[${j}]=this.value;autoGrowTextarea(this)" aria-label="${RB_LV[j][1]}">${esc(t || '')}</textarea>` : (t ? esc(t) : '<span class="rb-none">not written</span>')}</td>`).join('')}
+        ${ed ? `<td class="rb-del-td"><button class="rb-del" onclick="rbRemoveCrit(${k})" aria-label="Delete criterion ${code}">&#10005; Delete</button></td>` : ''}
+      </tr>`;
+    }
+    if (ed) h += `<tr class="rb-add-tr"><td colspan="${ncol}"><button class="rb-add" onclick="rbAddCrit(${g.key ? `'${g.key}'` : 'null'})"><span>+</span> Add criterion${g.key ? ` to ${g.key}` : ''}</button></td></tr>`;
+  }
+  h += `</tbody>${hasPts ? `<tfoot><tr>${ed ? '<td></td>' : ''}<td><b>Total</b></td><td class="num"><b>${total}</b></td><td colspan="${RB_LV.length + 1 + (ed ? 1 : 0)}"></td></tr></tfoot>` : ''}</table></div>
+    ${ed ? `<div class="rb-under"><button class="btn" onclick="rbAddGroup()">+ Add group</button></div>` : ''}`;
+  return `<div class="cp-card">${h}</div>`;
+}
+
+function rbOrphanHtml(c, d, rows, i) {
+  const o = d.orphans[i];
+  const free = rows.filter(r => !d.byKey[rbItemKey(r)]);
+  const ed = editMode && rbCanEdit(c);
+  return `<div class="cp-card"><div class="rb-empty">
+    <div class="rb-empty-h">&ldquo;${esc(o.origItem)}&rdquo; is no longer on the Assessment tab</div>
+    <div class="rb-empty-p">Its rubric (${o.criteria.length} criteria) is kept until you attach it to another item or delete it.</div>
+    ${ed ? `<div class="rb-empty-b">${free.length ? `<select class="rb-sel" id="rb-re" aria-label="Item to attach to">${free.map(r => `<option value="${rbItemKey(r)}">${esc(r.item)}</option>`).join('')}</select>
+      <button class="btn" onclick="rbReattach(${i})">Attach to this item</button>` : ''}
+      <button class="btn" style="color:var(--red)" onclick="rbDropOrphan(${i})">Delete rubric</button></div>` : ''}
+  </div></div>`;
+}
+
+function rbCoverageHtml(c, d, rows) {
+  const clos = rbClos(c);
+  if (!clos.length) return `<div class="cp-empty">No CLOs yet. Add them on the Learning Outcomes tab.</div>`;
+  return `<table class="cp-table rb-cov"><thead><tr><th style="width:96px">CLO</th><th>Measured by</th></tr></thead><tbody>${
+    clos.map((x, i) => {
+      const parts = rows.map(row => {
+        const r = d.byKey[rbItemKey(row)];
+        if (!r || r.program) return null;
+        const codes = r.criteria.map((y, k) => y.clos.includes(x.key) ? rbCode(r, k) : null).filter(Boolean);
+        return codes.length ? `<button class="rb-chip" onclick="rbSel='${rbItemKey(row)}';renderCoursePage();window.scrollTo(0,0)">${esc(row.item)} <span>${codes.join(', ')}</span></button>` : null;
+      }).filter(Boolean);
+      return `<tr><td><span class="lo-no" title="${esc(x.text)}">CLO${i + 1}</span></td><td>${parts.length ? parts.join('') : '<span class="lo-pill warn">No rubric criterion yet</span>'}</td></tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+// ── edit actions ──
+const rbCur = () => editRowsByTab.rubrics.byKey[rbSel];
+async function rbEnsureEdit() {
+  const c = findCourseById(currentCourseId);
+  if (!c || !rbOwned(c)) return false;
+  if (c.status === 'published') { showToast('Unpublish first to make changes'); return false; }
+  if (!editMode) await enterEditMode();
+  await ensureRubricDraft();
+  return !!editRowsByTab.rubrics;
+}
+function rbBlank(g = null) {
+  const r = editRowsByTab.rubrics && editRowsByTab.rubrics.byKey[rbSel];
+  const left = r && rbAnyPts(r.criteria) ? Math.max(0, 100 - rbSum(r.criteria)) : null;
+  return { g, name: '', pts: left, scope: null, lv: ['', '', '', ''], clos: [] };
+}
+async function rbNew() {
+  if (!(await rbEnsureEdit())) return;
+  const d = editRowsByTab.rubrics;
+  if (!d.byKey[rbSel]) d.byKey[rbSel] = { rubric_id: null, program: false, scope: 'Individual', groups: [], criteria: [] };
+  d.byKey[rbSel].program = false;
+  d.byKey[rbSel].criteria.push(rbBlank());
+  renderCoursePage();
+  setTimeout(() => document.querySelector('.rb-grid .rb-name')?.focus(), 0);
+}
+async function rbApplyProgram() {
+  if (!(await rbEnsureEdit())) return;
+  const d = editRowsByTab.rubrics;
+  d.byKey[rbSel] = Object.assign(d.byKey[rbSel] || { rubric_id: null, scope: 'Individual', groups: [], criteria: [] }, { program: true });
+  renderCoursePage();
+  showToast('Program Learning Journaling rubric applied');
+}
+function rbUnsetProgram() { delete editRowsByTab.rubrics.byKey[rbSel].program; editRowsByTab.rubrics.byKey[rbSel].program = false; renderCoursePage(); }
+function rbSetPts(k, v) { rbCur().criteria[k].pts = v === '' ? null : Number(v); renderCoursePage(); }
+function rbSetScope(k, v) { const r = rbCur(); r.criteria[k].scope = v === r.scope ? null : v; renderCoursePage(); }
+function rbAddCrit(g) {
+  const r = rbCur();
+  let at = r.criteria.length;
+  if (g) { const ks = r.criteria.map((x, k) => x.g === g ? k : -1).filter(k => k >= 0); if (ks.length) at = ks[ks.length - 1] + 1; }
+  r.criteria.splice(at, 0, rbBlank(g)); renderCoursePage();
+  setTimeout(() => { document.querySelectorAll('.rb-grid .rb-name')[at]?.focus(); }, 0);
+}
+function rbRemoveCrit(k) { rbCur().criteria.splice(k, 1); rbPickK = null; renderCoursePage(); }
+function rbAddGroup() {
+  const r = rbCur(), key = 'ABCDEFGH'.split('').find(x => !r.groups.some(g => g.key === x));
+  if (!key) return;
+  if (!r.groups.length) r.criteria.forEach(x => { x.g = key; });
+  r.groups.push({ key, name: r.groups.length ? 'New group' : 'Group ' + key });
+  renderCoursePage();
+}
+function rbRemoveGroup(key) {
+  const r = rbCur(), n = r.criteria.filter(x => x.g === key).length;
+  if (n && !confirm(`Remove group ${key}?\n\nIts ${n} criteria move to the neighbouring group (or become ungrouped if it is the only group).`)) return;
+  const i = r.groups.findIndex(g => g.key === key), to = (r.groups[i - 1] || r.groups[i + 1] || {}).key || null;
+  r.groups.splice(i, 1);
+  r.criteria.forEach(x => { if (x.g === key) x.g = r.groups.length ? to : null; });
+  renderCoursePage();
+}
+function rbReattach(i) {
+  const d = editRowsByTab.rubrics, k = document.getElementById('rb-re').value, o = d.orphans.splice(i, 1)[0];
+  d.byKey[k] = o; rbSel = k; renderCoursePage(); showToast('Rubric attached');
+}
+function rbDropOrphan(i) {
+  const d = editRowsByTab.rubrics, o = d.orphans[i];
+  if (!confirm(`Delete the rubric for "${o.origItem}"?\n\nIts ${o.criteria.length} criteria are removed when you save.`)) return;
+  d.orphans.splice(i, 1);
+  if (o.rubric_id) d.deleted.push(o.rubric_id);
+  rbSel = null; renderCoursePage();
+}
+let rbDragFrom = null;
+function rbDragStart(e, k) { rbDragFrom = k; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(k)); }
+function rbDragOver(e) {
+  if (rbDragFrom === null) return;
+  e.preventDefault();
+  const tr = e.currentTarget, b = tr.getBoundingClientRect(), after = (e.clientY - b.top) > b.height / 2;
+  document.querySelectorAll('.rb-row.drop-before, .rb-row.drop-after').forEach(x => x.classList.remove('drop-before', 'drop-after'));
+  if (tr.classList.contains('rb-row')) { tr.classList.add(after ? 'drop-after' : 'drop-before'); tr.dataset.after = after ? '1' : ''; }
+}
+function rbDrop(e, k) {
+  e.preventDefault();
+  if (rbDragFrom === null) return;
+  const r = rbCur(), target = r.criteria[k];
+  let to = k + (e.currentTarget.dataset.after ? 1 : 0);
+  const [moved] = r.criteria.splice(rbDragFrom, 1);
+  if (rbDragFrom < to) to--;
+  if (r.groups.length) moved.g = target.g;
+  r.criteria.splice(to, 0, moved);
+  rbDragFrom = null; renderCoursePage();
+}
+function rbDropGroup(e, key) {
+  e.preventDefault();
+  if (rbDragFrom === null) return;
+  const r = rbCur(), [moved] = r.criteria.splice(rbDragFrom, 1);
+  moved.g = key;
+  const first = r.criteria.findIndex(x => x.g === key);
+  r.criteria.splice(first < 0 ? r.criteria.length : first, 0, moved);
+  rbDragFrom = null; renderCoursePage();
+}
+function rbDragEnd() { rbDragFrom = null; document.querySelectorAll('.rb-row.drop-before, .rb-row.drop-after').forEach(x => x.classList.remove('drop-before', 'drop-after')); }
+function rbKey(e, k) {
+  if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+  e.preventDefault();
+  const a = rbCur().criteria, d = e.key === 'ArrowUp' ? -1 : 1;
+  if (k + d < 0 || k + d >= a.length) return;
+  const g = a[k + d].g; [a[k], a[k + d]] = [a[k + d], a[k]]; a[k + d].g = g; renderCoursePage();
+  document.querySelectorAll('.rb-drag')[k + d]?.focus();
+}
+
+// CLO picker: full CLO text; up to two CLOs whose wording shares the most words with
+// the criterion (name + Exemplary text) are marked Suggested.
+const RB_STOP = new Set('with that this their from into using such through about which when where what them they have will been also than then more most each other these those your able'.split(' '));
+const rbStems = s => new Set((String(s).toLowerCase().match(/[a-z]{4,}/g) || []).filter(w => !RB_STOP.has(w)).map(w => w.slice(0, 5)));
+function rbSuggest(x, clos) {
+  const crit = rbStems(x.name + ' ' + x.lv[0]);
+  return new Set(clos.map(y => ({ key: y.key, s: [...rbStems(y.text)].filter(w => crit.has(w)).length })).filter(y => y.s >= 2).sort((a, b) => b.s - a.s).slice(0, 2).map(y => y.key));
+}
+function rbPop() {
+  let p = document.getElementById('rb-pop');
+  if (!p) { p = document.createElement('div'); p.id = 'rb-pop'; p.className = 'lo-pop rb-pop'; document.body.appendChild(p); }
+  return p;
+}
+function rbOpenPick(ev, k) {
+  ev.stopPropagation();
+  const c = findCourseById(currentCourseId), r = rbCur(), x = r.criteria[k], clos = rbClos(c), sug = rbSuggest(x, clos);
+  rbPickK = k; renderCoursePage();
+  const pop = rbPop();
+  pop.innerHTML = `<h4>${rbCode(r, k)}${x.name ? ' &middot; ' + esc(x.name) : ''}</h4><div class="lo-ctx">Which CLOs does this criterion measure?</div>
+    <div class="rb-cpk">${clos.length ? clos.map((y, i) => `<label class="rb-cpk-row ${x.clos.includes(y.key) ? 'on' : ''}">
+      <input type="checkbox" ${x.clos.includes(y.key) ? 'checked' : ''} onchange="rbToggleClo(${k},'${y.key}')">
+      <span class="lo-no">CLO${i + 1}</span><span class="rb-cpk-t">${esc(y.text)}${sug.has(y.key) && !x.clos.includes(y.key) ? ' <span class="rb-sug">&#10022; Suggested</span>' : ''}</span></label>`).join('')
+      : '<div class="cp-empty">No CLOs yet. Add them on the Learning Outcomes tab.</div>'}</div>
+    <div style="display:flex;justify-content:flex-end"><button class="btn" onclick="rbClosePick()">Done</button></div>`;
+  const b = document.querySelector(`.rb-clo-btn[data-pk="${k}"]`).getBoundingClientRect();
+  pop.style.width = '520px';
+  pop.style.left = Math.max(12, Math.min(b.left + window.scrollX, window.scrollX + document.documentElement.clientWidth - 532)) + 'px';
+  pop.style.top = (b.bottom + window.scrollY + 8) + 'px';
+  pop.classList.add('show');
+}
+function rbToggleClo(k, key) {
+  const c = findCourseById(currentCourseId), x = rbCur().criteria[k], order = rbClos(c).map(y => y.key);
+  x.clos = x.clos.includes(key) ? x.clos.filter(y => y !== key) : [...x.clos, key].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  rbOpenPick({ stopPropagation() {} }, k);
+}
+function rbClosePick() { rbPickK = null; rbPop().classList.remove('show'); renderCoursePage(); }
+document.addEventListener('click', e => { const p = document.getElementById('rb-pop'); if (rbPickK !== null && p && !p.contains(e.target)) rbClosePick(); });
+
+// ── Excel export / import (one row per criterion) ──
+function rbExport() {
+  const c = findCourseById(currentCourseId), rows = rbRows(c) || [], row = rows.find(r => rbItemKey(r) === rbSel);
+  if (!row) return;
+  const rc = rubricCache[c.id], d = editMode && editRowsByTab.rubrics ? editRowsByTab.rubrics : rbDraftFrom(rc, rows);
+  const r = d.byKey[rbSel] && !d.byKey[rbSel].program ? d.byKey[rbSel] : { scope: 'Individual', groups: [], criteria: [] };
+  const clos = rbClos(c), gname = k => (r.groups.find(g => g.key === k) || {}).name || '';
+  const aoa = [RB_XL_HEAD, ...r.criteria.map(x => [x.g || '', x.g ? gname(x.g) : '', x.name, x.pts ?? '',
+    x.clos.map(k => clos.findIndex(y => y.key === k) + 1).filter(n => n > 0).join(', '), x.scope && x.scope !== r.scope ? x.scope : '', ...x.lv])];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [6, 24, 34, 7, 8, 10, 40, 40, 40, 40].map(w => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Rubric');
+  XLSX.writeFile(wb, `${c.code} ${row.item} rubric${r.criteria.length ? '' : ' (template)'}.xlsx`.replace(/[\\/:*?"<>|]/g, '-'));
+}
+async function rbImport() {
+  if (!(await rbEnsureEdit())) return;
+  let inp = document.getElementById('rb-xl-in');
+  if (!inp) {
+    inp = document.createElement('input'); inp.type = 'file'; inp.id = 'rb-xl-in'; inp.accept = '.xlsx,.xls,.csv'; inp.hidden = true;
+    inp.onchange = () => { if (inp.files[0]) rbReadFile(inp.files[0]); inp.value = ''; };
+    document.body.appendChild(inp);
+  }
+  inp.click();
+}
+async function rbReadFile(file) {
+  const c = findCourseById(currentCourseId), clos = rbClos(c);
+  let aoa;
+  try { const wb = XLSX.read(await file.arrayBuffer()); aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' }); }
+  catch (e) { showToast('Could not read this file.'); return; }
+  const hi = aoa.findIndex(row => row.some(v => String(v).trim().toLowerCase() === 'criterion'));
+  if (hi < 0) { showToast('No "Criterion" column found.'); return; }
+  const H = aoa[hi].map(v => String(v).trim().toLowerCase());
+  const col = n => H.findIndex(h => h.startsWith(n));
+  const ix = { g: H.findIndex(h => h === 'group'), gn: H.findIndex(h => h === 'group name'), name: col('criterion'), pts: col('points') >= 0 ? col('points') : col('pts'), clos: col('clo'), sc: col('scored'),
+    lv: ['exemplary', 'proficient', 'developing', 'needs improvement'].map(col) };
+  const problems = [], groups = [], criteria = [];
+  aoa.slice(hi + 1).forEach((row, n) => {
+    const cell = i => i < 0 ? '' : String(row[i] ?? '').trim();
+    const name = cell(ix.name), line = hi + n + 2;
+    if (!name && !row.some(v => String(v).trim())) return;
+    if (!name) { problems.push(`Row ${line}: no criterion name`); return; }
+    let g = cell(ix.g).toUpperCase() || null;
+    if (g && !/^[A-H]$/.test(g)) { problems.push(`Row ${line}: group "${g}" is not A–H`); g = null; }
+    if (g && !groups.some(x => x.key === g)) groups.push({ key: g, name: cell(ix.gn) || 'Group ' + g });
+    let pts = cell(ix.pts) === '' ? null : Number(cell(ix.pts));
+    if (pts !== null && !(pts >= 0)) { problems.push(`Row ${line}: points "${cell(ix.pts)}" is not a number`); pts = null; }
+    const nums = [];
+    for (const m of cell(ix.clos).matchAll(/(\d+)\s*[–-]\s*(\d+)|(\d+)/g)) {
+      if (m[3]) nums.push(+m[3]); else for (let k = +m[1]; k <= +m[2]; k++) nums.push(k);
+    }
+    const bad = nums.filter(k => k < 1 || k > clos.length);
+    if (bad.length) problems.push(`Row ${line}: CLO ${bad.join(', ')} does not exist`);
+    const keys = [...new Set(nums.filter(k => k >= 1 && k <= clos.length))].sort((a, b) => a - b).map(k => clos[k - 1].key);
+    const sc = /^ind/i.test(cell(ix.sc)) ? 'Individual' : /^team/i.test(cell(ix.sc)) ? 'Team' : null;
+    criteria.push({ g, name, pts, clos: keys, scope: sc, lv: ix.lv.map(cell) });
+  });
+  if (!criteria.length) { showToast('No criteria found in this file.'); return; }
+  if (!groups.length) criteria.forEach(x => { x.g = null; }); else criteria.forEach(x => { if (!x.g) x.g = groups[0].key; });
+  const d = editRowsByTab.rubrics, cur = d.byKey[rbSel], scope = cur && cur.scope ? cur.scope : 'Individual';
+  criteria.forEach(x => { if (x.scope === scope) x.scope = null; });
+  const msg = `Import ${criteria.length} criteria from ${file.name}?` +
+    (cur && cur.criteria && cur.criteria.length ? `\nReplaces the current rubric (${cur.criteria.length} criteria).` : '') +
+    (problems.length ? `\n\n${problems.length} problem${problems.length > 1 ? 's' : ''} (left blank):\n` + problems.slice(0, 6).join('\n') + (problems.length > 6 ? `\n…and ${problems.length - 6} more` : '') : '');
+  if (!confirm(msg)) return;
+  d.byKey[rbSel] = Object.assign(cur || { rubric_id: null }, { program: false, scope, groups, criteria });
+  renderCoursePage();
+  showToast(`Imported ${criteria.length} criteria. Check them, then Save.`);
+}
+
+// ── save (after the Learning Outcomes and Assessment rows) ──
+async function saveRubricsInner(c, d) {
+  const rows = (editRowsByTab.assessment || []).filter(r => String(r.item || '').trim());
+  const oc = outcomeCache[c.id];
+  // CLO key -> clo_id: new CLOs got their id when the Learning Outcomes tab was saved just before.
+  const cloIds = {};
+  if (editRowsByTab.outcomes) editRowsByTab.outcomes.clos.forEach(x => { if (x.clo_id) cloIds[x.key] = x.clo_id; });
+  ((oc && oc.clos) || []).forEach(x => { cloIds[String(x.clo_id)] = x.clo_id; });
+  if (d.deleted.length) await sbDelete('outcome_rubrics', `rubric_id=in.(${d.deleted.join(',')})`);
+  const entries = [
+    ...Object.entries(d.byKey).map(([k, r]) => { const row = rows.find(x => rbItemKey(x) === k); return [row ? String(row.item).trim() : r.origItem, r]; }),
+    ...d.orphans.map(r => [r.origItem, r]),
+  ];
+  for (const [item, r] of entries) {
+    if (!item) continue;
+    const content = JSON.stringify({ scope: r.scope, program: !!r.program, groups: r.groups, criteria: r.criteria });
+    if (!r.rubric_id) {
+      if (!r.program && !r.criteria.length) continue;
+      const [row] = await sbInsert('outcome_rubrics', [{ offering_id: c.id, assessment_item: item, default_scope: r.scope || 'Individual',
+        uses_program_rubric_id: r.program ? rubricCache[c.id].programRubric.rubric_id : null }]);
+      r.rubric_id = row.rubric_id;
+    } else if (item !== r.origItem || content !== r._orig) {
+      await sbPatch('outcome_rubrics', `rubric_id=eq.${r.rubric_id}`, { assessment_item: item, default_scope: r.scope || 'Individual',
+        uses_program_rubric_id: r.program ? (r.programId || rubricCache[c.id].programRubric.rubric_id) : null });
+    }
+    if (r._orig && content === r._orig) continue;                          // criteria unchanged
+    await sbDelete('outcome_rubric_criteria', `rubric_id=eq.${r.rubric_id}`);  // Map 1 rows cascade
+    await sbDelete('outcome_rubric_groups', `rubric_id=eq.${r.rubric_id}`);
+    if (r.program) continue;
+    if (r.groups.length) await sbInsert('outcome_rubric_groups', r.groups.map((g, i) => ({ rubric_id: r.rubric_id, group_key: g.key, name: g.name || 'Group ' + g.key, sort_order: i + 1 })));
+    const keep = r.criteria.filter(x => String(x.name || '').trim());
+    if (!keep.length) continue;
+    const ins = await sbInsert('outcome_rubric_criteria', keep.map((x, i) => ({
+      rubric_id: r.rubric_id, group_key: r.groups.length ? x.g : null, sort_order: i + 1, name: x.name.trim(),
+      points: x.pts === null || x.pts === '' || x.pts === undefined ? null : Number(x.pts),
+      scope_override: x.scope && x.scope !== r.scope ? x.scope : null,
+      descriptors: Object.fromEntries(RB_LK.map((k, j) => [k, x.lv[j] || ''])),
+    })));
+    const links = [];
+    ins.forEach((row, i) => keep[i].clos.forEach(k => { if (cloIds[k]) links.push({ criterion_id: row.criterion_id, clo_id: cloIds[k] }); }));
+    if (links.length) await sbInsert('outcome_criterion_clo_map', links);
+  }
+  delete rubricCache[c.id];
+}
+
+// ── App-wide UI (2026-10): Previous / Next bar under every course tab, and Excel export / import
+// for the spreadsheet-style tabs (Assessment, Communication, Schedule, Readings, T-Learning Activities).
+function cpTabNavHtml() {
+  const i = CP_TABS.findIndex(t => t.key === courseTab);
+  if (i < 0) return '';
+  const prev = CP_TABS[i - 1], next = CP_TABS[i + 1];
+  const go = t => `setCourseTab('${t.key}');window.scrollTo(0,0)`;
+  return `<div class="cp-tab-nav">
+    ${prev ? `<button class="btn" style="justify-self:start" onclick="${go(prev)}">&larr; Previous: ${esc(prev.label)}</button>` : '<span></span>'}
+    <span class="cp-tab-nav-here">${esc(CP_TABS[i].label)}</span>
+    ${next ? `<button class="btn" style="justify-self:end" onclick="${go(next)}">Next: ${esc(next.label)} &rarr;</button>` : '<span></span>'}
+  </div>`;
+}
+
+const XL_ICON = `<svg class="xl-ic" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><rect x="1" y="1" width="16" height="16" rx="3" fill="#1D6F42"/><path d="M5.2 5.2l7.6 7.6M12.8 5.2l-7.6 7.6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>`;
+function gridXlButtonsHtml(tabKey, rows) {
+  const c = findCourseById(currentCourseId);
+  const owned = c && courses.some(x => String(x.id) === String(c.id));
+  const canEdit = owned && c.status !== 'published';
+  const hasRows = (rows || []).some(r => CP_DETAIL_TABLES[tabKey].columns.some(col => String(r[col.field] ?? '').trim()));
+  return `<button class="btn" style="height:38px;" onclick="gridExport('${tabKey}')">${XL_ICON}${hasRows ? 'Export' : 'Export template'}</button>` +
+    (owned ? `<button class="btn" style="height:38px;" ${canEdit ? '' : 'aria-disabled="true" title="Unpublish first to make changes"'} onclick="gridImport('${tabKey}')">${XL_ICON}Import</button>` : '');
+}
+function gridRowsFor(tabKey) {
+  if (editMode && editRowsByTab[tabKey]) return editRowsByTab[tabKey];
+  const data = (courseDetailCache[currentCourseId] || {})[tabKey];
+  return Array.isArray(data) ? data : [];
+}
+function gridExport(tabKey) {
+  const c = findCourseById(currentCourseId), spec = CP_DETAIL_TABLES[tabKey];
+  const rows = gridRowsFor(tabKey).filter(r => spec.columns.some(col => String(r[col.field] ?? '').trim()));
+  const aoa = [spec.columns.map(col => col.label), ...rows.map(r => spec.columns.map(col => {
+    const v = r[col.field];
+    return v === null || v === undefined ? '' : (col.type === 'number' && v !== '' ? Number(v) : v);
+  }))];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = spec.columns.map(col => ({ wch: col.type === 'number' ? 10 : 40 }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, (CP_TAB_TITLES[tabKey] || tabKey).slice(0, 31));
+  XLSX.writeFile(wb, `${c.code} ${CP_TAB_TITLES[tabKey]}${rows.length ? '' : ' (template)'}.xlsx`.replace(/[\\/:*?"<>|]/g, '-'));
+}
+async function gridImport(tabKey) {
+  const c = findCourseById(currentCourseId);
+  if (!c || !courses.some(x => String(x.id) === String(c.id))) return;
+  if (c.status === 'published') { showToast('Unpublish first to make changes'); return; }
+  if (!editMode) await enterEditMode();
+  await ensureEditRowsForTab(tabKey);
+  let inp = document.getElementById('grid-xl-in');
+  if (!inp) { inp = document.createElement('input'); inp.type = 'file'; inp.id = 'grid-xl-in'; inp.accept = '.xlsx,.xls,.csv'; inp.hidden = true; document.body.appendChild(inp); }
+  inp.onchange = () => { if (inp.files[0]) gridReadFile(tabKey, inp.files[0]); inp.value = ''; };
+  inp.click();
+}
+async function gridReadFile(tabKey, file) {
+  const spec = CP_DETAIL_TABLES[tabKey], cols = spec.columns;
+  let aoa;
+  try { const wb = XLSX.read(await file.arrayBuffer()); aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' }); }
+  catch (e) { showToast('Could not read this file.'); return; }
+  const norm = s => String(s || '').trim().toLowerCase().replace(/\s*\(.*?\)\s*/g, '');
+  const hi = aoa.findIndex(row => cols.every(col => row.some(v => [norm(col.label), col.field].includes(norm(v)))));
+  if (hi < 0) { showToast(`Columns not found. Expected: ${cols.map(col => col.label).join(', ')}`); return; }
+  const H = aoa[hi].map(norm), ix = cols.map(col => H.findIndex(h => h === norm(col.label) || h === col.field));
+  const problems = [], imported = [];
+  aoa.slice(hi + 1).forEach((row, n) => {
+    const vals = ix.map(i => String(row[i] ?? '').trim());
+    if (!vals.some(Boolean)) return;
+    const r = {};
+    cols.forEach((col, k) => {
+      let v = vals[k];
+      if (col.type === 'number' && v !== '' && isNaN(Number(v))) { problems.push(`Row ${hi + n + 2}: ${col.label} "${v}" is not a number`); v = ''; }
+      r[col.field] = v;
+    });
+    imported.push(r);
+  });
+  if (!imported.length) { showToast('No rows found in this file.'); return; }
+  // Keep row ids where possible: same first-column value -> same row (Schedule keeps its class dates,
+  // Assessment keeps its rubric). On Assessment, rows left over on both sides are paired in order as renames.
+  const key = cols[0].field, k = v => String(v ?? '').trim().toLowerCase();
+  const current = (editRowsByTab[tabKey] || []).filter(r => cols.some(col => String(r[col.field] ?? '').trim()));
+  const used = new Set(), out = [], fresh = [];
+  imported.forEach(r => {
+    const hit = current.find(x => !used.has(x) && k(x[key]) === k(r[key]));
+    if (hit) { used.add(hit); out.push(Object.assign(hit, r)); } else { const o = { ...r }; out.push(o); fresh.push(o); }
+  });
+  const renames = [];
+  if (tabKey === 'assessment') {
+    const left = current.filter(x => !used.has(x));
+    fresh.forEach((o, i) => {
+      const x = left[i];
+      if (!x) return;
+      renames.push(`${x[key]} → ${o[key]}`);
+      used.add(x);
+      out[out.indexOf(o)] = Object.assign(x, o);
+    });
+  }
+  const removed = current.filter(x => !used.has(x)).length;
+  const msg = `Import ${out.length} rows from ${file.name}?\nReplaces the ${current.length} rows on this tab.` +
+    (renames.length ? `\n\nRenamed (rubrics follow):\n${renames.slice(0, 6).join('\n')}` : '') +
+    (removed ? `\n\n${removed} row${removed > 1 ? 's' : ''} not in the file will be removed.` : '') +
+    (problems.length ? `\n\n${problems.length} problem${problems.length > 1 ? 's' : ''} (left blank):\n` + problems.slice(0, 6).join('\n') : '');
+  if (!confirm(msg)) return;
+  out.forEach(r => { delete r._selected; });
+  editRowsByTab[tabKey] = out;
+  renderCoursePage();
+  showToast(`Imported ${out.length} rows. Check them, then Save.`);
+}
+
 function sbHeaders(extra = {}) {
   if (!supabaseUser?.access_token) throw new Error('Not authenticated');
   return {
