@@ -2954,32 +2954,33 @@ async function handleWallLogin() {
     const data = await r.json();
     if (!r.ok) throw new Error(data.error_description || data.msg || 'Login failed');
     supabaseUser = data;
+    const authEmail = String((data.user && data.user.email) || email).trim().toLowerCase();
 
     const profRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/faculty_profiles?email=eq.${encodeURIComponent(email)}&select=name_en,email,school,is_chair,must_change_password,timezone`,
+      `${SUPABASE_URL}/rest/v1/faculty_profiles?email=eq.${encodeURIComponent(authEmail)}&select=name_en,email,program,is_chair,must_change_password,timezone`,
       { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${data.access_token}` } }
     );
     const profData = await profRes.json();
 
-    if (profData.length > 0) {
+    if (Array.isArray(profData) && profData.length > 0) {
       PROFESSOR = {
-        name: profData[0].name_en,
+        name: profData[0].name_en || authEmail.split('@')[0],
         email: profData[0].email,
-        school: profData[0].school || '',
+        school: [].concat(profData[0].program || []).join(', '),
         isChair: profData[0].is_chair === true,
         timezone: profData[0].timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
       };
       // First login with no timezone saved yet — backfill from the browser
       // so Settings shows something sensible instead of blank.
       if (!profData[0].timezone) {
-        fetch(`${SUPABASE_URL}/rest/v1/faculty_profiles?email=eq.${encodeURIComponent(email)}`, {
+        fetch(`${SUPABASE_URL}/rest/v1/faculty_profiles?email=eq.${encodeURIComponent(authEmail)}`, {
           method: 'PATCH',
           headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${data.access_token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ timezone: PROFESSOR.timezone }),
         }).catch(() => {});
       }
     } else {
-      PROFESSOR = { name: data.user?.user_metadata?.full_name || email.split('@')[0], email, school: '', isChair: false, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone };
+      PROFESSOR = { name: data.user?.user_metadata?.full_name || authEmail.split('@')[0], email: authEmail, school: '', isChair: false, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone };
     }
 
     const initials = (PROFESSOR.name || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -2989,7 +2990,7 @@ async function handleWallLogin() {
     document.getElementById('tb-user-btn').style.display = 'flex';
     document.getElementById('login-wall').style.display = 'none';
 
-    const mustChange = profData.length > 0 && profData[0].must_change_password === true;
+    const mustChange = Array.isArray(profData) && profData.length > 0 && profData[0].must_change_password === true;
     if (mustChange) {
       document.getElementById('pw-change-wall').style.display = 'flex';
       document.getElementById('pw-new').focus();
@@ -4661,6 +4662,14 @@ async function loadData() {
       `learning_objectives,required_text,category,short_description,syllabus_link,new_curriculum)`
     );
     courses = rows.map(mapCourse);
+    if (PROFESSOR.email && PROFESSOR.name === PROFESSOR.email.split('@')[0]) {
+      const fromCourse = (rows.find(r => r.professor) || {}).professor;
+      if (fromCourse) {
+        PROFESSOR.name = fromCourse;
+        document.getElementById('tb-name').textContent = fromCourse;
+        document.getElementById('tb-avatar').textContent = fromCourse.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      }
+    }
     const missing = courses.filter(c => c.title.includes('catalog data unavailable')).length;
     console.log(`[TaeSylla] Loaded ${courses.length} offering(s) for ${PROFESSOR.email}` + (missing ? ` — ${missing} missing catalog data, see warnings above.` : '.'));
     // Day/time diagnostic — open DevTools console and look at this table if
@@ -4704,7 +4713,7 @@ function renderHome() {
 
   el.innerHTML = `
     <div class="ph-header">
-      <p class="ph-greeting">${timeOfDayGreeting()}, ${esc(firstName)}</p>
+      <p class="ph-greeting">Welcome, ${esc(firstName)}</p>
       <p class="ph-subline">${esc(CURRENT_SEMESTER)} · Week 1 of 16 · ${dateStr}</p>
     </div>
     <div class="kpi-grid" id="kpi-grid"></div>
