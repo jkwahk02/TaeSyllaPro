@@ -277,6 +277,8 @@ tr.cprof textarea{width:100%;border:1px solid var(--border-em);border-radius:6px
 /* overflow-x:auto also turns on a vertical scroll bar when anything pokes out (hover lists, the active tab's underline) */
 .tabs{overflow-y:hidden;}
 .tbl-wrap.tw-vis{overflow:visible;}
+/* course codes (DA200-1, *XD201) never wrap */
+.tbl td.mono{white-space:nowrap;}
 .ro-badge{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border:1px solid var(--border-em);border-radius:8px;font-size:16px;font-weight:600;color:var(--text2);background:var(--surface2);cursor:default;}
 .tab.dirty::after{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber);margin-left:6px;vertical-align:2px;}
 .lnk{display:block;margin-top:6px;padding:0;border:none;background:none;font:inherit;font-size:16px;font-weight:600;color:var(--blue);cursor:pointer;white-space:nowrap;}
@@ -486,7 +488,7 @@ html,body{background:transparent;}
     <section id="t-pw" hidden>
       <div class="card">
         <div class="card-head"><div class="card-t">Recommended pathways</div><span class="updated" data-upd="pw"></span></div>
-        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180536" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
+        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180539" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
         <div class="pw-term">
           <div class="pw-th">Pathway by term <span id="pw-title"></span></div>
           <p class="pw-focus" id="pw-focus"></p>
@@ -769,7 +771,7 @@ function renderCat(){
   const ed = c => editing && (c.lead || OWN) === OWN;
   const field = (i, k, w) => `<input${w ? ` style="width:${w}px"` : ''} class="${w ? 'num' : ''}" value="${esc(DATA.catalog[i][k])}" oninput="DATA.catalog[${i}].${k}=this.value">`;
   // 1. Course list (Academic Catalog 3.2, plus Offered)
-  $('cat-tbl').innerHTML = `<thead><tr><th rowspan="2" style="width:84px">Course ID</th><th rowspan="2">Course Title</th><th rowspan="2" style="width:130px">Classification</th>
+  $('cat-tbl').innerHTML = `<thead><tr><th rowspan="2" style="width:112px">Course ID</th><th rowspan="2">Course Title</th><th rowspan="2" style="width:130px">Classification</th>
       <th rowspan="2" class="c" style="width:70px">Credits</th><th colspan="2" class="c" style="width:150px">Credit Hours</th><th rowspan="2" style="width:150px">Offered</th></tr>
       <tr><th class="c">Lecture</th><th class="c">Field Work</th></tr></thead><tbody>${
     DATA.catalog.map((c, i) => `${i === 0 || DATA.catalog[i - 1].cat !== c.cat ? `<tr class="grp"><td colspan="7">${esc(c.cat)}</td></tr>` : ''}<tr class="crow${catOpen[c.code] ? ' open' : ''}" aria-expanded="${!!catOpen[c.code]}" onclick="if(!event.target.closest('input,select,textarea,button'))toggleCat('${c.code}')">
@@ -864,7 +866,7 @@ function catExport(){
 function renderOff(){
   $('term').innerHTML = DATA.terms.map(t=>`<option ${t===term?'selected':''}>${t}</option>`).join('');
   const rows = DATA.offerings.filter(o => o.term === term && !o.ext).sort((a,b)=>a.code.localeCompare(b.code));
-  $('off-tbl').innerHTML = `<thead><tr><th style="width:100px">Course</th><th>Title</th><th style="width:190px">Instructor</th><th style="width:200px">Time</th><th style="width:130px">Location</th><th style="width:100px" class="num">Students</th><th style="width:110px">Status</th></tr></thead><tbody>${
+  $('off-tbl').innerHTML = `<thead><tr><th style="width:128px">Course</th><th>Title</th><th style="width:190px">Instructor</th><th style="width:200px">Time</th><th style="width:130px">Location</th><th style="width:100px" class="num">Students</th><th style="width:110px">Status</th></tr></thead><tbody>${
     rows.length ? rows.map(o => `<tr class="orow" onclick="openOffering(${o.id})">
       <td class="mono">${esc(o.code)}</td><td>${esc(o.title)}</td><td>${esc(o.prof)}</td><td class="sub">${esc(o.time)}</td>
       <td>${esc(o.loc || '–')}</td><td class="num">${o.n ?? '–'}</td>
@@ -908,7 +910,7 @@ function renderInsDetail(names){
   const k = insSel, order = t => DATA.terms.indexOf(t);
   const rows = DATA.offerings.filter(o => (o.prof || '').split(',').map(x => x.trim()).map(p => p === 'TBD' ? '' : p).includes(k))
     .sort((a, b) => order(a.term) - order(b.term) || a.code.localeCompare(b.code));
-  $('insd-tbl').innerHTML = `<thead><tr><th style="width:120px">Semester</th><th style="width:100px">Course</th><th>Title</th><th style="width:200px">Time</th><th style="width:130px">Location</th><th style="width:100px" class="num">Students</th><th style="width:110px">Status</th></tr></thead><tbody>${
+  $('insd-tbl').innerHTML = `<thead><tr><th style="width:120px">Semester</th><th style="width:128px">Course</th><th>Title</th><th style="width:200px">Time</th><th style="width:130px">Location</th><th style="width:100px" class="num">Students</th><th style="width:110px">Status</th></tr></thead><tbody>${
     rows.map(o => `<tr class="orow" onclick="openOffering(${o.id})"><td>${esc(o.term)}</td>
       <td class="mono">${o.ext ? '〔' + esc(o.code) + '〕' : esc(o.code)}</td><td>${esc(o.title)}</td><td class="sub">${esc(o.time)}</td>
       <td>${esc(o.loc || '–')}</td><td class="num">${o.n ?? '–'}</td><td>${statusChip(o)}</td></tr>`).join('')}</tbody>`;
