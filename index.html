@@ -922,7 +922,7 @@ function handleRoute() {
     setRailActive('rail-home');
   }
 }
-const CUR_VER = '202610180552';
+const CUR_VER = '202610180556';
 function setRailActive(id) {
   document.querySelectorAll('.rail-btn').forEach((b) => b.classList.toggle('active', b.id === id));
 }
@@ -2927,6 +2927,7 @@ function sbHeaders(extra = {}) {
   };
 }
 async function sbGet(table, params = '') {
+  await sbFresh();
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, { headers: sbHeaders() });
   if (r.status === 401) { showToast('Session expired. Please sign in again.'); handleSignOut(); throw new Error('Session expired'); }
   if (!r.ok) {
@@ -2936,6 +2937,7 @@ async function sbGet(table, params = '') {
   return r.json();
 }
 async function sbWrite(method, table, params, body) {
+  await sbFresh();
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params ? '?' + params : ''}`, {
     method, headers: sbHeaders(), body: body !== undefined ? JSON.stringify(body) : undefined,
   });
@@ -2952,33 +2954,48 @@ function sbInsert(table, body) { return sbWrite('POST', table, '', body); }
 function sbDelete(table, params) { return sbWrite('DELETE', table, params); }
 
 // ── AUTH ──
-async function handleWallLogin() {
-  const email = document.getElementById('wall-email').value.trim();
-  const password = document.getElementById('wall-password').value;
-  const errEl = document.getElementById('wall-error');
-  const btn = document.getElementById('wall-submit');
-  if (loginLocked) return;
+// ── SESSION (same as Telos) ──
+// sessionStorage, not localStorage: a refresh keeps you signed in, closing the tab does not.
+const SESSION_KEY = 'taesylla_session';
+let freshSignIn = false;   // true only right after the password sign-in (then the app opens on Home)
+function saveAuthSession() { try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(supabaseUser)); } catch (e) {} }
+function clearSession() { try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {} }
+// Access tokens last about an hour: renew with the refresh token when one is nearly out.
+// Several requests at once share one renewal (Supabase rotates the refresh token).
+let sbRefreshing = null;
+async function sbFresh() {
+  const u = supabaseUser;
+  if (!u?.access_token) return false;
+  if (u.expires_at && u.expires_at * 1000 - Date.now() > 60000) return true;
+  if (!u.refresh_token) return false;
+  if (!sbRefreshing) sbRefreshing = (async () => {
+    try {
+      const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: u.refresh_token }) });
+      if (!r.ok) throw new Error('refresh failed');
+      supabaseUser = await r.json(); saveAuthSession(); return true;
+    } catch (e) { console.warn('token refresh failed:', e.message); return false; }
+    finally { sbRefreshing = null; }
+  })();
+  return sbRefreshing;
+}
+async function restoreSession() {
+  let saved = null;
+  try { saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { return false; }
+  if (!saved?.access_token) return false;
+  supabaseUser = saved;
+  if (!(await sbFresh())) { supabaseUser = null; clearSession(); return false; }
+  return true;
+}
 
-  if (!email || !password) { errEl.textContent = 'Email and password are required.'; return; }
-  if (!email.endsWith('@taejae.ac.kr')) { errEl.textContent = 'Please use your @taejae.ac.kr institutional email.'; return; }
-  if (SUPABASE_URL === 'YOUR_SUPABASE_URL') { errEl.textContent = 'Supabase is not configured yet — see the setup banner.'; return; }
-
-  btn.textContent = 'Signing in…'; btn.disabled = true; errEl.textContent = '';
-
-  try {
-    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-      method: 'POST',
-      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error_description || data.msg || 'Login failed');
-    supabaseUser = data;
-    const authEmail = String((data.user && data.user.email) || email).trim().toLowerCase();
+// After sign-in, or after a refresh that restored the session: profile, top bar, data, Google.
+async function enterApp(email, restored) {
+    const authEmail = String((supabaseUser.user && supabaseUser.user.email) || email).trim().toLowerCase();
 
     const profRes = await fetch(
       `${SUPABASE_URL}/rest/v1/faculty_profiles?email=eq.${encodeURIComponent(authEmail)}&select=name_en,email,program,is_chair,must_change_password,timezone`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${data.access_token}` } }
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${supabaseUser.access_token}` } }
     );
     const profData = await profRes.json();
 
@@ -2995,12 +3012,12 @@ async function handleWallLogin() {
       if (!profData[0].timezone) {
         fetch(`${SUPABASE_URL}/rest/v1/faculty_profiles?email=eq.${encodeURIComponent(authEmail)}`, {
           method: 'PATCH',
-          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${data.access_token}`, 'Content-Type': 'application/json' },
+          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${supabaseUser.access_token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ timezone: PROFESSOR.timezone }),
         }).catch(() => {});
       }
     } else {
-      PROFESSOR = { name: data.user?.user_metadata?.full_name || authEmail.split('@')[0], email: authEmail, school: '', isChair: false, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone };
+      PROFESSOR = { name: supabaseUser.user?.user_metadata?.full_name || authEmail.split('@')[0], email: authEmail, school: '', isChair: false, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone };
     }
 
     const initials = (PROFESSOR.name || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -3024,7 +3041,34 @@ async function handleWallLogin() {
     // the Google account picker right here. Fire-and-forget: if it's
     // dismissed, blocked, or fails, the app is still fully usable and
     // Settings remains the manual fallback.
-    connectGoogleCalendar();
+    connectGoogleCalendar(restored);
+}
+
+async function handleWallLogin() {
+  const email = document.getElementById('wall-email').value.trim();
+  const password = document.getElementById('wall-password').value;
+  const errEl = document.getElementById('wall-error');
+  const btn = document.getElementById('wall-submit');
+  if (loginLocked) return;
+
+  if (!email || !password) { errEl.textContent = 'Email and password are required.'; return; }
+  if (!email.endsWith('@taejae.ac.kr')) { errEl.textContent = 'Please use your @taejae.ac.kr institutional email.'; return; }
+  if (SUPABASE_URL === 'YOUR_SUPABASE_URL') { errEl.textContent = 'Supabase is not configured yet — see the setup banner.'; return; }
+
+  btn.textContent = 'Signing in…'; btn.disabled = true; errEl.textContent = '';
+
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error_description || data.msg || 'Login failed');
+    supabaseUser = data;
+    saveAuthSession();
+    freshSignIn = true;
+    await enterApp(email, false);
   } catch (e) {
     loginAttempts++;
     if (loginAttempts >= 5) {
@@ -3100,7 +3144,7 @@ document.addEventListener('click', (e) => {
 });
 
 function handleSignOut() {
-  supabaseUser = null; courses = []; dataLoaded = false;
+  supabaseUser = null; courses = []; dataLoaded = false; clearSession();
   document.getElementById('tb-user-btn').style.display = 'none';
   document.getElementById('login-wall').style.display = 'flex';
   document.getElementById('wall-password').value = '';
@@ -3208,19 +3252,23 @@ function renderGcalSettingsBlock() {
       </div>` : ''}
   `;
 }
-function connectGoogleCalendar() {
+function connectGoogleCalendar(silent) {
   if (typeof google === 'undefined' || !google.accounts?.oauth2) {
+    if (silent) { setTimeout(() => connectGoogleCalendar(true), 1500); return; }   // script still loading after a refresh
     showToast('Google sign-in is still loading — try again in a second.');
     return;
   }
   const client = google.accounts.oauth2.initTokenClient({
     client_id: GCAL_CLIENT_ID,
     scope: GCAL_SCOPE,
-    prompt: 'select_account',
+    // After a refresh: no chooser, the account already used (hint); Google issues the token without asking
+    // if it can. A first sign-in still shows the chooser.
+    prompt: silent ? '' : 'select_account',
+    hint: (silent && PROFESSOR.email) ? PROFESSOR.email : undefined,
     callback: async (resp) => {
-      if (resp.error) { showToast('Google sign-in failed: ' + resp.error); return; }
+      if (resp.error) { if (!silent) showToast('Google sign-in failed: ' + resp.error); return; }
       gcalToken = resp.access_token;
-      showToast('✓ Signed in to Google Calendar');
+      if (!silent) showToast('✓ Signed in to Google Calendar');
       renderGcalSettingsBlock();
       if (currentCourseId !== null) renderCoursePage(); // refresh Schedule tab's export button state
     },
@@ -4706,7 +4754,7 @@ async function loadData() {
       parsed_days: courses[i].scheduleDays.join('/'), parsed_startTime: courses[i].startTime, parsed_endTime: courses[i].endTime,
       parsed_timezone: courses[i].classTimezone,
     })));
-    if (!dataLoaded && location.hash) history.replaceState(null, '', location.pathname + location.search);
+    if (!dataLoaded && freshSignIn && location.hash) history.replaceState(null, '', location.pathname + location.search);
     dataLoaded = true;
     renderHome();
     handleRoute();
@@ -5238,6 +5286,15 @@ function renderHistory() {
 }
 
 // Data loads after login — do not call loadData() here.
+// A refresh with a stored session (sessionStorage) enters the app directly; otherwise the sign-in wall stays.
+(async () => {
+  // a stored session: keep the wall out of sight while it is restored (no flash of the sign-in form)
+  try { if (sessionStorage.getItem(SESSION_KEY)) document.getElementById('login-wall').style.display = 'none'; } catch (e) {}
+  if (await restoreSession()) {
+    try { await enterApp(supabaseUser.user?.email || '', true); }
+    catch (e) { console.warn('restore failed:', e); supabaseUser = null; clearSession(); document.getElementById('login-wall').style.display = 'flex'; }
+  } else document.getElementById('login-wall').style.display = 'flex';
+})();
 </script>
 </body>
 </html>
