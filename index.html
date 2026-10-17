@@ -900,6 +900,9 @@ function handleRoute() {
     // ?v= changes with every deploy so browsers don't keep an old copy (GitHub Pages caches for 10 minutes)
     if (!pc.firstChild) pc.innerHTML = '<iframe id="cur-frame" src="curriculum.html?v=' + CUR_VER + '" title="Curriculum" style="display:block;width:100%;height:900px;border:0;"></iframe>';
     setRailActive('rail-curriculum');
+    lastListRoute = 'curriculum';
+    // back from a course opened here: same place on the page (the frame keeps its tab)
+    if (curScrollY != null) { const y = curScrollY; curScrollY = null; setTimeout(() => window.scrollTo(0, y), 0); }
   } else if (location.hash === '#settings') {
     document.getElementById('page-course').style.display = 'none';
     document.getElementById('page-home').style.display = 'none';
@@ -922,7 +925,7 @@ function handleRoute() {
     setRailActive('rail-home');
   }
 }
-const CUR_VER = '202610180617';
+const CUR_VER = '202610180620';
 function setRailActive(id) {
   document.querySelectorAll('.rail-btn').forEach((b) => b.classList.toggle('active', b.id === id));
 }
@@ -4936,8 +4939,10 @@ function courseListRowHtml(c) {
 const COURSE_ORIGINS = {
   home:   { hash: '',       label: 'Home',          rail: 'rail-home' },
   finder: { hash: 'finder', label: 'Course Finder', rail: 'rail-finder' },
+  curriculum: { hash: 'curriculum', label: 'Curriculum', rail: 'rail-curriculum' },
 };
-let lastListRoute = 'home';             // key into COURSE_ORIGINS
+let lastListRoute = 'home';
+var curScrollY = null;                  // (var: set by the Curriculum frame) page scroll when a course was opened from Curriculum             // key into COURSE_ORIGINS
 function courseOrigin() { return COURSE_ORIGINS[lastListRoute] || COURSE_ORIGINS.home; }
 let catalogCourses = [];                // all offerings, mapped like `courses`
 let catalogLoaded = false, catalogLoading = false, catalogError = null;
