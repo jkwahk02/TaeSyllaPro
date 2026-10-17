@@ -897,7 +897,8 @@ function handleRoute() {
     const pc = document.getElementById('page-curriculum');
     pc.style.display = 'block';
     // The Curriculum page is its own document (curriculum.html); it reads this page's session.
-    if (!pc.firstChild) pc.innerHTML = '<iframe id="cur-frame" src="curriculum.html" title="Curriculum" style="display:block;width:100%;height:900px;border:0;"></iframe>';
+    // ?v= changes with every deploy so browsers don't keep an old copy (GitHub Pages caches for 10 minutes)
+    if (!pc.firstChild) pc.innerHTML = '<iframe id="cur-frame" src="curriculum.html?v=' + CUR_VER + '" title="Curriculum" style="display:block;width:100%;height:900px;border:0;"></iframe>';
     setRailActive('rail-curriculum');
   } else if (location.hash === '#settings') {
     document.getElementById('page-course').style.display = 'none';
@@ -921,6 +922,7 @@ function handleRoute() {
     setRailActive('rail-home');
   }
 }
+const CUR_VER = '202610180531';
 function setRailActive(id) {
   document.querySelectorAll('.rail-btn').forEach((b) => b.classList.toggle('active', b.id === id));
 }
