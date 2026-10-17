@@ -491,7 +491,7 @@ html,body{background:transparent;}
     <section id="t-pw" hidden>
       <div class="card">
         <div class="card-head"><div class="card-t">Recommended pathways</div><span class="updated" data-upd="pw"></span></div>
-        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180549" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
+        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180552" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
         <div class="pw-term">
           <div class="pw-th">Pathway by term <span id="pw-title"></span></div>
           <p class="pw-focus" id="pw-focus"></p>
@@ -776,16 +776,14 @@ function renderCat(){
   const ed = c => editing && (c.lead || OWN) === OWN;
   const field = (i, k, w) => `<input${w ? ` style="width:${w}px"` : ''} class="${w ? 'num' : ''}" value="${esc(DATA.catalog[i][k])}" oninput="DATA.catalog[${i}].${k}=this.value">`;
   // 1. Course list (Academic Catalog 3.2, plus Offered)
-  $('cat-tbl').innerHTML = `<thead><tr><th rowspan="2" style="width:112px">Course ID</th><th rowspan="2">Course Title</th><th rowspan="2" style="width:130px">Classification</th>
-      <th rowspan="2" class="c" style="width:70px">Credits</th><th colspan="2" class="c" style="width:150px">Credit Hours</th><th rowspan="2" style="width:150px">Offered</th></tr>
-      <tr><th class="c">Lecture</th><th class="c">Field Work</th></tr></thead><tbody>${
-    DATA.catalog.map((c, i) => `${i === 0 || DATA.catalog[i - 1].cat !== c.cat ? `<tr class="grp"><td colspan="7">${esc(c.cat)}</td></tr>` : ''}<tr class="crow${catOpen[c.code] ? ' open' : ''}" aria-expanded="${!!catOpen[c.code]}" onclick="if(!event.target.closest('input,select,textarea,button'))toggleCat('${c.code}')">
+  $('cat-tbl').innerHTML = `<thead><tr><th style="width:112px">Course ID</th><th>Course Title</th><th style="width:130px">Classification</th>
+      <th class="c" style="width:70px">Credits</th><th class="c" style="width:120px">Credit Hours</th><th style="width:150px">Offered</th></tr></thead><tbody>${
+    DATA.catalog.map((c, i) => `${i === 0 || DATA.catalog[i - 1].cat !== c.cat ? `<tr class="grp"><td colspan="6">${esc(c.cat)}</td></tr>` : ''}<tr class="crow${catOpen[c.code] ? ' open' : ''}" aria-expanded="${!!catOpen[c.code]}" onclick="if(!event.target.closest('input,select,textarea,button'))toggleCat('${c.code}')">
       <td class="mono"><span class="cv">&#9656;</span>${c.xl ? '<span class="xl-mark">*</span>' : ''}${c.code}</td>
       <td>${ed(c) ? field(i, 'title') : esc(c.title)}${(c.lead || OWN) !== OWN ? ` <span class="chip grey" title="Led by ${esc(c.lead)}">${esc(c.lead.split(' ').filter(w => w !== 'and').map(w => w[0]).join(''))} lead</span>` : ''}</td>
       <td>${ed(c) ? `<select onchange="DATA.catalog[${i}].cls=this.value">${['Major Required', 'Major Elective'].map(o => `<option ${o === c.cls ? 'selected' : ''}>${o}</option>`).join('')}</select>` : esc(c.cls)}</td>
       <td class="c">${ed(c) ? field(i, 'credits', 56) : esc(c.credits)}</td>
       <td class="c">${ed(c) ? field(i, 'lecture', 56) : esc(c.lecture)}</td>
-      <td class="c">${ed(c) ? field(i, 'field', 56) : esc(c.field)}</td>
       <td>${ed(c) ? `<select onchange="DATA.catalog[${i}].offered=this.value">${['Fall', 'Spring', 'Fall · Spring', 'Fall (+Spring)', 'Spring (+Fall)'].map(o => `<option ${o === c.offered ? 'selected' : ''}>${o}</option>`).join('')}</select>` : esc(c.offered)}</td></tr>${catOpen[c.code] ? catProfile(c, i, ed(c)) : ''}`).join('')}</tbody>`;
   $('cat-note').innerHTML = `<span class="xl-mark">*</span>${DATA.catalog.filter(c => c.xl).map(c => c.code).join(', ')} may be recognized either as courses offered by the school that provides the course or as major courses within the Program of Data Science and Artificial Intelligence. Each course counts only once toward graduation credit; students choose which program it counts toward.`;
 }
@@ -844,7 +842,7 @@ function catProfile(c, i, ed){
   const terms = [...new Set(offs.map(o => o.term))];
   const short = t => t.replace('Spring ', 'S’').replace('Fall ', 'F’').replace('’20', '’');
   const fact = (label, body) => `<div class="cp-f"><div class="cp-l">${label}</div>${body || '<span class="sub">–</span>'}</div>`;
-  return `<tr class="cprof"><td colspan="7">
+  return `<tr class="cprof"><td colspan="6">
     <div class="cp-facts">
       ${fact('PLO weights', c.plo_pct ? PLOS.map((p, j) => `<div class="cp-bar" title="${esc(p.name)}${lv && lv[p.code] ? ' · ' + lv[p.code].split('').join('/') : ''}"><span class="cp-k">${p.code}</span><i style="--w:${c.plo_pct[j]}%;--c:${PLO_COLOR[p.code]}"></i><b>${c.plo_pct[j]}%</b></div>`).join('') : '')}
       ${fact('Curricular domains', m ? domRadar(m) : '')}
@@ -883,9 +881,9 @@ function scrollRowIntoView(row, gap = 110){
   setTimeout(() => { if (Math.abs(win.scrollY - target) > 4) win.scrollTo(0, target); }, 700);
 }
 function catExport(){
-  const aoa = [['Level','Course ID','Course Title','Classification','Credits','Lecture','Field Work','Offered','Description'],
-    ...DATA.catalog.map(c => [c.cat, (c.xl ? '*' : '') + c.code, c.title, c.cls, Number(c.credits) || c.credits, Number(c.lecture) || c.lecture, c.field, c.offered, c.desc])];
-  const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = [16,10,44,16,8,8,10,16,90].map(w=>({wch:w}));
+  const aoa = [['Level','Course ID','Course Title','Classification','Credits','Credit Hours','Offered','Description'],
+    ...DATA.catalog.map(c => [c.cat, (c.xl ? '*' : '') + c.code, c.title, c.cls, Number(c.credits) || c.credits, Number(c.lecture) || c.lecture, c.offered, c.desc])];
+  const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = [16,10,44,16,8,12,16,90].map(w=>({wch:w}));
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Course catalog');
   XLSX.writeFile(wb, 'DS&AI Course Catalog.xlsx');
 }
