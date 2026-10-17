@@ -2331,7 +2331,8 @@ async function saveOutcomesInner(c, d) {
 // the Assessment tab's draft rows, so an added / renamed / deleted item shows here at once;
 // rubrics follow their item by row (id, or a temporary key for new rows) and are saved
 // after the assessment rows. Criteria x four levels, optional groups A–H, several CLOs per
-// criterion, points may be blank, Team / Individual per rubric with per-criterion exceptions.
+// criterion, points may be blank. Team / Individual is set once per rubric (per assessment item),
+// never per criterion (decided 2026-10-17).
 // Building or revising a rubric is meant to go through Excel (Export -> edit -> Import);
 // on-screen editing is for small fixes.
 let rubricCache = {};       // { [offeringId]: {status, error, rubrics:[...], programRubric} }
@@ -2340,7 +2341,7 @@ let rbPickK = null;         // criterion index whose CLO picker is open
 let rbRkSeq = 0;
 const RB_LV = [['4', 'Exemplary'], ['3', 'Proficient'], ['2', 'Developing'], ['1', 'Needs Improvement']];
 const RB_LK = ['E', 'P', 'D', 'NI'];
-const RB_XL_HEAD = ['Group', 'Group name', 'Criterion', 'Points', 'CLOs', 'Scored', 'Exemplary (4)', 'Proficient (3)', 'Developing (2)', 'Needs Improvement (1)'];
+const RB_XL_HEAD = ['Group', 'Group name', 'Criterion', 'Points', 'CLOs', 'Exemplary (4)', 'Proficient (3)', 'Developing (2)', 'Needs Improvement (1)'];
 const RB_XL = `<svg class="rb-xl" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><rect x="1" y="1" width="16" height="16" rx="3" fill="#1D6F42"/><path d="M5.2 5.2l7.6 7.6M12.8 5.2l-7.6 7.6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>`;
 
 async function loadRubrics(c) {
@@ -2353,7 +2354,7 @@ async function loadRubrics(c) {
     const ids = rs.map(r => r.rubric_id);
     const [groups, crits] = ids.length ? await Promise.all([
       sbGet('outcome_rubric_groups', `rubric_id=in.(${ids.join(',')})&select=rubric_id,group_key,name,sort_order&order=sort_order.asc`),
-      sbGet('outcome_rubric_criteria', `rubric_id=in.(${ids.join(',')})&select=criterion_id,rubric_id,group_key,sort_order,name,points,scope_override,descriptors&order=sort_order.asc`),
+      sbGet('outcome_rubric_criteria', `rubric_id=in.(${ids.join(',')})&select=criterion_id,rubric_id,group_key,sort_order,name,points,descriptors&order=sort_order.asc`),
     ]) : [[], []];
     const m1 = crits.length ? await sbGet('outcome_criterion_clo_map', `criterion_id=in.(${crits.map(x => x.criterion_id).join(',')})&select=criterion_id,clo_id`) : [];
     const prog = oc && oc.programCode ? await sbGet('outcome_rubrics', `program_code=eq.${encodeURIComponent(oc.programCode)}&offering_id=is.null&select=rubric_id,name`) : [];
@@ -2364,7 +2365,7 @@ async function loadRubrics(c) {
         rubric_id: r.rubric_id, item: r.assessment_item, scope: r.default_scope, programId: r.uses_program_rubric_id,
         groups: groups.filter(g => g.rubric_id === r.rubric_id).sort((a, b) => a.sort_order - b.sort_order).map(g => ({ key: g.group_key, name: g.name })),
         criteria: crits.filter(x => x.rubric_id === r.rubric_id).sort((a, b) => a.sort_order - b.sort_order).map(x => ({
-          g: x.group_key, name: x.name, pts: x.points === null ? null : Number(x.points), scope: x.scope_override,
+          g: x.group_key, name: x.name, pts: x.points === null ? null : Number(x.points),
           lv: RB_LK.map(k => (x.descriptors || {})[k] || ''),
           clos: m1.filter(m => m.criterion_id === x.criterion_id).map(m => String(m.clo_id)),
         })),
@@ -2485,12 +2486,12 @@ function rbBodyHtml(c, rc, d, row) {
         ${rbAnyPts(gc) ? `<span class="rb-gsub">${rbSum(gc)} pts</span>` : ''}${ed ? `<button class="link rb-g-del" onclick="rbRemoveGroup('${g.key}')">Remove group</button>` : ''}</td></tr>`;
     }
     for (const k of ks) {
-      const x = r.criteria[k], code = rbCode(r, k), own = x.scope && x.scope !== r.scope;
+      const x = r.criteria[k], code = rbCode(r, k);
       const tags = x.clos.map(cloLab).filter(Boolean);
       h += `<tr class="rb-row" ${ed ? `ondragover="rbDragOver(event)" ondrop="rbDrop(event,${k})"` : ''}>
         ${ed ? `<td><span class="rb-drag" draggable="true" tabindex="0" title="Drag to reorder (or Alt+&uarr;/&darr;)" ondragstart="rbDragStart(event,${k})" ondragend="rbDragEnd()" onkeydown="rbKey(event,${k})">&#10303;</span></td>` : ''}
         <td><span class="rb-ccode">${code}</span>${ed ? `<textarea class="cp-textarea rb-in rb-name" rows="1" placeholder="Criterion" oninput="rbCur().criteria[${k}].name=this.value;autoGrowTextarea(this)">${esc(x.name)}</textarea>` : `<b class="rb-cname">${esc(x.name)}</b>`}
-          <div>${ed ? `<select class="rb-sel rb-sc ${own ? 'own' : ''}" onchange="rbSetScope(${k},this.value)" aria-label="Scoring for ${code}">${['Team', 'Individual'].map(s => `<option ${(x.scope || r.scope) === s ? 'selected' : ''}>${s}</option>`).join('')}</select>` : (own ? `<span class="rb-sc-badge">${esc(x.scope)}</span>` : '')}</div></td>
+</td>
         <td class="num">${ed ? `<input class="rb-in rb-num" type="number" min="0" value="${x.pts ?? ''}" placeholder="–" onchange="rbSetPts(${k},this.value)" aria-label="Points for ${code}">` : (x.pts ?? '<span class="rb-none">–</span>')}</td>
         <td>${ed ? `<button class="rb-clo-btn ${rbPickK === k ? 'sel' : ''}" data-pk="${k}" onclick="rbOpenPick(event,${k})" aria-label="Choose CLOs for ${code}">${tags.length ? tags.map(t => `<span class="rb-clo on">${t}</span>`).join('') : '<span class="rb-clo-add">+ CLO</span>'}</button>`
                  : (tags.length ? tags.map(t => `<span class="rb-clo on">${t}</span>`).join(' ') : '<span class="rb-none">no CLO</span>')}</td>
@@ -2546,7 +2547,7 @@ async function rbEnsureEdit() {
 function rbBlank(g = null) {
   const r = editRowsByTab.rubrics && editRowsByTab.rubrics.byKey[rbSel];
   const left = r && rbAnyPts(r.criteria) ? Math.max(0, 100 - rbSum(r.criteria)) : null;
-  return { g, name: '', pts: left, scope: null, lv: ['', '', '', ''], clos: [] };
+  return { g, name: '', pts: left, lv: ['', '', '', ''], clos: [] };
 }
 async function rbNew() {
   if (!(await rbEnsureEdit())) return;
@@ -2566,7 +2567,6 @@ async function rbApplyProgram() {
 }
 function rbUnsetProgram() { delete editRowsByTab.rubrics.byKey[rbSel].program; editRowsByTab.rubrics.byKey[rbSel].program = false; renderCoursePage(); }
 function rbSetPts(k, v) { rbCur().criteria[k].pts = v === '' ? null : Number(v); renderCoursePage(); }
-function rbSetScope(k, v) { const r = rbCur(); r.criteria[k].scope = v === r.scope ? null : v; renderCoursePage(); }
 function rbAddCrit(g) {
   const r = rbCur();
   let at = r.criteria.length;
@@ -2686,9 +2686,9 @@ function rbExport() {
   const r = d.byKey[rbSel] && !d.byKey[rbSel].program ? d.byKey[rbSel] : { scope: 'Individual', groups: [], criteria: [] };
   const clos = rbClos(c), gname = k => (r.groups.find(g => g.key === k) || {}).name || '';
   const aoa = [RB_XL_HEAD, ...r.criteria.map(x => [x.g || '', x.g ? gname(x.g) : '', x.name, x.pts ?? '',
-    x.clos.map(k => clos.findIndex(y => y.key === k) + 1).filter(n => n > 0).join(', '), x.scope && x.scope !== r.scope ? x.scope : '', ...x.lv])];
+    x.clos.map(k => clos.findIndex(y => y.key === k) + 1).filter(n => n > 0).join(', '), ...x.lv])];
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols'] = [6, 24, 34, 7, 8, 10, 40, 40, 40, 40].map(w => ({ wch: w }));
+  ws['!cols'] = [6, 24, 34, 7, 8, 40, 40, 40, 40].map(w => ({ wch: w }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Rubric');
   XLSX.writeFile(wb, `${c.code} ${row.item} rubric${r.criteria.length ? '' : ' (template)'}.xlsx`.replace(/[\\/:*?"<>|]/g, '-'));
@@ -2712,7 +2712,7 @@ async function rbReadFile(file) {
   if (hi < 0) { showToast('No "Criterion" column found.'); return; }
   const H = aoa[hi].map(v => String(v).trim().toLowerCase());
   const col = n => H.findIndex(h => h.startsWith(n));
-  const ix = { g: H.findIndex(h => h === 'group'), gn: H.findIndex(h => h === 'group name'), name: col('criterion'), pts: col('points') >= 0 ? col('points') : col('pts'), clos: col('clo'), sc: col('scored'),
+  const ix = { g: H.findIndex(h => h === 'group'), gn: H.findIndex(h => h === 'group name'), name: col('criterion'), pts: col('points') >= 0 ? col('points') : col('pts'), clos: col('clo'),
     lv: ['exemplary', 'proficient', 'developing', 'needs improvement'].map(col) };
   const problems = [], groups = [], criteria = [];
   aoa.slice(hi + 1).forEach((row, n) => {
@@ -2732,13 +2732,11 @@ async function rbReadFile(file) {
     const bad = nums.filter(k => k < 1 || k > clos.length);
     if (bad.length) problems.push(`Row ${line}: CLO ${bad.join(', ')} does not exist`);
     const keys = [...new Set(nums.filter(k => k >= 1 && k <= clos.length))].sort((a, b) => a - b).map(k => clos[k - 1].key);
-    const sc = /^ind/i.test(cell(ix.sc)) ? 'Individual' : /^team/i.test(cell(ix.sc)) ? 'Team' : null;
-    criteria.push({ g, name, pts, clos: keys, scope: sc, lv: ix.lv.map(cell) });
+    criteria.push({ g, name, pts, clos: keys, lv: ix.lv.map(cell) });
   });
   if (!criteria.length) { showToast('No criteria found in this file.'); return; }
   if (!groups.length) criteria.forEach(x => { x.g = null; }); else criteria.forEach(x => { if (!x.g) x.g = groups[0].key; });
   const d = editRowsByTab.rubrics, cur = d.byKey[rbSel], scope = cur && cur.scope ? cur.scope : 'Individual';
-  criteria.forEach(x => { if (x.scope === scope) x.scope = null; });
   const msg = `Import ${criteria.length} criteria from ${file.name}?` +
     (cur && cur.criteria && cur.criteria.length ? `\nReplaces the current rubric (${cur.criteria.length} criteria).` : '') +
     (problems.length ? `\n\n${problems.length} problem${problems.length > 1 ? 's' : ''} (left blank):\n` + problems.slice(0, 6).join('\n') + (problems.length > 6 ? `\n…and ${problems.length - 6} more` : '') : '');
@@ -2783,7 +2781,6 @@ async function saveRubricsInner(c, d) {
     const ins = await sbInsert('outcome_rubric_criteria', keep.map((x, i) => ({
       rubric_id: r.rubric_id, group_key: r.groups.length ? x.g : null, sort_order: i + 1, name: x.name.trim(),
       points: x.pts === null || x.pts === '' || x.pts === undefined ? null : Number(x.pts),
-      scope_override: x.scope && x.scope !== r.scope ? x.scope : null,
       descriptors: Object.fromEntries(RB_LK.map((k, j) => [k, x.lv[j] || ''])),
     })));
     const links = [];
