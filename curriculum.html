@@ -449,7 +449,7 @@ html,body{background:transparent;}
       <button class="tab" data-t="cat" onclick="setTab('cat')">Course Catalog</button>
       <button class="tab" data-t="pw" onclick="setTab('pw')">Pathways</button>
       <button class="tab" data-t="map" onclick="setTab('map')">Course&ndash;PLO Map <span class="count" id="prop-count"></span></button>
-      <button class="tab" data-t="off" onclick="setTab('off')">Course Offerings</button>
+      <button class="tab" data-t="off" onclick="setTab('off')">Semester Offerings</button>
     </div>
 
     <section id="t-empty" hidden><div class="card empty-prog" id="empty-prog"></div></section>
@@ -492,7 +492,7 @@ html,body{background:transparent;}
     <section id="t-pw" hidden>
       <div class="card">
         <div class="card-head"><div class="card-t">Recommended pathways</div><span class="updated" data-upd="pw"></span></div>
-        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180559" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
+        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180612" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
         <div class="pw-term">
           <div class="pw-th">Pathway by term <span id="pw-title"></span></div>
           <p class="pw-focus" id="pw-focus"></p>
@@ -527,7 +527,7 @@ html,body{background:transparent;}
 
     <section id="t-off" hidden>
       <div class="off-bar"><div class="seg" role="group" aria-label="View offerings">
-        <button id="ov-sem" class="on" onclick="setOffView('sem')">By semester</button><button id="ov-ins" onclick="setOffView('ins')">By instructor</button></div></div>
+        <button id="ov-sem" class="on" onclick="setOffView('sem')">By course</button><button id="ov-ins" onclick="setOffView('ins')">By instructor</button></div></div>
       <div id="off-sem">
       <div class="card">
         <div class="card-head"><div class="card-t">All semesters</div></div>
@@ -616,7 +616,7 @@ function confirmBox(msg){
 /* ---------- page header: one edit session for every tab (same rule as the course page) ---------- */
 function countChanges(){ let n=0; for (const c of COURSES) for (const p of PLOS) if ((map[c][p.code]||'') !== (saved[c][p.code]||'')) n++; return n; }
 let snap = null;   // content when Edit was pressed
-const TAB_NAME = {ov:'Overview', lo:'Learning Outcomes', cat:'Course Catalog', pw:'Pathways', map:'Course–PLO Map', off:'Course Offerings'};
+const TAB_NAME = {ov:'Overview', lo:'Learning Outcomes', cat:'Course Catalog', pw:'Pathways', map:'Course–PLO Map', off:'Semester Offerings'};
 function dirtyTabs(){
   if (!editing || !snap) return [];
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
