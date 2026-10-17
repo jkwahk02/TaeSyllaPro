@@ -498,7 +498,7 @@ html,body{background:transparent;}
     <section id="t-pw" hidden>
       <div class="card">
         <div class="card-head"><div class="card-t">Recommended pathways</div></div>
-        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180641" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
+        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180643" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
         <div class="pw-term">
           <div class="pw-th">Pathway by term <span id="pw-title"></span></div>
           <p class="pw-focus" id="pw-focus"></p>
@@ -1161,8 +1161,8 @@ function renderOv(){
   $('ov-domains').innerHTML = OV.domains.map((d, i) => `<div class="dom" style="--c:${d.color}">
     <div class="dom-k">${d.key}</div><div><div class="dom-t">${ed ? inp(`domains.${i}.name`, d.name) : esc(d.name)}</div>
     <div class="dom-d">${ed ? ta(`domains.${i}.focus`, d.focus, 2) : esc(d.focus)}</div></div></div>`).join('');
-  $('ov-levels').innerHTML = OV.levels.map((l, i) => `<div class="lvl"><div class="lvl-t">${esc(l.name)}</div>
-    <div class="lvl-d">${ed ? ta(`levels.${i}.focus`, l.focus, 2) : esc(l.focus)}</div></div>`).join('');
+  $('ov-levels').innerHTML = OV.levels.map((l, i) => `<div class="lvl dom" style="--c:${['#6F8FAF', '#3F6390', '#1F3A5F'][i] || '#3F6390'}"><div class="dom-k">P${i + 1}</div><div><div class="lvl-t">${ed ? inp(`levels.${i}.label`, l.label || l.name) : esc(l.label || l.name)}</div>
+    <div class="lvl-d">${ed ? ta(`levels.${i}.focus`, l.focus, 2) : esc(l.focus)}</div></div></div>`).join('');
   renderPathway();
   renderDomainFlow(ed);
 }
@@ -1203,7 +1203,7 @@ function renderPathway(){
   let h = `<thead><tr><th style="width:150px"></th>${OV.terms.map(t => `<th class="c">${t}</th>`).join('')}</tr></thead><tbody>`;
   const n = {S: 0, C: 0, R: 0};
   for (const l of OV.levels) {
-    h += `<tr><td class="pw-l">${esc(l.name)}</td>`;
+    h += `<tr><td class="pw-l">${esc(l.label || l.name)}</td>`;
     for (const t of OV.terms) {
       const cs = OV.pathway.filter(p => p.level === l.name && p.terms.includes(t));
       h += `<td>${cs.map(p => {
@@ -1545,7 +1545,8 @@ setTab('ov');   // pages with tabs open on the first tab
       progNames: progs.map(p => p.name), progCodes: Object.fromEntries(progs.map(p => [p.name, p.code])),
       me: pe('PROFESSOR && PROFESSOR.name') || nameOf(user.user && user.user.email),
       role: me.is_chair ? 'chair' : 'faculty',           // Phase 3: the program's chair edits, everyone else reads
-      docs: {overview: doc('overview').content || {}, domain_map: doc('domain_map').content || {}, pathway: pw, pathfinder: pfd},   // as stored, so a save keeps keys the page doesn't show
+      // as stored (a separate copy: the page edits OV/PF in place), so a save sees what changed and keeps keys the page doesn't show
+      docs: JSON.parse(JSON.stringify({overview: doc('overview').content || {}, domain_map: doc('domain_map').content || {}, pathway: pw, pathfinder: pfd})),
       email: ((user.user && user.user.email) || '').toLowerCase(),
       api: {write, rpc: rpcW},
       isChairOfProg: !!me.is_chair,
