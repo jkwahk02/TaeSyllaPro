@@ -438,17 +438,17 @@ html,body{background:transparent;}
     </div>
 
     <div class="tabs" role="tablist">
-      <button class="tab" data-t="ov" onclick="setTab('ov')">Overview</button>
+      <button class="tab active" data-t="ov" onclick="setTab('ov')">Overview</button>
       <button class="tab" data-t="lo" onclick="setTab('lo')">Learning Outcomes</button>
       <button class="tab" data-t="cat" onclick="setTab('cat')">Course Catalog</button>
       <button class="tab" data-t="pw" onclick="setTab('pw')">Pathways</button>
-      <button class="tab active" data-t="map" onclick="setTab('map')">Course&ndash;PLO Map <span class="count" id="prop-count"></span></button>
+      <button class="tab" data-t="map" onclick="setTab('map')">Course&ndash;PLO Map <span class="count" id="prop-count"></span></button>
       <button class="tab" data-t="off" onclick="setTab('off')">Course Offerings</button>
     </div>
 
     <section id="t-empty" hidden><div class="card empty-prog" id="empty-prog"></div></section>
 
-    <section id="t-ov" hidden>
+    <section id="t-ov">
       <div class="ov-bar" id="ov-actions"></div>
       <div class="card"><div class="card-t" style="margin-bottom:10px">Program description</div><div class="ov-text" id="ov-desc"></div></div>
       <div class="card"><div class="card-t" style="margin-bottom:10px">Mission</div><div id="ov-mission"></div><div id="ov-align"></div></div>
@@ -486,7 +486,7 @@ html,body{background:transparent;}
     <section id="t-pw" hidden>
       <div class="card">
         <div class="card-head"><div class="card-t">Recommended pathways</div><span class="updated" data-upd="pw"></span></div>
-        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180535" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
+        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180536" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
         <div class="pw-term">
           <div class="pw-th">Pathway by term <span id="pw-title"></span></div>
           <p class="pw-focus" id="pw-focus"></p>
@@ -497,7 +497,7 @@ html,body{background:transparent;}
       </div>
     </section>
 
-    <section id="t-map">
+    <section id="t-map" hidden>
       <div class="card prop-card" id="prop-card" hidden>
         <div class="card-head"><div class="card-t prop-t"><i class="dot"></i><span id="prop-title"></span></div></div>
         <div id="prop-open"></div>
@@ -579,7 +579,7 @@ function setProg(p){ if (editing) discard(); location.search = '?p=' + encodeURI
 const clone = o => JSON.parse(JSON.stringify(o));
 let saved = {}; for (const c of COURSES) { saved[c] = {}; for (const p of PLOS) saved[c][p.code] = (DATA.map[c][p.code] || {}).levels || ''; }
 let map = clone(saved);
-let editing = false, role = window.__CUR.role, tab = 'map', selKey = null, catOpen = {}, declining = null;
+let editing = false, role = window.__CUR.role, tab = 'ov', selKey = null, catOpen = {}, declining = null;
 let term = DATA.terms.includes(window.__CUR.curTerm) ? window.__CUR.curTerm : DATA.terms[DATA.terms.length - 1];
 
 let proposals = window.__CUR.proposals;
