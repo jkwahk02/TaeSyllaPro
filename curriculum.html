@@ -495,7 +495,7 @@ html,body{background:transparent;}
     <section id="t-pw" hidden>
       <div class="card">
         <div class="card-head"><div class="card-t">Recommended pathways</div></div>
-        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180634" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
+        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180636" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
         <div class="pw-term">
           <div class="pw-th">Pathway by term <span id="pw-title"></span></div>
           <p class="pw-focus" id="pw-focus"></p>
@@ -845,8 +845,7 @@ async function decline(id){
 /* ---------- Course Catalog (chair edits; a cross-listed course is edited by its lead program's chair) ---------- */
 const OWN = window.__CUR.progName;   // catalog rows this program leads are the ones its chair edits
 function renderCat(){
-  $('cat-btns').innerHTML = `<button class="btn btn-sm" onclick="catExport()">${XL}Export</button>
-    <button class="btn btn-sm" onclick="toast('Would make the catalog document (Google Doc)')">Make catalog document</button>`;
+  $('cat-btns').innerHTML = `<button class="btn btn-sm" onclick="catExport()">${XL}Export</button>`;
   const ed = c => editing && (c.lead || OWN) === OWN;
   const field = (i, k, w) => `<input${w ? ` style="width:${w}px"` : ''} class="${w ? 'num' : ''}" value="${esc(DATA.catalog[i][k])}" oninput="DATA.catalog[${i}].${k}=this.value">`;
   // 1. Course list (Academic Catalog 3.2, plus Offered)
