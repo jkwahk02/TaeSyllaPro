@@ -433,6 +433,13 @@ html,body{background:transparent;}
 .main{padding:0 !important;}
 .cur-boot{padding:60px 0;text-align:center;color:var(--text3);font-size:19px;}
 .toast{position:fixed;}
+.tbl input.code{width:96px;font-family:var(--mono, monospace);text-transform:uppercase;}
+.tbl td select{height:38px;border:1px solid var(--border-em);border-radius:6px;padding:0 8px;font-size:16px;width:100%;background:var(--surface);}
+.icon-x{width:32px;height:32px;border-radius:50%;border:1px solid var(--border-em);background:var(--surface);color:var(--text2);cursor:pointer;font-size:14px;}
+.icon-x:hover{background:var(--red-l, #fde8e8);color:var(--red, #b42318);border-color:currentColor;}
+.plo-add{margin-top:12px;}
+#plo-tbl td input:not(.code):not(.num){width:100%;}
+.tip.tip-note{padding:10px 14px;min-width:260px;font-size:15px;font-weight:400;line-height:1.45;text-transform:none;letter-spacing:0;color:var(--text2);white-space:normal;}
 </style>
 </head>
 <body>
@@ -482,6 +489,7 @@ html,body{background:transparent;}
       <div class="card">
         <div class="card-head"><div class="card-t">Program learning outcomes</div></div>
         <div class="tbl-wrap tw-vis"><table class="tbl" id="plo-tbl"></table></div>
+        <button class="btn btn-sm plo-add" id="plo-add" onclick="ploAdd()" hidden>+ Add PLO</button>
       </div>
     </section>
 
@@ -498,7 +506,7 @@ html,body{background:transparent;}
     <section id="t-pw" hidden>
       <div class="card">
         <div class="card-head"><div class="card-t">Recommended pathways</div></div>
-        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180643" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
+        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180652" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
         <div class="pw-term">
           <div class="pw-th">Pathway by term <span id="pw-title"></span></div>
           <p class="pw-focus" id="pw-focus"></p>
@@ -641,20 +649,48 @@ function renderActions(){
 }
 
 /* ---------- Learning Outcomes ---------- */
+/* ---------- Learning Outcomes: the chair edits codes, text, ILO and standard, and adds or removes PLOs ---------- */
+let ploRen = [];   // code renames in this Edit session [from, to], undone on Cancel
+function renameKey(from, to){
+  for (const o of [map, saved, DATA.map]) for (const c of Object.keys(o)) if (o[c] && from in o[c]) { o[c][to] = o[c][from]; delete o[c][from]; }
+  for (const x of proposals.concat(decided)) if (x.plo === from) x.plo = to;
+}
+function ploCode(i, v){
+  v = v.trim().toUpperCase(); const p = PLOS[i];
+  if (!v || v === p.code) { renderPlos(); return; }
+  if (PLOS.some(q => q !== p && q.code === v)) { toast(`${v} is already used`); renderPlos(); return; }
+  renameKey(p.code, v); ploRen.push([p.code, v]); p.code = v; render();
+}
+function ploAdd(){
+  let n = PLOS.length + 1; while (PLOS.some(p => p.code === 'PLO' + n)) n++;
+  PLOS.push({id: null, code: 'PLO' + n, name: '', def: '', ilo: '', std: ''});
+  render();
+  setTimeout(() => { const r = document.querySelectorAll('#plo-tbl tbody tr'); const inp = r[r.length - 1] && r[r.length - 1].querySelector('input:not(.code)'); if (inp) inp.focus(); }, 0);
+}
+async function ploRemove(i){
+  const p = PLOS[i];
+  if (proposals.some(x => x.plo === p.code)) { toast(`${p.code} has open proposals. Decide them first.`); return; }
+  const a = COURSES.filter(c => (map[c][p.code] || '')).length;
+  if (p.id && !(await confirmBox(`Remove ${p.code}?\nIt comes off the program's outcomes when you save${a ? ` (it is mapped in ${a} course${a === 1 ? '' : 's'})` : ''}. Past maps and assessment results that use it are kept.`))) return;
+  PLOS.splice(i, 1); render();
+}
 function renderPlos(){
-  const ch = isChair();
-  $('plo-tbl').innerHTML = `<thead><tr><th style="width:70px">PLO</th><th>Outcome</th><th style="width:150px">ILO</th><th style="width:150px">Standard of performance</th><th style="width:140px">Assessed in</th></tr></thead><tbody>${
+  const ed = isChair() && editing, ILOS = window.__CUR.ilos || [];
+  const tipA = `<span class="hov" tabindex="0">Assessed in<span class="tip tip-note" role="tooltip">Courses marked <b>A</b> for this PLO in the Course–PLO Map. To change them, edit the map.</span></span>`;
+  $('plo-tbl').innerHTML = `<thead><tr><th style="width:${ed ? 120 : 70}px">PLO</th><th>Outcome</th><th style="width:${ed ? 220 : 150}px">ILO</th><th style="width:150px">Standard of performance</th><th style="width:140px">${tipA}</th>${ed ? '<th style="width:56px"></th>' : ''}</tr></thead><tbody>${
     PLOS.map((p,i) => {
       const a = COURSES.filter(c => (saved[c][p.code]||'').includes('A'));
-      return `<tr><td class="mono">${p.code}</td>
-        <td>${editing ? `<input value="${esc(p.name)}" oninput="PLOS[${i}].name=this.value"><textarea style="margin-top:6px" oninput="PLOS[${i}].def=this.value">${esc(p.def)}</textarea>`
-                      : `<b>${esc(p.name)}</b><div class="sub">${esc(p.def)}</div>`}</td>
-        <td><span class="chip grey">${p.ilo}</span></td>
-        <td class="num">${editing ? `<input class="num" type="number" min="0" max="100" value="${p.std}" onchange="PLOS[${i}].std=+this.value"> %` : `${p.std}% Proficient+`}</td>
+      return `<tr><td class="mono">${ed ? `<input class="code" value="${esc(p.code)}" onchange="ploCode(${i},this.value)" aria-label="PLO code">` : p.code}</td>
+        <td>${ed ? `<input value="${esc(p.name)}" placeholder="Outcome title" oninput="PLOS[${i}].name=this.value;renderActions()"><textarea style="margin-top:6px" placeholder="Definition" oninput="PLOS[${i}].def=this.value;renderActions()">${esc(p.def)}</textarea>`
+                 : `<b>${esc(p.name)}</b><div class="sub">${esc(p.def)}</div>`}</td>
+        <td>${ed ? `<select onchange="PLOS[${i}].ilo=this.value;renderActions()"><option value="">—</option>${ILOS.map(x => `<option value="${esc(x.code)}" ${x.code === p.ilo ? 'selected' : ''}>${esc(x.code)} ${esc(x.title)}</option>`).join('')}</select>`
+                 : (p.ilo ? `<span class="chip grey">${esc(p.ilo)}</span>` : '<span class="sub">—</span>')}</td>
+        <td class="num">${ed ? `<input class="num" type="number" min="0" max="100" value="${esc(p.std)}" onchange="PLOS[${i}].std=this.value===''?'':+this.value;renderActions()"> %` : (p.std === '' || p.std == null ? '<span class="sub">—</span>' : `${p.std}% Proficient+`)}</td>
         <td>${a.length ? `<span class="hov" tabindex="0">${a.length} course${a.length===1?'':'s'}<span class="tip" role="tooltip">${
-          a.map(c => `<span class="tip-r"><code>${c}</code>${esc(DATA.names[c] || '')}</span>`).join('')}</span></span>` : '<span class="sub">None</span>'}${
-          editing ? `<button class="lnk" onclick="goMap('${p.code}')">Edit in map &rarr;</button>` : ''}</td></tr>`;
+          a.map(c => `<span class="tip-r"><code>${c}</code>${esc(DATA.names[c] || '')}</span>`).join('')}</span></span>` : '<span class="sub">None</span>'}</td>
+        ${ed ? `<td class="c"><button class="icon-x" title="Remove ${esc(p.code)}" aria-label="Remove ${esc(p.code)}" onclick="ploRemove(${i})">✕</button></td>` : ''}</tr>`;
     }).join('')}</tbody>`;
+  $('plo-add').hidden = !ed;
 }
 
 /* ---------- Course–PLO Map ---------- */
@@ -714,6 +750,7 @@ document.addEventListener('click', e => { if (!$('pop').hidden && !$('pop').cont
 function startEdit(){ snap = {PLOS: clone(PLOS), cat: clone(DATA.catalog), OV: clone(OV), PF: clone({roles: PF.roles, mk: PF.mk})}; editing = true; render(); }
 function discard(){
   if (snap) { PF.roles = snap.PF.roles; PF.mk = snap.PF.mk; pfSync(); PLOS.splice(0, PLOS.length, ...snap.PLOS); DATA.catalog.splice(0, DATA.catalog.length, ...snap.cat); Object.assign(OV, snap.OV); }
+  for (const [a, b] of ploRen.reverse()) renameKey(b, a); ploRen = [];
   map = clone(saved); snap = null; editing = false; $('pop').hidden = true; selKey = null;
 }
 async function cancelEdit(){
@@ -733,7 +770,7 @@ async function saveMap(){
     await confirmBox(`Could not save\n${e.message || e}\n\nYour edits are still on the page. Steps before this one were saved; press Save again to send the rest.`);
     return;
   }
-  saved = clone(map); snap = null; editing = false; $('pop').hidden = true; selKey = null;
+  saved = clone(map); snap = null; editing = false; ploRen = []; $('pop').hidden = true; selKey = null;
   d.forEach(k => window.__CUR.upd[k] = new Date().toLocaleDateString('sv-SE')); renderUpd();
   render(); toast('Saved');
 }
@@ -745,14 +782,35 @@ async function persist(d){
   const enc = encodeURIComponent;
   const num = (v, what) => { const t = String(v ?? '').trim(); if (t === '') return null; const x = Number(t); if (!isFinite(x)) throw new Error(`${what}: "${t}" is not a number`); return x; };
   const st = persist.stored = persist.stored || {plos: clone(snap.PLOS), cat: clone(snap.cat)};
-  // 1. Learning Outcomes: PLO title, definition, standard
+  // 1. Learning Outcomes: codes, text, ILO, standard; new PLOs added; removed ones taken off the active list
+  const codes = PLOS.map(p => String(p.code).trim());
+  if (codes.some(c => !c)) throw new Error('A PLO has no code');
+  if (new Set(codes).size !== codes.length) throw new Error('Two PLOs have the same code');
+  for (const p of PLOS) if (!String(p.name).trim()) throw new Error(`${p.code}: the outcome title is empty`);
+  for (const o of [...st.plos]) if (o.id && !PLOS.some(p => p.id === o.id)) {
+    // kept in the database (is_active = false): past maps, proposals and assessment results still point to it
+    await A.write('PATCH', 'outcome_plos', `plo_id=eq.${o.id}`, {is_active: false});
+    st.plos = st.plos.filter(x => x !== o);
+  }
+  // renamed codes first take a temporary code, so codes can move between PLOs (e.g. PLO2 <-> PLO3)
+  const ren = PLOS.filter(p => p.id && (st.plos.find(o => o.id === p.id) || {}).code !== p.code);
+  for (const p of ren) await A.write('PATCH', 'outcome_plos', `plo_id=eq.${p.id}`, {plo_code: `~${p.id}`});
   for (const p of PLOS) {
-    const o = st.plos.find(x => x.code === p.code);
-    if (o && (o.name !== p.name || o.def !== p.def || String(o.std) !== String(p.std))) {
-      if (!String(p.name).trim()) throw new Error(`${p.code}: the outcome title is empty`);
-      await A.write('PATCH', 'outcome_plos', `plo_id=eq.${p.id}`, {title: p.name.trim(), definition: p.def, performance_standard_pct: num(p.std, p.code + ' standard')});
-      Object.assign(o, clone(p));
+    const o = st.plos.find(x => x.id && x.id === p.id);
+    const row = {plo_code: p.code.trim(), title: p.name.trim(), definition: p.def, performance_standard_pct: num(p.std, p.code + ' standard')};
+    if (!p.id) {
+      // a code used before (inactive) comes back as that same row
+      const r = await A.write('POST', 'outcome_plos', 'on_conflict=program_code,plo_code,catalog_year_from',
+        {...row, program_code: P, catalog_year_from: window.__CUR.ploYear, is_active: true}, 'resolution=merge-duplicates,return=representation');
+      p.id = r[0].plo_id;
+    } else if (!o || o.code !== p.code || o.name !== p.name || o.def !== p.def || String(o.std) !== String(p.std)) {
+      await A.write('PATCH', 'outcome_plos', `plo_id=eq.${p.id}`, row);
     }
+    if (!o || (o.ilo || '') !== (p.ilo || '')) {
+      await A.write('DELETE', 'outcome_plo_ilo_map', `plo_id=eq.${p.id}`);
+      if (p.ilo) await A.write('POST', 'outcome_plo_ilo_map', '', {plo_id: p.id, ilo_code: p.ilo});
+    }
+    if (o) Object.assign(o, clone(p)); else st.plos.push(clone(p));
   }
   // 2. Course–PLO Map: one row per course × PLO; no levels = the row goes
   for (const c of COURSES) for (const p of PLOS) {
@@ -803,7 +861,7 @@ function renderProps(){
   $('prop-card').hidden = !open.length;
   $('prop-title').textContent = `${open.length} proposal${open.length > 1 ? 's' : ''} ${ch ? 'waiting' : 'sent, waiting for the chair'}`;
   $('prop-open').innerHTML = open.length ? open.map(x => {
-    const p = PLOS.find(q=>q.code===x.plo);
+    const p = PLOS.find(q=>q.code===x.plo) || {name: ''};
     return `<div class="prop" id="prop-${x.id}">
       <div>
         <div class="prop-h"><code>${x.course}</code> ${esc(DATA.names[x.course])} <span class="chip grey">${x.plo} ${esc(p.name)}</span></div>
@@ -1464,10 +1522,11 @@ setTab('ov');   // pages with tabs open on the first tab
     const code = me.code;
 
     // 2. Program data
-    const [catalog, docs, plos] = await Promise.all([
+    const [catalog, docs, plos, ilos] = await Promise.all([
       get('outcome_catalog', `program_code=eq.${code}&order=sort_order.asc&select=*`),
       get('outcome_program_docs', `program_code=eq.${code}&select=doc_key,content,updated_at`),
-      get('outcome_plos', `program_code=eq.${code}&is_active=eq.true&order=plo_code.asc&select=plo_id,plo_code,title,definition,performance_standard_pct`),
+      get('outcome_plos', `program_code=eq.${code}&is_active=eq.true&order=plo_code.asc&select=plo_id,plo_code,title,definition,performance_standard_pct,catalog_year_from`),
+      get('outcome_ilos', 'order=sort_order.asc&select=ilo_code,title').catch(() => []),
     ]);
     const doc = k => (docs.find(x => x.doc_key === k) || {});
     const ploIds = plos.map(p => p.plo_id), ploCode = Object.fromEntries(plos.map(p => [p.plo_id, p.plo_code]));
@@ -1546,6 +1605,8 @@ setTab('ov');   // pages with tabs open on the first tab
       me: pe('PROFESSOR && PROFESSOR.name') || nameOf(user.user && user.user.email),
       role: me.is_chair ? 'chair' : 'faculty',           // Phase 3: the program's chair edits, everyone else reads
       // as stored (a separate copy: the page edits OV/PF in place), so a save sees what changed and keeps keys the page doesn't show
+      ilos: ilos.map(x => ({code: x.ilo_code, title: x.title})),
+      ploYear: plos.reduce((m, p) => Math.max(m, p.catalog_year_from || 0), 0) || new Date().getFullYear(),   // new PLOs join the current set
       docs: JSON.parse(JSON.stringify({overview: doc('overview').content || {}, domain_map: doc('domain_map').content || {}, pathway: pw, pathfinder: pfd})),
       email: ((user.user && user.user.email) || '').toLowerCase(),
       api: {write, rpc: rpcW},
