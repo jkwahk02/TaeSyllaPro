@@ -68,7 +68,11 @@ button,input,select,textarea{font-family:inherit;}
 .ph{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:22px;}
 .ph h1{font-size:30px;font-weight:600;letter-spacing:-0.01em;text-wrap:balance;}
 .ph-meta{font-size:19px;color:var(--text2);margin-top:6px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-.ph-act{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;}
+.card-head .head-btns{margin-left:auto;}
+.ph-upd{align-self:center;font-size:17px;color:var(--text3);white-space:nowrap;}
+.ph-upd:empty{display:none;}
+.ph-act .ph-act{margin-left:0;}
+.ph-act{margin-left:auto;align-items:center;display:flex;gap:10px;flex-wrap:wrap;}
 .sel{appearance:none;height:40px;padding:0 34px 0 13px;border:1px solid var(--border-em);border-radius:var(--r);background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239e9c96' stroke-width='1.6' fill='none'/%3E%3C/svg%3E") no-repeat right 12px center;font-size:19px;font-weight:500;color:var(--text);}
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:24px;overflow-x:auto;}
 .tab{padding:12px 18px;font-size:19px;font-weight:500;color:var(--text3);background:none;border:none;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;display:inline-flex;align-items:center;gap:8px;}
@@ -440,7 +444,7 @@ html,body{background:transparent;}
         <h1><span id="prog-name">Data Science and Artificial Intelligence</span> <span class="chip blue role-chip" id="role-chip">Chair</span>
           <select class="sel prog-sel" id="prog-sel" aria-label="Program" onchange="setProg(this.value)" hidden></select></h1>
       </div>
-      <div class="ph-act" id="actions"></div>
+      <div class="ph-act"><span class="updated ph-upd" id="ph-upd"></span><span class="ph-act" id="actions"></span></div>
     </div>
 
     <div class="tabs" role="tablist">
@@ -449,7 +453,7 @@ html,body{background:transparent;}
       <button class="tab" data-t="cat" onclick="setTab('cat')">Course Catalog</button>
       <button class="tab" data-t="pw" onclick="setTab('pw')">Pathways</button>
       <button class="tab" data-t="map" onclick="setTab('map')">Course&ndash;PLO Map <span class="count" id="prop-count"></span></button>
-      <button class="tab" data-t="off" onclick="setTab('off')">Semester Offerings</button>
+      <button class="tab" data-t="off" onclick="setTab('off')">Course Offerings</button>
     </div>
 
     <section id="t-empty" hidden><div class="card empty-prog" id="empty-prog"></div></section>
@@ -473,17 +477,16 @@ html,body{background:transparent;}
 
     <section id="t-lo" hidden>
       <div class="card">
-        <div class="card-head"><div class="card-t">Program learning outcomes</div><span class="updated" data-upd="lo"></span></div>
+        <div class="card-head"><div class="card-t">Program learning outcomes</div></div>
         <div class="tbl-wrap tw-vis"><table class="tbl" id="plo-tbl"></table></div>
       </div>
     </section>
 
     <section id="t-cat" hidden>
       <div class="card">
-        <div class="card-head"><div class="card-t">Course catalog <span class="card-aka">(Cohort 2026)</span></div>
-          <span class="updated" data-upd="cat"></span>
+        <div class="card-head"><div class="card-t">Course catalog <span class="card-aka">(Cohort 2026 and after)</span></div>
+          
           <div class="head-btns" id="cat-btns"></div></div>
-        <div class="label" style="margin-bottom:8px">Course list</div>
         <div class="tbl-wrap"><table class="tbl cat" id="cat-tbl"></table></div>
         <p class="cat-note" id="cat-note"></p>
       </div>
@@ -491,8 +494,8 @@ html,body{background:transparent;}
 
     <section id="t-pw" hidden>
       <div class="card">
-        <div class="card-head"><div class="card-t">Recommended pathways</div><span class="updated" data-upd="pw"></span></div>
-        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180619" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
+        <div class="card-head"><div class="card-t">Recommended pathways</div></div>
+        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180634" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
         <div class="pw-term">
           <div class="pw-th">Pathway by term <span id="pw-title"></span></div>
           <p class="pw-focus" id="pw-focus"></p>
@@ -510,7 +513,7 @@ html,body{background:transparent;}
         <details class="done"><summary>Decided</summary><div id="prop-done"></div></details>
       </div>
       <div class="card">
-        <div class="card-head"><div class="card-t">Course &times; PLO <span class="card-aka">(curriculum map)</span></div><span class="updated" data-upd="map"></span></div>
+        <div class="card-head"><div class="card-t">Course &times; PLO <span class="card-aka">(curriculum map)</span></div></div>
         <div class="cm-wrap" id="cm-wrap"><table class="cm" id="cm"></table></div>
         <div class="legend" id="cm-legend">
           <span><span class="lv"><span class="on I">I</span><span class="on R">R</span><span class="on A">A</span></span>Introduced &middot; Reinforced &middot; Assessed</span>
@@ -616,7 +619,7 @@ function confirmBox(msg){
 /* ---------- page header: one edit session for every tab (same rule as the course page) ---------- */
 function countChanges(){ let n=0; for (const c of COURSES) for (const p of PLOS) if ((map[c][p.code]||'') !== (saved[c][p.code]||'')) n++; return n; }
 let snap = null;   // content when Edit was pressed
-const TAB_NAME = {ov:'Overview', lo:'Learning Outcomes', cat:'Course Catalog', pw:'Pathways', map:'Course–PLO Map', off:'Semester Offerings'};
+const TAB_NAME = {ov:'Overview', lo:'Learning Outcomes', cat:'Course Catalog', pw:'Pathways', map:'Course–PLO Map', off:'Course Offerings'};
 function dirtyTabs(){
   if (!editing || !snap) return [];
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -718,10 +721,75 @@ async function cancelEdit(){
 async function saveMap(){
   const d = dirtyTabs(), n = countChanges();
   if (!d.length) { snap = null; editing = false; render(); return; }
-  if (!(await confirmBox(`Save changes?\n${d.map(k => TAB_NAME[k] + (k === 'map' ? ` (${n} cell${n>1?'s':''})` : '')).join(', ')}${n ? '\nInstructors of the changed courses are notified.' : ''}`))) return;
+  if (!(await confirmBox(`Save changes?\n${d.map(k => TAB_NAME[k] + (k === 'map' ? ` (${n} cell${n>1?'s':''})` : '')).join(', ')}`))) return;
+  const btn = document.querySelector('#actions .btn-primary'); if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  try { await persist(d); }
+  catch (e) {
+    console.error(e);
+    if (btn) { btn.disabled = false; btn.textContent = 'Save changes'; }
+    await confirmBox(`Could not save\n${e.message || e}\n\nYour edits are still on the page. Steps before this one were saved; press Save again to send the rest.`);
+    return;
+  }
   saved = clone(map); snap = null; editing = false; $('pop').hidden = true; selKey = null;
-  d.forEach(k => document.querySelectorAll(`[data-upd="${k}"]`).forEach(e => e.textContent = 'Last updated ' + new Date().toISOString().slice(0, 10)));
+  d.forEach(k => window.__CUR.upd[k] = new Date().toLocaleDateString('sv-SE')); renderUpd();
   render(); toast('Saved');
+}
+// Write what changed since Edit was pressed, one table at a time; a failure stops there.
+// Every step compares with what is already stored, so pressing Save again after a failure only sends what is left.
+async function persist(d){
+  const A = window.__CUR.api, P = window.__CUR.code, who = window.__CUR.email, now = new Date().toISOString(), today = new Date().toLocaleDateString('sv-SE');   // local date (KST), not UTC
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const enc = encodeURIComponent;
+  const num = (v, what) => { const t = String(v ?? '').trim(); if (t === '') return null; const x = Number(t); if (!isFinite(x)) throw new Error(`${what}: "${t}" is not a number`); return x; };
+  const st = persist.stored = persist.stored || {plos: clone(snap.PLOS), cat: clone(snap.cat)};
+  // 1. Learning Outcomes: PLO title, definition, standard
+  for (const p of PLOS) {
+    const o = st.plos.find(x => x.code === p.code);
+    if (o && (o.name !== p.name || o.def !== p.def || String(o.std) !== String(p.std))) {
+      if (!String(p.name).trim()) throw new Error(`${p.code}: the outcome title is empty`);
+      await A.write('PATCH', 'outcome_plos', `plo_id=eq.${p.id}`, {title: p.name.trim(), definition: p.def, performance_standard_pct: num(p.std, p.code + ' standard')});
+      Object.assign(o, clone(p));
+    }
+  }
+  // 2. Course–PLO Map: one row per course × PLO; no levels = the row goes
+  for (const c of COURSES) for (const p of PLOS) {
+    const v = map[c][p.code] || '';
+    if (v === (saved[c][p.code] || '')) continue;
+    if (!v) await A.write('DELETE', 'outcome_curriculum_map', `course_base_id=eq.${enc(c)}&plo_id=eq.${p.id}`);
+    else await A.write('POST', 'outcome_curriculum_map', 'on_conflict=course_base_id,plo_id',
+      {course_base_id: c, plo_id: p.id, levels: v, approved_at: today, approved_by: who}, 'resolution=merge-duplicates,return=minimal');
+    saved[c][p.code] = v;
+    const m = (DATA.map[c] = DATA.map[c] || {}); if (v) m[p.code] = {...(m[p.code] || {clos: []}), levels: v}; else delete m[p.code];
+  }
+  // 3. Course Catalog: rows this program leads
+  for (const c of DATA.catalog) {
+    const o = st.cat.find(x => x.code === c.code);
+    if (!o || same(o, c) || (c.lead || OWN) !== OWN) continue;
+    if (!String(c.title).trim()) throw new Error(`${c.code}: the title is empty`);
+    const credits = num(c.credits, c.code + ' credits');
+    await A.write('PATCH', 'outcome_catalog', `program_code=eq.${P}&course_id=eq.${enc(c.code)}`, {
+      title: c.title.trim(), classification: c.cls, credits: credits == null ? 4 : credits, lecture_hours: num(c.lecture, c.code + ' credit hours'),
+      offered: c.offered, description: c.desc, updated_at: now, updated_by: who});
+    Object.assign(o, clone(c));
+  }
+  // 4. Program documents (Overview, domain map, pathway by term, Pathfinder roles and marks); stored keys the page doesn't show are kept
+  const docs = window.__CUR.docs, put = (key, content) => A.write('POST', 'outcome_program_docs', 'on_conflict=program_code,doc_key',
+    {program_code: P, doc_key: key, content, updated_at: now, updated_by: who}, 'resolution=merge-duplicates,return=minimal');
+  if (d.includes('ov')) {
+    const ov = {...docs.overview}; for (const k of Object.keys(OV)) if (!['domainMap', 'terms', 'pathway', 'pathRec'].includes(k)) ov[k] = OV[k];
+    if (!same(ov, docs.overview)) { await put('overview', ov); docs.overview = ov; }
+    if (!same(OV.domainMap, docs.domain_map)) { await put('domain_map', OV.domainMap); docs.domain_map = clone(OV.domainMap); }
+  }
+  if (d.includes('pw')) {
+    const pw = {...docs.pathway, terms: OV.terms, courses: OV.pathway.map(({offered, by, ...p}) => p)};
+    if (!same(pw, docs.pathway)) { await put('pathway', pw); docs.pathway = pw; }
+    if (PF.roles.some(r => !String(r.name).trim())) throw new Error('A graduate role has no name');
+    if (new Set(PF.roles.map(r => r.name.trim())).size !== PF.roles.length) throw new Error('Two graduate roles have the same name');
+    const marks = {}; for (const [c, m] of Object.entries(PF.mk)) { const k = Object.fromEntries(Object.entries(m).filter(([, v]) => v && v !== '-')); if (Object.keys(k).length) marks[c] = k; }
+    const pf = {...docs.pathfinder, roles: PF.roles.map(({orig, ...r}) => ({...r, name: r.name.trim()})), marks};
+    if (!same(pf, docs.pathfinder)) { await put('pathfinder', pf); docs.pathfinder = pf; }
+  }
+  persist.stored = null;
 }
 
 /* ---------- proposals (under the map) ---------- */
@@ -753,24 +821,29 @@ function renderProps(){
       <span><b class="mono" style="font-weight:500">${d.course}</b> ${d.plo}: ${d.from||'none'} &rarr; ${d.to||'none'} &middot; ${d.by} &middot; ${d.on}</span>
       ${d.note?`<span style="flex-basis:100%;color:var(--text3)">&ldquo;${esc(d.note)}&rdquo;</span>`:''}</div>`).join('') : '<div class="empty">Nothing decided yet.</div>';
 }
-function accept(id){
+// Proposals are decided at once (not part of the Edit session); the database applies an accepted change to the map
+async function accept(id){
   const x = proposals.find(p=>p.id===id);
-  saved[x.course][x.plo] = x.to; map[x.course][x.plo] = x.to;
+  try { await window.__CUR.api.rpc('outcome_decide_proposal', {p_id: id, p_accept: true}); }
+  catch (e) { toast('Could not accept: ' + (e.message || e)); return; }
+  if (saved[x.course]) { saved[x.course][x.plo] = x.to; map[x.course][x.plo] = x.to; }
   proposals = proposals.filter(p=>p.id!==id);
-  decided.unshift({...x, result:'accepted', on:new Date().toISOString().slice(0, 10), note:''});
+  decided.unshift({...x, result:'accepted', on:new Date().toLocaleDateString('sv-SE'), note:''});
   render(); toast(`Accepted: ${x.course} ${x.plo} updated`);
 }
-function decline(id){
+async function decline(id){
   const note = ($('dr-'+id)?.value || '').trim();
   if (!note) { $('dr-'+id).focus(); toast('Add a short reason'); return; }
   const x = proposals.find(p=>p.id===id);
+  try { await window.__CUR.api.rpc('outcome_decide_proposal', {p_id: id, p_accept: false, p_note: note}); }
+  catch (e) { toast('Could not decline: ' + (e.message || e)); return; }
   proposals = proposals.filter(p=>p.id!==id); declining = null;
-  decided.unshift({...x, result:'declined', on:new Date().toISOString().slice(0, 10), note});
+  decided.unshift({...x, result:'declined', on:new Date().toLocaleDateString('sv-SE'), note});
   render(); toast(`Declined. ${x.by} will see your reason.`);
 }
 
 /* ---------- Course Catalog (chair edits; a cross-listed course is edited by its lead program's chair) ---------- */
-const OWN = 'Data Science and Artificial Intelligence';
+const OWN = window.__CUR.progName;   // catalog rows this program leads are the ones its chair edits
 function renderCat(){
   $('cat-btns').innerHTML = `<button class="btn btn-sm" onclick="catExport()">${XL}Export</button>
     <button class="btn btn-sm" onclick="toast('Would make the catalog document (Google Doc)')">Make catalog document</button>`;
@@ -1068,8 +1141,7 @@ function ovSet(path, v){
 }
 function renderOv(){
   const ch = isChair(), ed = ch && editing;
-  if (!$('ov-actions').innerHTML) $('ov-actions').innerHTML = `<span class="updated" data-upd="ov"></span>
-    <button class="btn btn-sm" onclick="toast('Would export the overview as a Word / Google Doc section (Self-Study A–B1)')">Export</button>`;
+  if (!$('ov-actions').innerHTML) $('ov-actions').innerHTML = ``;
   // 1. at a glance
   if ($('ov-facts')) $('ov-facts').innerHTML = OV.facts.map((f, i) => `<div class="fact"><div class="label">${esc(f[0])}</div>
     <div class="fact-v">${ed ? inp(`facts.${i}.1`, f[1]) : esc(f[1])}</div></div>`).join('');
@@ -1260,7 +1332,7 @@ function renderDomainFlow(ed){
     <rect x="${X1}" y="${t.y}" width="5" height="${t.h}" rx="2" fill="${col}"/>
     <text x="${X1 + 14}" y="${t.y + t.h / 2 + 5}" class="fl-c" style="font-size:14px">${c.code}</text>
     <text x="${X1 + 74}" y="${t.y + t.h / 2 + 5}" class="fl-pn">${esc((n => n.length > 30 ? n.slice(0, 29).trimEnd() + '…' : n)((DATA.catalog.find(x => x.code === c.code) || {}).title || ''))}<title>${esc((DATA.catalog.find(x => x.code === c.code) || {}).title || '')}</title></text>
-    ${c.offered ? `<text x="${X1 + CW - 8}" y="${t.y + t.h / 2 + 4}" text-anchor="end" class="fl-off${/·|\+/.test(c.offered) ? ' both' : ''}">${esc(c.offered)}</text>` : ''}</g>`; }
+    ${c.offered ? `<text x="${X1 + CW - 8}" y="${t.y + t.h / 2 + 4}" text-anchor="end" class="fl-off${/·|\+/.test(c.offered) ? ' both' : ''}">${esc([c.offered, c.by].filter(Boolean).join(' · '))}</text>` : ''}</g>`; }
   lvl.forEach(l => { const n = tn[l]; svg += `<g class="nd" data-t="${l}" onmouseenter="ovHl(this)" onmouseleave="ovHl(null)">
     <rect x="${X2}" y="${n.y}" width="${NW}" height="${n.h}" rx="3" fill="#5B6B7D"/>
     <text x="${X2 + NW + 10}" y="${n.y + n.h / 2 + 5}" class="fl-c" style="font-size:14px">${l}</text></g>`; });
@@ -1339,7 +1411,9 @@ function renderEmptyProg(t){
 function render(){ renderProgHead(); document.body.classList.toggle('editing', editing); renderActions(); renderOv(); renderPlos(); renderMap(); renderProps(); renderCat(); renderOff(); renderSemMatrix(); renderIns(); renderFlow(); }
 render();
 
-document.querySelectorAll('[data-upd]').forEach(e => { const v = window.__CUR.upd[e.dataset.upd]; e.textContent = v ? 'Last updated ' + v : ''; });
+// One "Last updated" for the page, next to Edit / Save: the date of the tab being shown
+function renderUpd(){ const v = window.__CUR.upd[tab]; $('ph-upd').textContent = v ? 'Last updated ' + v : ''; }
+{ const _setTab = setTab; setTab = function (t) { _setTab(t); renderUpd(); }; }
 $('role-chip').hidden = !window.__CUR.isChairOfProg;   // tells a chair this is their program, even while editing is not open yet
 pfSync();
 setTab('ov');   // pages with tabs open on the first tab
@@ -1358,6 +1432,19 @@ setTab('ov');   // pages with tabs open on the first tab
   const H = {apikey: KEY, Authorization: `Bearer ${user.access_token}`, 'Content-Type': 'application/json'};
   const get = async (t, q) => { const r = await F(`${URL_}/rest/v1/${t}?${q}`, {headers: H}); if (!r.ok) throw new Error(`${t}: HTTP ${r.status}`); return r.json(); };
   const rpc = async (fn, body) => { const r = await F(`${URL_}/rest/v1/rpc/${fn}`, {method: 'POST', headers: H, body: JSON.stringify(body || {})}); if (!r.ok) throw new Error(`${fn}: HTTP ${r.status}`); return r.json(); };
+  // Writes (chair edits): renew the parent's token first, then send with the current one
+  const send = async (method, path, body, prefer) => {
+    try { if (P.sbFresh) await P.sbFresh(); } catch (e) {}
+    const u = pe('supabaseUser');
+    if (!u || !u.access_token) throw new Error('Signed out. Sign in again and retry.');
+    const h = {apikey: KEY, Authorization: `Bearer ${u.access_token}`, 'Content-Type': 'application/json'};
+    if (prefer) h.Prefer = prefer;
+    const r = await F(`${URL_}/rest/v1/${path}`, {method, headers: h, body: body == null ? undefined : JSON.stringify(body)});
+    if (!r.ok) { let m = ''; try { m = (await r.json()).message || ''; } catch (e) {} throw new Error(`${path.split('?')[0]}: ${m || 'HTTP ' + r.status}`); }
+    return r.status === 204 ? null : r.json().catch(() => null);
+  };
+  const write = (method, table, query, body, prefer) => send(method, `${table}${query ? '?' + query : ''}`, body, prefer || 'return=minimal');
+  const rpcW = (fn, body) => send('POST', `rpc/${fn}`, body || {});
   const inList = a => `(${a.map(x => `"${String(x).replace(/"/g, '')}"`).join(',')})`;
   const day = s => (s || '').slice(0, 10);
 
@@ -1416,7 +1503,7 @@ setTab('ov');   // pages with tabs open on the first tab
     const map = {};
     for (const r of cmap) (map[r.course_base_id] = map[r.course_base_id] || {})[ploCode[r.plo_id]] = {levels: r.levels, clos: r.tagged_clo_numbers || []};
     const DATA = {
-      plos: plos.map(p => ({code: p.plo_code, name: p.title, def: p.definition || '', ilo: (iloMap.find(x => x.plo_id === p.plo_id) || {}).ilo_code || '', std: p.performance_standard_pct == null ? '' : Math.round(p.performance_standard_pct)})),
+      plos: plos.map(p => ({id: p.plo_id, code: p.plo_code, name: p.title, def: p.definition || '', ilo: (iloMap.find(x => x.plo_id === p.plo_id) || {}).ilo_code || '', std: p.performance_standard_pct == null ? '' : Math.round(p.performance_standard_pct)})),
       map,
       mapCourses: codes.filter(c => map[c]),
       names: Object.fromEntries(catalog.map(c => [c.course_id, c.title])),
@@ -1439,7 +1526,8 @@ setTab('ov');   // pages with tabs open on the first tab
     const OV = {...ov, domains: ov.domains || [], levels: ov.levels || [], domainMap: doc('domain_map').content || {},
       terms: pw.terms || ['2-1', '2-2', '3-1', '3-2', '4-1', '4-2'],
       pathway: (pw.courses || []).map(p => { const c = catalog.find(x => x.course_id === p.code) || {};
-        return {...p, offered: c.lead_program ? (c.lead_program === 'HS' ? 'All schools' : c.lead_program) : (c.offered || '')}; })};
+        // offered: semesters (catalog); by: the program that runs a course from outside DS&AI (HS = all schools)
+        return {...p, offered: c.offered || '', by: c.lead_program ? (c.lead_program === 'HS' ? 'All' : c.lead_program) : ''}; })};
     const PF = {groups: pfd.groups || [], roles: (pfd.roles || []).map(r => ({...r, orig: r.orig || r.name})), marks: {},
       mk: Object.fromEntries(codes.map(c => [c, Object.fromEntries((pfd.roles || []).map(r => [r.id, ((pfd.marks || {})[c] || {})[r.id] || '-']))]))};
     const plo = id => ploCode[id];
@@ -1449,7 +1537,10 @@ setTab('ov');   // pages with tabs open on the first tab
       DATA, OV, PF, curTerm, code, progName: me.name,
       progNames: progs.map(p => p.name), progCodes: Object.fromEntries(progs.map(p => [p.name, p.code])),
       me: pe('PROFESSOR && PROFESSOR.name') || nameOf(user.user && user.user.email),
-      role: 'faculty',                                   // Phase 2: read-only for everyone
+      role: me.is_chair ? 'chair' : 'faculty',           // Phase 3: the program's chair edits, everyone else reads
+      docs: {overview: doc('overview').content || {}, domain_map: doc('domain_map').content || {}, pathway: pw, pathfinder: pfd},   // as stored, so a save keeps keys the page doesn't show
+      email: ((user.user && user.user.email) || '').toLowerCase(),
+      api: {write, rpc: rpcW},
       isChairOfProg: !!me.is_chair,
       hasData: catalog.length > 0 || docs.length > 0,
       hasRoles: (pfd.roles || []).length > 0,
