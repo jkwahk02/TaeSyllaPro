@@ -279,6 +279,7 @@ tr.cprof textarea{width:100%;border:1px solid var(--border-em);border-radius:6px
 .tbl-wrap.tw-vis{overflow:visible;}
 /* course codes (DA200-1, *XD201) never wrap */
 .tbl td.mono{white-space:nowrap;}
+.cp-former{font-size:13px;color:var(--text3);margin-left:4px;}
 .cp-more{margin-top:6px;padding:0;border:none;background:none;font:inherit;font-size:15px;font-weight:600;color:var(--blue);cursor:pointer;}
 .cp-next .cp-ln{opacity:.75;}
 .cp-next .cp-ln .cp-k::after{content:' ·';}
@@ -491,7 +492,7 @@ html,body{background:transparent;}
     <section id="t-pw" hidden>
       <div class="card">
         <div class="card-head"><div class="card-t">Recommended pathways</div><span class="updated" data-upd="pw"></span></div>
-        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180552" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
+        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180559" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
         <div class="pw-term">
           <div class="pw-th">Pathway by term <span id="pw-title"></span></div>
           <p class="pw-focus" id="pw-focus"></p>
@@ -850,7 +851,7 @@ function catProfile(c, i, ed){
       ${fact('Offerings', (() => {
         // offered so far (up to the current term) first; upcoming ones behind “More”
         const ti = t => { const [p, y] = String(t).split(' '); return +y - (p === 'Spring' ? 0.5 : 0); }, now = ti(CUR_TERM);   // Fall Y < Spring Y+1
-        const line = o => `<div class="cp-ln"><span class="cp-k t">${short(o.term)}</span><button class="cp-lnk" onclick="openOffering(${o.id})" title="Open ${esc(o.code)} · ${esc(o.term)}">${esc(o.code)} ${esc(surname(o.prof === 'TBD' ? '' : (o.prof || '').split(',')[0].trim()))}</button></div>`;
+        const line = o => `<div class="cp-ln"><span class="cp-k t">${short(o.term)}</span><button class="cp-lnk" onclick="openOffering(${o.id})" title="Open ${esc(o.code)} · ${esc(o.term)}">${esc(o.code)} ${esc(surname(o.prof === 'TBD' ? '' : (o.prof || '').split(',')[0].trim()))}</button>${o.former ? ` <span class="cp-former" title="Earlier code of ${esc(code)}">earlier code</span>` : ''}</div>`;
         const past = offs.filter(o => ti(o.term) <= now), next = offs.filter(o => ti(o.term) > now);
         return (past.map(line).join('') || '<span class="sub">Not offered yet</span>')
           + (next.length ? (catMore[code] ? `<div class="cp-next">${next.map(line).join('')}</div>` : '')
@@ -1377,12 +1378,18 @@ setTab('ov');   // pages with tabs open on the first tab
     const doc = k => (docs.find(x => x.doc_key === k) || {});
     const ploIds = plos.map(p => p.plo_id), ploCode = Object.fromEntries(plos.map(p => [p.plo_id, p.plo_code]));
     const codes = catalog.map(c => c.course_id);
+    // Courses renumbered or renamed (course_lineage, also used by Telos): offerings under an old code
+    // (e.g. DA203) belong to the current course (DA204) and are listed with it.
+    const lineage = await get('course_lineage', 'select=predecessor_course_id,successor_course_id').catch(() => []);
+    const succOf = c => { let x = c; for (let k = 0; k < 6 && !codes.includes(x); k++) { const l = lineage.find(r => r.predecessor_course_id === x); if (!l) break; x = l.successor_course_id; } return x; };
+    const formerCodes = [...new Set(lineage.map(r => r.predecessor_course_id).filter(p => !codes.includes(p) && codes.includes(succOf(p))))];
+    const offCodes = codes.concat(formerCodes);
     const [iloMap, cmap, props, courses, offs, fac, programs] = await Promise.all([
       ploIds.length ? get('outcome_plo_ilo_map', `plo_id=in.(${ploIds.join(',')})&select=plo_id,ilo_code`) : [],
       ploIds.length ? get('outcome_curriculum_map', `plo_id=in.(${ploIds.join(',')})&select=course_base_id,plo_id,levels,tagged_clo_numbers,approved_at`) : [],
       ploIds.length ? get('outcome_map_proposals', `plo_id=in.(${ploIds.join(',')})&order=proposed_at.desc&select=*`) : [],
       codes.length ? get('courses', `course_id=in.${inList(codes)}&select=course_id,title,competency_critical_thinking,competency_creative_thinking,competency_self_directed_learning,competency_communication,competency_diversity_empathy,competency_global_harmony`) : [],
-      codes.length ? get('course_offerings', `course_base_id=in.${inList(codes)}&select=offering_id,course_id,course_base_id,section,semester_year,professor,status,weekday_time,reference_timezone_student_location,title`) : [],
+      codes.length ? get('course_offerings', `course_base_id=in.${inList(offCodes)}&select=offering_id,course_id,course_base_id,section,semester_year,professor,status,weekday_time,reference_timezone_student_location,title`) : [],
       get('faculty_profiles', 'select=name_en,email,program'),
       get('programs', 'select=code,name'),
     ]);
@@ -1400,7 +1407,7 @@ setTab('ov');   // pages with tabs open on the first tab
     const ZONE = [['Seoul', 'Korea'], ['Korea', 'Korea'], ['Los_Angeles', 'US Pacific'], ['Pacific', 'US Pacific'], ['New_York', 'US Eastern'], ['Eastern', 'US Eastern'], ['China', 'China'], ['Shanghai', 'China']];
     const loc = (...t) => { for (const s of t) for (const [k, v] of ZONE) if (s && s.includes(k)) return v; return ''; };
     const latestClos = c => {
-      const os = offs.filter(o => o.course_base_id === c).sort((a, b) => tkey(b.semester_year) - tkey(a.semester_year));
+      const os = offs.filter(o => succOf(o.course_base_id) === c).sort((a, b) => tkey(b.semester_year) - tkey(a.semester_year));
       for (const o of os) { const l = clos.filter(x => x.offering_id === o.offering_id); if (l.length) return l.map(x => x.text); }
       return [];
     };
@@ -1420,7 +1427,8 @@ setTab('ov');   // pages with tabs open on the first tab
                 field: c.field_hours == null ? '' : String(c.field_hours), offered: c.offered || '', desc: c.description || '', xl: c.cross_listed,
                 lead: c.lead_program ? progName(c.lead_program) : progName(code), cat: c.level, clos: latestClos(c.course_id), plo_pct: pct};
       }),
-      offerings: offs.map(o => ({id: o.offering_id, term: o.semester_year, code: o.course_id || o.course_base_id, base: o.course_base_id,
+      offerings: offs.map(o => ({id: o.offering_id, term: o.semester_year, code: o.course_id || o.course_base_id, base: succOf(o.course_base_id),
+        former: succOf(o.course_base_id) !== o.course_base_id,
         title: o.title || (catalog.find(c => c.course_id === o.course_base_id) || {}).title || '', prof: o.professor || 'TBD',
         time: /1899/.test(o.weekday_time || '') ? '' : (o.weekday_time || ''), status: o.status || 'draft',
         loc: loc(o.reference_timezone_student_location, o.weekday_time), n: null})),
