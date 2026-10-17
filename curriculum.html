@@ -71,6 +71,7 @@ button,input,select,textarea{font-family:inherit;}
 .card-head .head-btns{margin-left:auto;}
 .ph-upd{align-self:center;font-size:17px;color:var(--text3);white-space:nowrap;}
 .ph-upd:empty{display:none;}
+.ne-badge{display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:15px;background:var(--surface2);border:1px dashed var(--border-em);color:var(--text2);font-size:15px;font-weight:600;}
 .ph-act .ph-act{margin-left:0;}
 .ph-act{margin-left:auto;align-items:center;display:flex;gap:10px;flex-wrap:wrap;}
 .sel{appearance:none;height:40px;padding:0 34px 0 13px;border:1px solid var(--border-em);border-radius:var(--r);background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239e9c96' stroke-width='1.6' fill='none'/%3E%3C/svg%3E") no-repeat right 12px center;font-size:19px;font-weight:500;color:var(--text);}
@@ -345,6 +346,8 @@ blockquote{font-size:20px;line-height:1.5;color:var(--text);border-left:4px soli
 .dom:last-child{border-bottom:none;}
 .dom-k{flex-shrink:0;width:34px;height:34px;border-radius:8px;background:var(--c);color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;}
 .dom-t{font-size:19px;font-weight:600;}
+.dom > div:last-child{flex:1;min-width:0;}
+#t-ov textarea{resize:vertical;}
 .dom-d,.lvl-d{font-size:16px;color:var(--text2);line-height:1.45;margin-top:2px;}
 .lvl{padding:10px 0;border-bottom:1px solid var(--border);}
 .lvl:last-child{border-bottom:none;}
@@ -495,7 +498,7 @@ html,body{background:transparent;}
     <section id="t-pw" hidden>
       <div class="card">
         <div class="card-head"><div class="card-t">Recommended pathways</div></div>
-        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180640" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
+        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180641" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
         <div class="pw-term">
           <div class="pw-th">Pathway by term <span id="pw-title"></span></div>
           <p class="pw-focus" id="pw-focus"></p>
@@ -846,7 +849,7 @@ async function decline(id){
 const OWN = window.__CUR.progName;   // catalog rows this program leads are the ones its chair edits
 function renderCat(){
   $('cat-btns').innerHTML = `<button class="btn btn-sm" onclick="catExport()">${XL}Export</button>`;
-  const ed = c => editing && (c.lead || OWN) === OWN;
+  const ed = c => false;   // Course Catalog: not editable for now
   const field = (i, k, w) => `<input${w ? ` style="width:${w}px"` : ''} class="${w ? 'num' : ''}" value="${esc(DATA.catalog[i][k])}" oninput="DATA.catalog[${i}].${k}=this.value">`;
   // 1. Course list (Academic Catalog 3.2, plus Offered)
   $('cat-tbl').innerHTML = `<thead><tr><th style="width:112px">Course ID</th><th>Course Title</th><th style="width:130px">Classification</th>
@@ -1152,14 +1155,14 @@ function renderOv(){
   // 3. graduates
   $('ov-roles').innerHTML = OV.roles.map((r, i) => `<div class="role">
     <div class="role-t">${ed ? inp(`roles.${i}.0`, r[0]) : esc(r[0])}</div>
-    <div class="role-d">${ed ? inp(`roles.${i}.1`, r[1]) : esc(r[1])}</div></div>`).join('');
+    <div class="role-d">${ed ? ta(`roles.${i}.1`, r[1], 2) : esc(r[1])}</div></div>`).join('');
   $('ov-careers').innerHTML = ed ? ta('careers', OV.careers, 3) : `<p>${esc(OV.careers)}</p>`;
   // 4. curriculum: domains, levels, pathway, figure
   $('ov-domains').innerHTML = OV.domains.map((d, i) => `<div class="dom" style="--c:${d.color}">
     <div class="dom-k">${d.key}</div><div><div class="dom-t">${ed ? inp(`domains.${i}.name`, d.name) : esc(d.name)}</div>
-    <div class="dom-d">${ed ? inp(`domains.${i}.focus`, d.focus) : esc(d.focus)}</div></div></div>`).join('');
+    <div class="dom-d">${ed ? ta(`domains.${i}.focus`, d.focus, 2) : esc(d.focus)}</div></div></div>`).join('');
   $('ov-levels').innerHTML = OV.levels.map((l, i) => `<div class="lvl"><div class="lvl-t">${esc(l.name)}</div>
-    <div class="lvl-d">${ed ? inp(`levels.${i}.focus`, l.focus) : esc(l.focus)}</div></div>`).join('');
+    <div class="lvl-d">${ed ? ta(`levels.${i}.focus`, l.focus, 2) : esc(l.focus)}</div></div>`).join('');
   renderPathway();
   renderDomainFlow(ed);
 }
@@ -1411,7 +1414,12 @@ function render(){ renderProgHead(); document.body.classList.toggle('editing', e
 render();
 
 // One "Last updated" for the page, next to Edit / Save: the date of the tab being shown
-function renderUpd(){ const v = window.__CUR.upd[tab]; $('ph-upd').textContent = v ? 'Last updated ' + v : ''; }
+const NO_EDIT = ['cat', 'pw', 'off'];   // tabs the Edit session doesn't change
+function renderUpd(){
+  const v = window.__CUR.upd[tab], ne = editing && NO_EDIT.includes(tab);
+  $('ph-upd').innerHTML = ne ? '<span class="ne-badge">Not editable on this tab</span>' : (v ? 'Last updated ' + v : '');
+}
+{ const _render = render; render = function () { _render(); renderUpd(); }; }
 { const _setTab = setTab; setTab = function (t) { _setTab(t); renderUpd(); }; }
 $('role-chip').hidden = !window.__CUR.isChairOfProg;   // tells a chair this is their program, even while editing is not open yet
 pfSync();
