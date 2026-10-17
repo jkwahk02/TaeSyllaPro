@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Curriculum · TaeSylla Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Tokens copied from TaeSylla Pro (index - 2026-09-24.html) so the program page matches the app. */
+:root {
+  --bg:#f7f6f3; --surface:#fff; --surface2:#f2f1ed; --surface3:#eceae4;
+  --border:rgba(0,0,0,0.08); --border-em:rgba(0,0,0,0.14);
+  --text:#1a1916; --text2:#6b6960; --text3:#9e9c96;
+  --blue:#185FA5; --blue-l:#E6F1FB; --blue-m:#378ADD; --blue-b:#B5D4F4;
+  --amber:#854F0B; --amber-l:#FAEEDA; --amber-b:#EF9F27; --amber-d:#633806;
+  --green:#3B6D11; --green-l:#EAF3DE; --green-b:#C0DD97;
+  --red:#A32D2D; --red-l:#FCEBEB;
+  --teal-l:#E1F5EE; --teal:#0F6E56;
+  --violet:#534AB7; --violet-l:#EEEDFE;
+  --r:8px; --r-lg:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{background:var(--bg);color-scheme:light;}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:20px;min-height:100vh;}
+button,input,select,textarea{font-family:inherit;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 clamp(16px,3vw,32px);display:flex;align-items:center;height:66px;position:sticky;top:0;z-index:100;}
+.tb-logo{display:flex;align-items:center;gap:11px;font-size:22px;font-weight:600;}
+.tb-mark{width:34px;height:34px;border-radius:8px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;}
+.tb-user{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.tb-avatar{width:36px;height:36px;border-radius:50%;background:var(--blue-l);color:var(--blue);font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.tb-name{font-size:18px;font-weight:500;line-height:1.3;}
+.tb-role{font-size:15px;color:var(--text3);line-height:1.3;}
+.shell{display:flex;min-height:calc(100vh - 66px);}
+.rail{width:66px;flex-shrink:0;position:relative;z-index:60;}
+.rail-inner{position:absolute;top:0;left:0;height:100%;width:66px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:stretch;padding:20px 10px;gap:10px;overflow:hidden;transition:width .18s ease,box-shadow .18s ease;}
+.rail:hover .rail-inner,.rail:focus-within .rail-inner{width:232px;box-shadow:6px 0 28px rgba(0,0,0,0.10);}
+.rail-btn{width:100%;height:46px;border-radius:var(--r);display:flex;align-items:center;justify-content:flex-start;gap:14px;padding:0 12px;border:none;background:transparent;cursor:pointer;color:var(--text3);white-space:nowrap;overflow:hidden;font-family:inherit;text-decoration:none;}
+.rail-btn svg{flex-shrink:0;}
+.rail-btn:hover{background:var(--surface2);}
+.rail-btn.active{background:var(--blue-l);color:var(--blue);}
+.rail-label{font-size:17px;font-weight:500;color:inherit;white-space:nowrap;opacity:0;transition:opacity .15s ease;}
+.rail:hover .rail-label,.rail:focus-within .rail-label{opacity:1;}
+.rail-tag{font-size:11px;font-weight:700;background:var(--violet-l);color:var(--violet);padding:1px 6px;border-radius:8px;margin-left:-6px;}
+@media (prefers-reduced-motion:reduce){ .rail-inner,.rail-label{transition:none;} }
+.main{flex:1;min-width:0;padding:36px clamp(16px,4vw,64px) 90px;}
+.btn{height:40px;padding:0 18px;border-radius:var(--r);font-size:17px;font-weight:600;cursor:pointer;border:1px solid var(--border-em);background:var(--surface);color:var(--text);display:inline-flex;align-items:center;gap:7px;white-space:nowrap;}
+.btn:hover{background:var(--surface2);}
+.btn:focus-visible,.cell:focus-visible,.tab:focus-visible{outline:3px solid var(--blue-b);outline-offset:2px;}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue);}
+.btn-primary:hover{background:#134e88;}
+.btn-sm{height:34px;font-size:15px;padding:0 13px;}
+.btn-danger{color:var(--red);border-color:#e9c4c4;}
+.btn-danger:hover{background:var(--red-l);}
+.label{font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);}
+.chip{font-size:14px;font-weight:600;padding:4px 11px;border-radius:12px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+.chip.blue{background:var(--blue-l);color:var(--blue);}
+.chip.green{background:var(--green-l);color:var(--green);}
+.chip.amber{background:var(--amber-l);color:var(--amber);}
+.chip.red{background:var(--red-l);color:var(--red);}
+.chip.grey{background:var(--surface2);color:var(--text2);}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px 26px;margin-bottom:20px;}
+.card-t{font-size:19px;font-weight:600;margin-bottom:4px;}
+.card-s{font-size:16px;color:var(--text2);line-height:1.5;margin-bottom:18px;max-width:900px;}
+.note{display:flex;gap:12px;align-items:flex-start;background:var(--blue-l);color:#0d3f6e;border-radius:var(--r);padding:12px 16px;font-size:16px;line-height:1.45;margin-bottom:18px;}
+.note.lock{background:var(--surface2);color:var(--text2);}
+
+/* page header */
+.ph{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:22px;}
+.ph h1{font-size:30px;font-weight:600;letter-spacing:-0.01em;text-wrap:balance;}
+.ph-meta{font-size:18px;color:var(--text2);margin-top:6px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.ph-act{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;}
+.sel{appearance:none;height:40px;padding:0 34px 0 13px;border:1px solid var(--border-em);border-radius:var(--r);background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239e9c96' stroke-width='1.6' fill='none'/%3E%3C/svg%3E") no-repeat right 12px center;font-size:16px;font-weight:500;color:var(--text);}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:24px;overflow-x:auto;}
+.tab{padding:12px 18px;font-size:18px;font-weight:500;color:var(--text3);background:none;border:none;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;display:inline-flex;align-items:center;gap:8px;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+.tab .count{font-size:13px;font-weight:700;background:var(--amber-b);color:#fff;border-radius:10px;padding:1px 8px;}
+
+/* curriculum map */
+.cm-wrap{overflow-x:auto;margin:0 -4px;padding:0 4px;}
+.cm{width:100%;border-collapse:separate;border-spacing:0;min-width:980px;table-layout:fixed;}
+.cm th{font-size:14px;font-weight:600;color:var(--text3);padding:0 6px 12px;text-align:center;vertical-align:bottom;border-bottom:1px solid var(--border);}
+.cm th.c{text-align:left;padding-left:0;}
+.cm th .pc{display:block;font-family:'DM Mono',monospace;font-size:15px;color:var(--text);}
+.cm th .pn{display:block;font-size:12px;font-weight:500;margin-top:3px;line-height:1.25;}
+.cm td{padding:7px 5px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.cm tr.grp td{background:var(--surface2);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);padding:7px 10px;border-bottom:none;}
+.course{display:flex;flex-direction:column;gap:2px;}
+.course b{font-family:'DM Mono',monospace;font-size:15px;font-weight:500;}
+.course span{font-size:14px;color:var(--text2);line-height:1.3;}
+.course i{font-size:13px;color:var(--text3);font-style:normal;}
+.cell{width:100%;min-height:46px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;position:relative;cursor:default;padding:4px 2px;}
+.editing .cell{cursor:pointer;border-style:dashed;border-color:var(--border-em);}
+.editing .cell:hover{background:var(--surface2);}
+.lv{display:flex;gap:3px;}
+.lv span{width:22px;height:20px;border-radius:4px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text3);opacity:.55;}
+.lv span.on.I{background:#F1F6FC;color:var(--blue);border:1px solid var(--blue-b);opacity:1;}
+.lv span.on.R{background:var(--blue-b);color:#0d3f6e;opacity:1;}
+.lv span.on.A{background:var(--blue);color:#fff;opacity:1;}
+.cell-sub{font-size:11px;color:var(--text3);line-height:1.2;text-align:center;}
+.cell-sub.warn{color:var(--amber);font-weight:600;}
+.jr{font-size:11px;font-weight:600;color:var(--teal);background:var(--teal-l);border-radius:8px;padding:1px 7px;}
+.cell.changed{border:2px solid var(--violet);}
+.cell.pend::after{content:"";position:absolute;top:-4px;right:-4px;width:11px;height:11px;border-radius:50%;background:var(--amber-b);border:2px solid var(--surface);}
+.cell.sel{outline:3px solid var(--amber-b);outline-offset:2px;}
+.cm tfoot td{border-bottom:none;border-top:1px solid var(--border-em);padding-top:12px;font-size:13px;text-align:center;color:var(--text2);line-height:1.35;}
+.cm tfoot td.ok{color:var(--green);font-weight:600;}
+.cm tfoot td.warn{color:var(--amber);font-weight:600;}
+.legend{display:flex;gap:22px;flex-wrap:wrap;align-items:center;font-size:15px;color:var(--text2);margin-top:16px;}
+.legend>span{display:inline-flex;align-items:center;gap:8px;}
+.dot{width:11px;height:11px;border-radius:50%;background:var(--amber-b);display:inline-block;}
+
+/* popover */
+.pop{position:absolute;z-index:200;background:var(--surface);border:1px solid var(--border-em);border-radius:var(--r-lg);box-shadow:0 12px 36px rgba(0,0,0,0.16);padding:18px;width:340px;}
+.pop[hidden]{display:none;}
+.pop h4{font-size:17px;font-weight:600;}
+.pop .ctx{font-size:14px;color:var(--text3);margin:2px 0 12px;line-height:1.35;}
+.opt{display:flex;align-items:flex-start;gap:12px;padding:9px 10px;border:1px solid var(--border-em);border-radius:var(--r);margin-bottom:6px;cursor:pointer;}
+.opt:hover{background:var(--surface2);}
+.opt input{width:18px;height:18px;margin-top:2px;accent-color:var(--blue);}
+.opt b{font-size:15px;display:block;}
+.opt small{font-size:13px;color:var(--text2);}
+.pop-f{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:13px;color:var(--text3);}
+
+/* proposals */
+.prop{border:1px solid var(--border-em);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px 20px;}
+.prop-h{font-size:18px;font-weight:600;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.prop-h code{font-family:'DM Mono',monospace;font-weight:500;}
+.prop-m{font-size:15px;color:var(--text2);margin-top:4px;}
+.chg{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap;}
+.chg .cell{width:96px;}
+.chg .arrow{color:var(--text3);font-size:20px;}
+.why{margin-top:12px;font-size:15px;line-height:1.5;background:var(--surface2);border-radius:var(--r);padding:10px 12px;}
+.why b{font-weight:600;}
+.prop-a{display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:150px;}
+.decline-box{grid-column:1 / -1;}
+.decline-box textarea{width:100%;min-height:72px;border:1px solid var(--border-em);border-radius:var(--r);padding:10px 12px;font-size:15px;line-height:1.45;resize:none;}
+.hist{font-size:15px;color:var(--text2);border-top:1px solid var(--border);padding:12px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.hist:first-of-type{border-top:none;}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;}
+.tbl{width:100%;border-collapse:collapse;min-width:760px;}
+.tbl th{text-align:left;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);padding:0 12px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.tbl td{padding:13px 12px;font-size:16px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl input{height:38px;border:1px solid var(--border-em);border-radius:6px;padding:0 10px;font-size:16px;width:100%;}
+.tbl input.num{width:80px;font-variant-numeric:tabular-nums;}
+.mono{font-family:'DM Mono',monospace;}
+.num{font-variant-numeric:tabular-nums;}
+
+/* role switch, dialog, toast */
+.role-sw{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom, 0px));z-index:300;display:flex;align-items:center;gap:4px;background:var(--text);padding:5px;border-radius:24px;box-shadow:0 6px 20px rgba(0,0,0,.2);}
+.role-sw span{color:#bbb;font-size:12px;font-weight:600;padding:0 10px;text-transform:uppercase;letter-spacing:.05em;}
+.role-sw button{border:none;background:transparent;color:#ddd;font-size:14px;font-weight:600;padding:8px 14px;border-radius:18px;cursor:pointer;}
+.role-sw button.on{background:#fff;color:var(--text);}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--text);color:#fff;padding:11px 18px;border-radius:var(--r);font-size:16px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:400;}
+.toast.show{opacity:1;}
+.cbox-bg{position:fixed;inset:0;background:rgba(26,25,22,.38);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;}
+.cbox-bg[hidden]{display:none;}
+.cbox{background:var(--surface);border-radius:var(--r-lg);box-shadow:0 20px 60px rgba(0,0,0,.25);padding:24px 26px;max-width:460px;width:100%;}
+.cbox-t{font-size:19px;font-weight:600;margin-bottom:8px;}
+.cbox-m{font-size:16px;color:var(--text2);line-height:1.5;white-space:pre-line;}
+.cbox-b{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
+[hidden]{display:none !important;}
+@media (max-width:760px){
+  body{font-size:17px;}
+  .rail{display:none;}
+  .main{padding:22px 16px 110px;}
+  .prop{grid-template-columns:1fr;}
+  .prop-a{flex-direction:row;flex-wrap:wrap;}
+  .role-sw{left:12px;right:12px;transform:none;justify-content:center;flex-wrap:wrap;border-radius:14px;}
+}
+@media (prefers-reduced-motion:reduce){ .toast{transition:none;} }
+
+/* ── Program Design (2026-10-17) ── */
+.card-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+.card-head .card-t{margin:0;}
+.card-head .sel{margin-left:auto;}
+.card-head .updated{margin-left:auto;font-size:14px;color:var(--text3);}
+.card-aka{font-size:15px;font-weight:500;color:var(--text3);}
+.card-head .view-only{cursor:help;}
+.editing .ro{filter:grayscale(1);opacity:.4;pointer-events:none;user-select:none;transition:opacity .2s,filter .2s;}
+.tbl.cat th{vertical-align:middle;}
+.tbl.cat thead tr:first-child th[colspan]{border-bottom:1px solid var(--border);padding-bottom:4px;}
+.tbl.cat td{vertical-align:middle;}
+.xl-mark{color:#C0392B;font-weight:700;margin-right:1px;}
+.cat-note{font-size:14px;color:var(--text2);line-height:1.5;margin:10px 0 0;}
+.crow .cv{display:inline-block;width:14px;color:var(--text3);transition:transform .15s;}
+.crow.open .cv{transform:rotate(90deg);}
+.crow.open td{background:var(--blue-l);border-bottom:none;font-weight:600;}
+.crow.open td:first-child,tr.cprof td{box-shadow:inset 3px 0 0 var(--blue);}
+.crow.open .cv{color:var(--blue);}
+tr.cprof td{background:var(--surface);padding:22px 24px 30px 28px;border-bottom:1px solid var(--border-em);}
+tr.cprof .ins-c.nm{background:var(--surface);box-shadow:inset 0 0 0 1px var(--border-em);color:var(--text);}
+tr.cprof .ins-c.nm:hover{background:var(--blue);color:#fff;box-shadow:none;}
+.cp-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:44px;}
+.cp-l{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin:12px 0 10px;}
+.cp-l:first-child{margin-top:0;}
+.cp-desc{font-size:15px;line-height:1.6;margin:0;max-width:75ch;}
+tr.cprof textarea{width:100%;border:1px solid var(--border-em);border-radius:6px;padding:8px 10px;font-size:15px;font-family:inherit;line-height:1.5;}
+.cp-plo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 12px;}
+.cp-plo>span{display:flex;align-items:center;gap:6px;font-size:13px;}
+.cp-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.dchip{font-size:13px;font-weight:600;padding:3px 9px;border-radius:12px;color:var(--c);background:var(--surface);box-shadow:inset 0 0 0 1px var(--c);}
+.dchip.p{background:var(--c);color:#fff;}
+.dchip.a{background:var(--surface2);box-shadow:none;color:var(--text2);font-weight:500;}
+.cp-roles{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;}
+@media (max-width:900px){ .cp-grid{grid-template-columns:1fr;} }
+.cp-dl{display:grid;grid-template-columns:120px minmax(0,1fr);gap:14px 16px;margin:0;font-size:14px;line-height:1.5;}
+.cp-dl dt{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);padding-top:2px;}
+.cp-dl dd{margin:0;display:grid;gap:2px;}
+.cp-row{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;}
+.cp-k{color:var(--text2);}
+.cp-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:0;}
+.cp-facts{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1fr) minmax(0,1.6fr) minmax(0,.75fr);border:1px solid var(--border);border-radius:8px;margin-bottom:28px;}
+.cp-f{padding:12px 16px;border-left:1px solid var(--border);min-width:0;}
+.cp-f:first-child{border-left:none;}
+.cp-f .cp-l{margin:0 0 8px;}
+.cp-ln{font-size:14px;line-height:1.5;}
+.cp-ln .cp-k{display:inline-block;min-width:74px;color:var(--text3);font-size:13px;}
+.cp-f .cp-ln + .cp-ln{margin-top:2px;}
+.cp-ln .cp-k.t{min-width:40px;}
+.cp-bar{display:grid;grid-template-columns:44px minmax(0,1fr) 38px;align-items:center;gap:8px;font-size:13px;line-height:1.7;}
+.cp-bar .cp-k{min-width:0;}
+.cp-bar i{display:block;height:7px;border-radius:4px;background:linear-gradient(var(--c),var(--c)) 0/var(--w) 100% no-repeat,var(--surface2);}
+.cp-bar b{text-align:right;font-weight:600;font-variant-numeric:tabular-nums;}
+.cp-dom{display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:baseline;gap:4px;font-size:13.5px;line-height:1.5;}
+.cp-dom.p span{font-weight:700;}
+.cp-dom em{font-style:normal;font-size:12px;color:var(--text3);}
+.cp-dom .cp-dot{margin:0;}
+.cp-radar{width:100%;max-width:300px;display:block;margin:-4px auto 0;}
+.cp-rl{font-size:10.5px;font-weight:600;}
+.cp-rl.p{font-weight:800;}
+.cp-roles-svg{width:100%;max-width:300px;display:block;}
+.cp-rb{font-size:9.5px;font-weight:600;fill:var(--text2);}
+.cp-rb.s{font-size:11px;}
+.cp-rleg{display:flex;gap:12px;font-size:11.5px;color:var(--text3);margin-top:4px;flex-wrap:wrap;}
+.cp-rleg span{display:inline-flex;align-items:flex-end;gap:4px;}
+.cp-rleg i{display:inline-block;width:8px;background:var(--text2);border-radius:1px;}
+.cp-lnk{padding:0;border:none;background:none;font:inherit;font-size:14px;color:var(--blue);cursor:pointer;text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--blue) 35%,transparent);text-underline-offset:3px;}
+.cp-lnk:hover{text-decoration-color:var(--blue);}
+.cp-rleg i.cp-rleg i.cp-rleg i.cp-rleg span{align-items:center;}
+.bb-s{font-size:13px;fill:#fff;}
+.cp-rb.strong{fill:var(--text);font-weight:800;}
+.cp-rleg i.bb{border-radius:50%;background:var(--text2);}
+.bm-h{font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;}
+.cp-rb.none{fill:var(--text3);font-weight:400;}
+.cp-sub{font-size:12.5px;color:var(--text3);margin-top:6px;}
+.cp-sub:first-of-type{margin-top:0;}
+.cp-v .sub{font-weight:400;}
+.cp-grid{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) !important;}
+@media (max-width:900px){ .cp-facts{grid-template-columns:repeat(2,minmax(0,1fr));} .cp-f:nth-child(3){border-left:none;} }
+.cd-lvl{margin-top:18px;padding:7px 12px;background:var(--surface2);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);}
+.cd{padding:14px 0;border-bottom:1px solid var(--border);}
+.cd:last-child{border-bottom:none;}
+.cd-h{font-size:16px;font-weight:700;margin-bottom:6px;}
+.cd-h .mono{font-weight:700;}
+.cd-bar{margin:0 8px;color:var(--text3);font-weight:400;}
+.cd p{font-size:15.5px;line-height:1.6;color:var(--text);max-width:80ch;margin:0;}
+.cd textarea{width:100%;border:1px solid var(--border-em);border-radius:6px;padding:8px 10px;font-size:15px;font-family:inherit;line-height:1.5;}
+.tbl.ins{table-layout:fixed;min-width:1000px;}
+.tbl.ins td{vertical-align:top;}
+.tbl.ins th.cur,.tbl.ins td.cur{background:var(--blue-l);}
+.ins-c{display:inline-block;margin:2px;padding:3px 7px;border:none;border-radius:6px;background:var(--surface2);font-family:'DM Mono',monospace;font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer;}
+.ins-c:hover{background:var(--blue);color:#fff;}
+.ins-c.nm{font-family:inherit;font-weight:600;font-size:12.5px;}
+.ins-c.nm small{font-size:10.5px;font-weight:500;opacity:.75;margin-left:1px;}
+.ins-c.tbd{background:none;border:1px dashed var(--border-em);color:var(--text3);}
+.ins-c.ext{background:none;color:var(--text3);font-weight:500;padding:3px 2px;}
+.off-bar{display:flex;margin-bottom:14px;}
+.prog-sel{margin-left:10px;height:34px;font-size:15px;vertical-align:4px;}
+.empty-prog .ep-t{font-size:19px;font-weight:600;margin-bottom:14px;}
+.ep-box{border:1px dashed var(--border-em);border-radius:10px;padding:36px 24px;text-align:center;}
+.ep-h{font-size:16px;font-weight:600;margin-bottom:6px;}
+.ep-box p{margin:0 auto 14px;max-width:60ch;}
+.ro-badge{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border:1px solid var(--border-em);border-radius:8px;font-size:14px;font-weight:600;color:var(--text2);background:var(--surface2);cursor:default;}
+.tab.dirty::after{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber);margin-left:6px;vertical-align:2px;}
+.lnk{display:block;margin-top:6px;padding:0;border:none;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--blue);cursor:pointer;white-space:nowrap;}
+.lnk:hover{text-decoration:underline;}
+.cm .hlcol{background:var(--blue-l) !important;transition:background .6s;}
+.cm tr.grp td.hlcol{background:var(--blue-l) !important;}
+.hov{position:relative;cursor:default;border-bottom:1px dashed var(--text3);outline:none;}
+.hov .tip{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:320px;max-width:420px;padding:8px 0;background:var(--surface);border:1px solid var(--border-em);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.12);}
+.hov:hover .tip,.hov:focus .tip{display:block;}
+.tip-r{display:flex;gap:10px;padding:4px 14px;font-size:14px;line-height:1.35;color:var(--text);white-space:normal;}
+.tip-r code{flex-shrink:0;width:50px;font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:var(--text2);}
+.card-head .view-only{margin-left:auto;}
+.lv-key{display:inline-flex;align-items:center;gap:6px;}
+.lv-key i{display:inline-block;width:22px;height:7px;border-radius:4px;background:var(--blue);margin-left:6px;}
+.lv-key i:first-child{margin-left:0;}
+.prop-card{border-color:#f1d4a3;box-shadow:inset 4px 0 0 var(--amber);}
+.prop-t{display:flex;align-items:center;gap:10px;color:var(--amber);}
+.head-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.bar-r{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;}
+h1 .role-chip{font-size:13px;vertical-align:5px;margin-left:8px;}
+.banner{display:inline-flex;align-items:center;gap:10px;margin-bottom:14px;padding:9px 16px;border-radius:20px;border:1px solid #f1d4a3;background:var(--amber-l);color:var(--amber);font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;}
+details.done{margin-top:6px;}
+details.done summary{cursor:pointer;font-size:15px;font-weight:600;color:var(--text2);padding:6px 0;}
+.empty{font-size:16px;color:var(--text3);padding:6px 0;}
+.sub{font-size:14px;color:var(--text3);line-height:1.45;margin-top:3px;}
+.tbl tr.grp td{background:var(--surface2);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);padding:7px 12px;}
+.tbl textarea{width:100%;min-height:70px;border:1px solid var(--border-em);border-radius:6px;padding:8px 10px;font-size:15px;font-family:inherit;line-height:1.45;}
+.tbl select{height:38px;border:1px solid var(--border-em);border-radius:6px;padding:0 8px;font-size:15px;font-family:inherit;}
+tr.crow,tr.orow{cursor:pointer;}
+tr.crow:hover td,tr.orow:hover td{background:var(--surface2);}
+tr.crow.open td{border-bottom:none;}
+tr.cdetail td{background:var(--surface2);padding-top:4px;}
+.clo-ol{padding-left:22px;font-size:15px;line-height:1.5;color:var(--text);}
+.clo-ol li{margin-bottom:3px;}
+.tbl td .chip{margin:2px 4px 2px 0;}
+.rail-tag.chair{background:var(--blue-l);color:var(--blue);}
+.ov-bar{display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-bottom:14px;padding-inline:27px;}
+.ov-bar .updated{margin-right:4px;font-size:14px;color:var(--text3);}
+.ov-grid{display:grid;grid-template-columns:minmax(260px,1fr) 2fr;gap:20px;}
+.ov-grid .card{margin-bottom:20px;}
+.ov-facts{display:flex;flex-direction:column;gap:14px;}
+.fact-v{font-size:16px;line-height:1.45;margin-top:3px;}
+.ov-text p{font-size:16px;line-height:1.6;color:var(--text);margin-bottom:10px;}
+.ov-text p:last-child{margin-bottom:0;}
+#t-ov textarea,#t-ov input:not([type=checkbox]){width:100%;border:1px solid var(--border-em);border-radius:6px;padding:8px 10px;font-size:15px;font-family:inherit;line-height:1.45;margin-bottom:8px;}
+#t-ov select{height:36px;border:1px solid var(--border-em);border-radius:6px;padding:0 8px;font-size:14px;font-family:inherit;}
+blockquote{font-size:19px;line-height:1.5;color:var(--text);border-left:4px solid var(--blue);padding:4px 0 4px 16px;margin:0;}
+.ov-ul{padding-left:20px;font-size:16px;line-height:1.55;}
+.ov-ul li{margin-bottom:4px;}
+.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.role{border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;background:var(--surface2);}
+.role-t{font-size:16px;font-weight:700;margin-bottom:4px;}
+.role-d{font-size:15px;color:var(--text2);line-height:1.45;}
+.ov-two{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+.dom{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);}
+.dom:last-child{border-bottom:none;}
+.dom-k{flex-shrink:0;width:34px;height:34px;border-radius:8px;background:var(--c);color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;}
+.dom-t{font-size:16px;font-weight:600;}
+.dom-d,.lvl-d{font-size:14px;color:var(--text2);line-height:1.45;margin-top:2px;}
+.lvl{padding:10px 0;border-bottom:1px solid var(--border);}
+.lvl:last-child{border-bottom:none;}
+.lvl-t{font-size:16px;font-weight:600;}
+.tbl.pw{min-width:900px;table-layout:fixed;}
+.tbl.pw th.c,.tbl th.c,.tbl td.c{text-align:center;}
+.tbl.pw td{vertical-align:top;}
+.pw-l{font-weight:700;font-size:14px;color:var(--text2);}
+.pw-c{display:inline-flex;flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;font-family:'DM Mono',monospace;font-size:13px;font-weight:600;padding:4px 8px;margin:2px 4px 2px 0;border-radius:6px;background:var(--blue-l);color:var(--blue);}
+.pw-pick{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.pw-opt{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 14px;border:1px solid var(--border-em);border-radius:17px;background:var(--surface);font:inherit;font-size:14px;font-weight:600;color:var(--text2);cursor:pointer;}
+.pw-opt i{width:9px;height:9px;border-radius:50%;background:var(--c);}
+.pw-opt.on{border-color:var(--c);color:var(--text);box-shadow:inset 0 0 0 1px var(--c);}
+.pw-pick{display:flex !important;align-items:flex-start;gap:28px;flex-wrap:wrap;}
+.pw-all{display:flex;flex-direction:column;align-items:center;gap:7px;border:none;background:none;font:inherit;font-size:12.5px;font-weight:600;color:var(--text2);cursor:pointer;padding:28px 4px 0;}
+.pw-all i{flex:none;width:30px;height:30px;border-radius:50%;box-shadow:inset 0 0 0 2px #5B6B7D;}
+.pw-all.on i{background:#5B6B7D;}
+.pw-all.on{color:var(--text);}
+.pw-mx{display:grid;grid-template-columns:repeat(5,minmax(110px,1fr));gap:4px 14px;flex:1;min-width:0;}
+.pw-col{display:grid;grid-template-rows:18px 82px 82px;justify-items:center;row-gap:4px;}
+.pw-ch{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;height:18px;line-height:18px;}
+.pw-b{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:7px;height:82px;width:100%;max-width:150px;border:none;background:none;font:inherit;cursor:pointer;padding:6px 4px 0;}
+.pw-b i{flex:none;width:30px;height:30px;border-radius:50%;background:var(--c);opacity:.28;transition:transform .15s,opacity .15s;}
+.pw-b span{font-size:12.5px;line-height:1.25;color:var(--text2);text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.pw-b:hover i{opacity:.6;}
+.pw-b.on i{opacity:1;transform:scale(1.25);box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--c);}
+.pw-b.on span{color:var(--text);font-weight:700;}
+.pw-b:focus-visible,.pw-all:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:8px;}
+#pf-frame{display:block;width:100%;height:1400px;border:0;}
+.pw-term{margin-top:26px;padding-top:22px;border-top:1px solid var(--border);}
+.pw-th{font-size:16px;font-weight:600;margin-bottom:6px;}
+.pw-th span{color:var(--blue);}
+.pw-c.bad{box-shadow:inset 0 0 0 1.5px var(--amber-b);}
+.pw-warn{font-style:normal;color:var(--amber);margin-left:3px;}
+.pw-bad{color:var(--amber);font-weight:600;}
+td.off-sem{background:var(--surface2);}
+td.off-sem input{opacity:.45;}
+.pw-ed input:not([type=checkbox]),.pw-ed select{width:100%;height:34px;border:1px solid var(--border-em);border-radius:6px;padding:0 8px;font:inherit;font-size:14px;background:var(--surface);}
+.pw-ed tr.hid td{opacity:.5;}
+.pw-ed.mk th{font-size:11px;white-space:nowrap;}
+.pw-ed.mk td{padding:3px 4px;}
+.pw-ed .mk-s{width:44px;padding:0 4px;text-align:center;font-size:14px;}
+.pw-ed .mk-s.S{background:#FAEEDA;}
+.pw-ed .mk-s.C{background:var(--blue-l);}
+.pw-ed .mk-s.R{background:var(--surface2);}
+.pw-focus{font-size:15px;color:var(--text2);margin:0 0 12px;}
+.pw-grp{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--c);align-self:center;margin-left:8px;}
+.pw-c b{font-weight:700;margin-right:3px;}
+.pw-c.mS{background:var(--c);color:#fff;}
+.pw-c.mC{background:var(--surface);color:var(--c);box-shadow:inset 0 0 0 1.5px var(--c);}
+.pw-c.mR{background:var(--surface2);color:var(--text2);}
+.pw-c.off{background:none;color:var(--text3);opacity:.4;}
+.pw-c.ed{cursor:pointer;}
+#pw-legend .pw-c{margin-right:6px;font-family:inherit;font-size:12px;padding:2px 8px;}
+.pw-c small{flex-basis:100%;text-align:center;font-size:10px;font-weight:500;opacity:.8;}
+.chk{font-size:14px;margin-right:10px;white-space:nowrap;}
+#ovflow .nd{cursor:pointer;}
+.fl-off{font-size:11.5px;font-weight:600;fill:var(--text3);}
+.fl-off.both{fill:var(--blue);font-weight:700;}
+#ovflow path.rb{transition:opacity .15s;}
+#ovflow.hl path.rb{opacity:.06;}
+#ovflow.hl path.rb.on{opacity:.8;}
+@media (max-width:900px){ .ov-grid,.ov-two,.roles{grid-template-columns:1fr;} }
+.seg{display:inline-flex;border:1px solid var(--border-em);border-radius:8px;overflow:hidden;}
+.seg button{height:34px;padding:0 14px;border:none;background:var(--surface);font-size:15px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;}
+.seg button+button{border-left:1px solid var(--border-em);}
+.seg button.on{background:var(--blue-l);color:var(--blue);}
+.flow-wrap{overflow-x:auto;}
+.flow-wrap svg{min-width:900px;display:block;}
+.fl-h{font-size:15px;font-weight:700;fill:var(--text2);}
+.fl-c{font-size:15px;font-weight:700;fill:var(--text);font-family:'DM Mono',monospace;}
+.fl-n{font-size:11px;font-weight:700;fill:#fff;}
+.fl-p{font-size:16px;font-weight:700;}
+.fl-pn{font-size:13px;fill:var(--text2);}
+#flow .nd{cursor:pointer;}
+#flow path.rb{transition:opacity .15s;}
+#flow.hl path.rb{opacity:.08;}
+#flow.hl path.rb.on{opacity:.85;}
+
+/* embedded in TaeSylla Pro: the parent page has the top bar, rail and page padding */
+html,body{background:transparent;}
+.shell{display:block;min-height:0;}
+.main{padding:0 !important;}
+.cur-boot{padding:60px 0;text-align:center;color:var(--text3);font-size:18px;}
+.toast{position:fixed;}
+</style>
+</head>
+<body>
+
+<div class="shell">
+<div id="cur-boot" class="cur-boot">Loading curriculum…</div>
+
+  <main class="main">
+    <div class="ph">
+      <div>
+        <div class="label">Curriculum</div>
+        <h1><span id="prog-name">Data Science and Artificial Intelligence</span> <span class="chip blue role-chip" id="role-chip">Chair</span>
+          <select class="sel prog-sel" id="prog-sel" aria-label="Program" onchange="setProg(this.value)" hidden></select></h1>
+      </div>
+      <div class="ph-act" id="actions"></div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" data-t="ov" onclick="setTab('ov')">Overview</button>
+      <button class="tab" data-t="lo" onclick="setTab('lo')">Learning Outcomes</button>
+      <button class="tab" data-t="cat" onclick="setTab('cat')">Course Catalog</button>
+      <button class="tab" data-t="pw" onclick="setTab('pw')">Pathways</button>
+      <button class="tab active" data-t="map" onclick="setTab('map')">Course&ndash;PLO Map <span class="count" id="prop-count"></span></button>
+      <button class="tab" data-t="off" onclick="setTab('off')">Course Offerings</button>
+    </div>
+
+    <section id="t-empty" hidden><div class="card empty-prog" id="empty-prog"></div></section>
+
+    <section id="t-ov" hidden>
+      <div class="ov-bar" id="ov-actions"></div>
+      <div class="card"><div class="card-t" style="margin-bottom:10px">Program description</div><div class="ov-text" id="ov-desc"></div></div>
+      <div class="card"><div class="card-t" style="margin-bottom:10px">Mission</div><div id="ov-mission"></div><div id="ov-align"></div></div>
+      <div class="card"><div class="card-t" style="margin-bottom:12px">Graduate Roles &amp; Pathways</div><div class="roles" id="ov-roles"></div><div class="ov-text" id="ov-careers" style="margin-top:14px"></div></div>
+      <div class="card">
+        <div class="card-t" style="margin-bottom:12px">Curriculum architecture</div>
+        <div class="ov-two">
+          <div><div class="label" style="margin-bottom:8px">Curricular domains: what is taught</div><div id="ov-domains"></div></div>
+          <div><div class="label" style="margin-bottom:8px">Learning Pathway: how students progress</div><div id="ov-levels"></div></div>
+        </div>
+        <div class="label" style="margin:22px 0 8px">Domains &rarr; courses</div>
+        <div class="flow-wrap ro" id="ov-flow"></div>
+        <div id="ov-dmap-edit"></div>
+      </div>
+    </section>
+
+    <section id="t-lo" hidden>
+      <div class="card">
+        <div class="card-head"><div class="card-t">Program learning outcomes</div><span class="updated" data-upd="lo"></span></div>
+        <div class="tbl-wrap"><table class="tbl" id="plo-tbl"></table></div>
+      </div>
+    </section>
+
+    <section id="t-cat" hidden>
+      <div class="card">
+        <div class="card-head"><div class="card-t">Course catalog <span class="card-aka">(Cohort 2026)</span></div>
+          <span class="updated" data-upd="cat"></span>
+          <div class="head-btns" id="cat-btns"></div></div>
+        <div class="label" style="margin-bottom:8px">Course list</div>
+        <div class="tbl-wrap"><table class="tbl cat" id="cat-tbl"></table></div>
+        <p class="cat-note" id="cat-note"></p>
+      </div>
+    </section>
+
+    <section id="t-pw" hidden>
+      <div class="card">
+        <div class="card-head"><div class="card-t">Recommended pathways</div><span class="updated" data-upd="pw"></span></div>
+        <iframe id="pf-frame" src="pathfinder-embed.html" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
+        <div class="pw-term">
+          <div class="pw-th">Pathway by term <span id="pw-title"></span></div>
+          <p class="pw-focus" id="pw-focus"></p>
+          <div class="tbl-wrap"><table class="tbl pw" id="ov-pathway"></table></div>
+          <div class="legend" id="pw-legend"></div>
+          <div id="ov-pathway-edit"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="t-map">
+      <div class="card prop-card" id="prop-card" hidden>
+        <div class="card-head"><div class="card-t prop-t"><i class="dot"></i><span id="prop-title"></span></div></div>
+        <div id="prop-open"></div>
+        <details class="done"><summary>Decided</summary><div id="prop-done"></div></details>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-t">Course &times; PLO <span class="card-aka">(curriculum map)</span></div><span class="updated" data-upd="map"></span></div>
+        <div class="cm-wrap" id="cm-wrap"><table class="cm" id="cm"></table></div>
+        <div class="legend" id="cm-legend">
+          <span><span class="lv"><span class="on I">I</span><span class="on R">R</span><span class="on A">A</span></span>Introduced &middot; Reinforced &middot; Assessed</span>
+          <span><i class="dot"></i>Proposal waiting</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-t">Course &rarr; CLO &rarr; PLO</div>
+          <span class="chip grey view-only" title="Drawn from the table above. Edit the table to change it.">Read-only</span></div>
+        <div id="flow-wrap" class="flow-wrap ro"></div>
+      </div>
+    </section>
+
+
+    <section id="t-off" hidden>
+      <div class="off-bar"><div class="seg" role="group" aria-label="View offerings">
+        <button id="ov-sem" class="on" onclick="setOffView('sem')">By semester</button><button id="ov-ins" onclick="setOffView('ins')">By instructor</button></div></div>
+      <div id="off-sem">
+      <div class="card">
+        <div class="card-head"><div class="card-t">All semesters</div></div>
+        <div class="tbl-wrap ro"><table class="tbl ins" id="sem-tbl"></table></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-t">Course offerings by semester</div><select class="sel" id="term" aria-label="Term" onchange="term=this.value;renderOff()"></select></div>
+        <div class="tbl-wrap ro"><table class="tbl" id="off-tbl"></table></div>
+      </div>
+      </div>
+      <div id="off-ins" hidden>
+      <div class="card">
+        <div class="card-head"><div class="card-t">All instructors</div></div>
+        <div class="tbl-wrap ro"><table class="tbl ins" id="ins-tbl"></table></div>
+        <p class="cat-note">〔 〕 Course outside the major; not counted in Total.</p>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-t">Course offerings by instructor</div><select class="sel" id="ins-sel" aria-label="Instructor" onchange="insSel=this.value;renderIns()"></select></div>
+        <div class="tbl-wrap ro"><table class="tbl" id="insd-tbl"></table></div>
+      </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="pop" id="pop" hidden></div>
+<div class="toast" id="toast"></div>
+<div class="cbox-bg" id="cbox" hidden>
+  <div class="cbox" role="dialog" aria-modal="true" aria-labelledby="cbox-t">
+    <div class="cbox-t" id="cbox-t"></div><div class="cbox-m" id="cbox-m"></div>
+    <div class="cbox-b"><button class="btn" id="cbox-no">Cancel</button><button class="btn btn-primary" id="cbox-yes">Continue</button></div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="text/plain" id="cur-main">
+// Curriculum page (TaeSylla Pro). Data from Supabase via cur_loader: PLOs, Course–PLO map (87 cells,
+// Self-Study v42), course catalog (courses), offerings and their course-design readiness.
+const DATA = window.__CUR.DATA;
+const PLOS = DATA.plos;
+const COURSES = DATA.mapCourses;
+const GROUPS = [
+  {t:'Fundamentals', f:c => c.startsWith('DA2')},
+  {t:'Advanced', f:c => c.startsWith('DA3') || c.startsWith('DA4')},
+  {t:'Interdisciplinary (XD)', f:c => c.startsWith('XD')},
+];
+const LVL = {I:'Introduced', R:'Reinforced', A:'Assessed'};
+const LDESC = {I:'First exposure to the PLO in this course.', R:'Students practise and develop it further.', A:'A graded task measures it.'};
+const ME = {chair: window.__CUR.me, faculty: window.__CUR.me, multi: window.__CUR.me};
+// The program comes from the signed-in user (faculty_profiles.program); only a user in 2+ programs gets a selector.
+const DSAI = window.__CUR.progName;   // the program being shown
+const PROGS = {chair: window.__CUR.progNames, faculty: window.__CUR.progNames, multi: window.__CUR.progNames};
+let prog = DSAI;
+function setProg(p){ if (editing) discard(); location.search = '?p=' + encodeURIComponent(window.__CUR.progCodes[p] || ''); }
+
+const clone = o => JSON.parse(JSON.stringify(o));
+let saved = {}; for (const c of COURSES) { saved[c] = {}; for (const p of PLOS) saved[c][p.code] = (DATA.map[c][p.code] || {}).levels || ''; }
+let map = clone(saved);
+let editing = false, role = window.__CUR.role, tab = 'map', selKey = null, catOpen = {}, declining = null;
+let term = DATA.terms.includes(window.__CUR.curTerm) ? window.__CUR.curTerm : DATA.terms[DATA.terms.length - 1];
+
+let proposals = window.__CUR.proposals;
+let decided = window.__CUR.decided;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2000); }
+function na(){}
+const isChair = () => role === 'chair' && prog === DSAI;
+const levelsHtml = v => `<span class="lv">${['I','R','A'].map(l=>`<span class="${v.includes(l)?'on '+l:''}">${l}</span>`).join('')}</span>`;
+const pendingFor = (c,p) => proposals.some(x => x.course===c && x.plo===p);
+const XL = `<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" style="flex-shrink:0"><rect x="1" y="1" width="16" height="16" rx="3" fill="#1D6F42"/><path d="M5.2 5.2l7.6 7.6M12.8 5.2l-7.6 7.6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>`;
+
+function confirmBox(msg){
+  return new Promise(resolve => {
+    const [title, ...rest] = msg.split('\n');
+    $('cbox-t').textContent = title; $('cbox-m').textContent = rest.join('\n').trim();
+    const box=$('cbox'), yes=$('cbox-yes'), no=$('cbox-no');
+    const done = v => { box.hidden = true; yes.onclick = no.onclick = box.onclick = null; resolve(v); };
+    yes.onclick = () => done(true); no.onclick = () => done(false); box.onclick = e => { if (e.target === box) done(false); };
+    box.hidden = false; yes.focus();
+  });
+}
+
+/* ---------- page header: one edit session for every tab (same rule as the course page) ---------- */
+function countChanges(){ let n=0; for (const c of COURSES) for (const p of PLOS) if ((map[c][p.code]||'') !== (saved[c][p.code]||'')) n++; return n; }
+let snap = null;   // content when Edit was pressed
+const TAB_NAME = {ov:'Overview', lo:'Learning Outcomes', cat:'Course Catalog', pw:'Pathways', map:'Course–PLO Map', off:'Course Offerings'};
+function dirtyTabs(){
+  if (!editing || !snap) return [];
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const ovNow = {...OV, pathway: null, pathRec: null}, ovThen = {...snap.OV, pathway: null, pathRec: null};
+  return [['ov', !same(ovNow, ovThen)], ['lo', !same(PLOS, snap.PLOS)], ['cat', !same(DATA.catalog, snap.cat)],
+          ['map', countChanges() > 0], ['pw', !same([OV.pathway, PF.roles, PF.mk], [snap.OV.pathway, snap.PF.roles, snap.PF.mk])]].filter(x => x[1]).map(x => x[0]);
+}
+function renderActions(){
+  const d = dirtyTabs();
+  $('actions').innerHTML = !isChair() ? `<span class="ro-badge" title="Only the program chair can edit"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" stroke-width="1.5"/></svg>Read-only</span>` : editing
+    ? `<button class="btn" onclick="cancelEdit()">Cancel</button><button class="btn btn-primary" onclick="saveMap()">Save changes</button>`
+    : `<button class="btn" onclick="startEdit()">Edit</button>`;
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('dirty', d.includes(b.dataset.t)));
+  const open = myProposals().length;
+  $('prop-count').textContent = open || ''; $('prop-count').hidden = !open;
+}
+
+/* ---------- Learning Outcomes ---------- */
+function renderPlos(){
+  const ch = isChair();
+  $('plo-tbl').innerHTML = `<thead><tr><th style="width:70px">PLO</th><th>Outcome</th><th style="width:150px">ILO</th><th style="width:150px">Standard of performance</th><th style="width:140px">Assessed in</th></tr></thead><tbody>${
+    PLOS.map((p,i) => {
+      const a = COURSES.filter(c => (saved[c][p.code]||'').includes('A'));
+      return `<tr><td class="mono">${p.code}</td>
+        <td>${editing ? `<input value="${esc(p.name)}" oninput="PLOS[${i}].name=this.value"><textarea style="margin-top:6px" oninput="PLOS[${i}].def=this.value">${esc(p.def)}</textarea>`
+                      : `<b>${esc(p.name)}</b><div class="sub">${esc(p.def)}</div>`}</td>
+        <td><span class="chip grey">${p.ilo}</span></td>
+        <td class="num">${editing ? `<input class="num" type="number" min="0" max="100" value="${p.std}" onchange="PLOS[${i}].std=+this.value"> %` : `${p.std}% Proficient+`}</td>
+        <td>${a.length ? `<span class="hov" tabindex="0">${a.length} course${a.length===1?'':'s'}<span class="tip" role="tooltip">${
+          a.map(c => `<span class="tip-r"><code>${c}</code>${esc(DATA.names[c] || '')}</span>`).join('')}</span></span>` : '<span class="sub">None</span>'}${
+          editing ? `<button class="lnk" onclick="goMap('${p.code}')">Edit in map &rarr;</button>` : ''}</td></tr>`;
+    }).join('')}</tbody>`;
+}
+
+/* ---------- Course–PLO Map ---------- */
+function renderMap(){
+  const t = $('cm');
+  t.className = 'cm' + (editing ? ' editing' : '');
+  let h = `<colgroup><col style="width:24%">${PLOS.map(()=>'<col>').join('')}</colgroup>
+    <thead><tr><th class="c">Course</th>${PLOS.map(p=>`<th><span class="pc">${p.code}</span><span class="pn">${esc(p.name)}</span></th>`).join('')}</tr></thead><tbody>`;
+  for (const g of GROUPS) {
+    const cs = COURSES.filter(g.f); if (!cs.length) continue;
+    h += `<tr class="grp"><td colspan="${PLOS.length + 1}">${g.t}</td></tr>`;
+    for (const c of cs) {
+      h += `<tr><td><div class="course"><b>${c}</b><span>${esc(DATA.names[c])}</span></div></td>`;
+      for (const p of PLOS) {
+        const v = map[c][p.code] || '', k = c+'|'+p.code, clos = (DATA.map[c][p.code] || {}).clos || [];
+        const changed = v !== (saved[c][p.code]||'');
+        h += `<td><button class="cell ${changed?'changed':''} ${pendingFor(c,p.code)?'pend':''} ${selKey===k?'sel':''}" data-k="${k}"
+              aria-label="${c} ${p.code}: ${v ? v.split('').map(x=>LVL[x]).join(', ') : 'not addressed'}" onclick="cellClick(event,'${k}')" ${editing?'':'tabindex="-1"'}>
+              ${v ? levelsHtml(v) : `<span class="cell-sub">${editing?'+':'&mdash;'}</span>`}${v && clos.length ? `<span class="cell-sub">CLO ${clos.join(', ')}</span>` : ''}</button></td>`;
+      }
+      h += `</tr>`;
+    }
+  }
+  h += `</tbody><tfoot><tr><td style="text-align:left"><span class="label">Coverage</span></td>${PLOS.map(p => {
+    const vals = COURSES.map(c => map[c][p.code]||'');
+    const a = vals.filter(v=>v.includes('A')).length, i = vals.some(v=>v.includes('I')), r = vals.some(v=>v.includes('R'));
+    const ok = a && i && r;
+    return `<td class="${ok?'ok':'warn'}">Assessed in ${a}<br>${ok?'I &rarr; R &rarr; A':(!i?'Never introduced':!r?'Never reinforced':'Never assessed')}</td>`;
+  }).join('')}</tr></tfoot>`;
+  t.innerHTML = h;
+}
+function cellClick(ev, k){
+  ev.stopPropagation();
+  const [c, plo] = k.split('|');
+  if (pendingFor(c, plo) && !editing) { document.getElementById('prop-'+proposals.find(x=>x.course===c&&x.plo===plo).id)?.scrollIntoView({behavior:'smooth', block:'center'}); return; }
+  if (!isChair()) return;
+  if (!editing) { startEdit(); return setTimeout(()=>cellClick({stopPropagation(){}}, k), 0); }
+  selKey = k; renderMap();
+  const v = map[c][plo] || '', p = PLOS.find(x=>x.code===plo);
+  const pop = $('pop');
+  pop.innerHTML = `<h4>${c} &rarr; ${plo}</h4><div class="ctx">${esc(DATA.names[c])} &middot; ${esc(p.name)}</div>
+    ${['I','R','A'].map(l=>`<label class="opt"><input type="checkbox" ${v.includes(l)?'checked':''} onchange="toggleLvl('${k}','${l}',this.checked)"><span><b>${LVL[l]}</b><small>${LDESC[l]}</small></span></label>`).join('')}
+    <div class="pop-f"><span></span><button class="btn btn-sm" onclick="closePop()">Done</button></div>`;
+  const r = document.querySelector(`.cell[data-k="${k}"]`).getBoundingClientRect();
+  let left = r.left + scrollX + r.width/2 - 170;
+  left = Math.max(12, Math.min(left, scrollX + document.documentElement.clientWidth - 352));
+  pop.style.left = left+'px'; pop.style.top = (r.bottom + scrollY + 8)+'px';
+  pop.hidden = false;
+}
+function toggleLvl(k, l, on){
+  const [c, plo] = k.split('|'); let v = map[c][plo] || '';
+  map[c][plo] = ['I','R','A'].filter(x => x===l ? on : v.includes(x)).join('');
+  renderMap(); renderActions(); cellClick({stopPropagation(){}}, k);
+}
+function closePop(){ $('pop').hidden = true; selKey = null; renderMap(); }
+document.addEventListener('click', e => { if (!$('pop').hidden && !$('pop').contains(e.target)) closePop(); });
+function startEdit(){ snap = {PLOS: clone(PLOS), cat: clone(DATA.catalog), OV: clone(OV), PF: clone({roles: PF.roles, mk: PF.mk})}; editing = true; render(); }
+function discard(){
+  if (snap) { PF.roles = snap.PF.roles; PF.mk = snap.PF.mk; pfSync(); PLOS.splice(0, PLOS.length, ...snap.PLOS); DATA.catalog.splice(0, DATA.catalog.length, ...snap.cat); Object.assign(OV, snap.OV); }
+  map = clone(saved); snap = null; editing = false; $('pop').hidden = true; selKey = null;
+}
+async function cancelEdit(){
+  const d = dirtyTabs();
+  if (d.length && !(await confirmBox(`Discard unsaved changes?\n${d.map(k => TAB_NAME[k]).join(', ')}`))) return;
+  discard(); render();
+}
+async function saveMap(){
+  const d = dirtyTabs(), n = countChanges();
+  if (!d.length) { snap = null; editing = false; render(); return; }
+  if (!(await confirmBox(`Save changes?\n${d.map(k => TAB_NAME[k] + (k === 'map' ? ` (${n} cell${n>1?'s':''})` : '')).join(', ')}${n ? '\nInstructors of the changed courses are notified.' : ''}`))) return;
+  saved = clone(map); snap = null; editing = false; $('pop').hidden = true; selKey = null;
+  d.forEach(k => document.querySelectorAll(`[data-upd="${k}"]`).forEach(e => e.textContent = 'Last updated ' + new Date().toISOString().slice(0, 10)));
+  render(); toast('Saved');
+}
+
+/* ---------- proposals (under the map) ---------- */
+const myProposals = () => isChair() ? proposals : proposals.filter(p => p.by === ME.faculty);
+function cellMini(v){ return `<div class="cell">${v?levelsHtml(v):'<span class="cell-sub">not addressed</span>'}</div>`; }
+function renderProps(){
+  const ch = isChair(), open = myProposals();
+  $('prop-card').hidden = !open.length;
+  $('prop-title').textContent = `${open.length} proposal${open.length > 1 ? 's' : ''} ${ch ? 'waiting' : 'sent, waiting for the chair'}`;
+  $('prop-open').innerHTML = open.length ? open.map(x => {
+    const p = PLOS.find(q=>q.code===x.plo);
+    return `<div class="prop" id="prop-${x.id}">
+      <div>
+        <div class="prop-h"><code>${x.course}</code> ${esc(DATA.names[x.course])} <span class="chip grey">${x.plo} ${esc(p.name)}</span></div>
+        <div class="prop-m">${x.by} &middot; ${x.term} &middot; ${x.when}</div>
+        <div class="chg">${cellMini(x.from)}<span class="arrow">&rarr;</span>${cellMini(x.to)}</div>
+        <div class="why">${esc(x.why)}</div>
+      </div>
+      <div class="prop-a">${ch
+        ? `<button class="btn btn-primary btn-sm" onclick="accept(${x.id})">Accept</button><button class="btn btn-sm btn-danger" onclick="declining=${x.id};renderProps()">Decline&hellip;</button>`
+        : `<span class="chip amber">Waiting</span>`}</div>
+      ${declining===x.id ? `<div class="decline-box"><textarea id="dr-${x.id}" placeholder="Reason for ${esc(x.by)}"></textarea>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button class="btn btn-sm" onclick="declining=null;renderProps()">Cancel</button><button class="btn btn-sm btn-danger" onclick="decline(${x.id})">Decline</button></div></div>` : ''}
+    </div>`;
+  }).join('') : `<div class="empty">No open proposals.</div>`;
+  const done = ch ? decided : decided.filter(d => d.by === ME.faculty);
+  $('prop-done').innerHTML = done.length ? done.map(d => `<div class="hist">
+      <span class="chip ${d.result==='accepted'?'green':'red'}">${d.result==='accepted'?'Accepted':'Declined'}</span>
+      <span><b class="mono" style="font-weight:500">${d.course}</b> ${d.plo}: ${d.from||'none'} &rarr; ${d.to||'none'} &middot; ${d.by} &middot; ${d.on}</span>
+      ${d.note?`<span style="flex-basis:100%;color:var(--text3)">&ldquo;${esc(d.note)}&rdquo;</span>`:''}</div>`).join('') : '<div class="empty">Nothing decided yet.</div>';
+}
+function accept(id){
+  const x = proposals.find(p=>p.id===id);
+  saved[x.course][x.plo] = x.to; map[x.course][x.plo] = x.to;
+  proposals = proposals.filter(p=>p.id!==id);
+  decided.unshift({...x, result:'accepted', on:new Date().toISOString().slice(0, 10), note:''});
+  render(); toast(`Accepted: ${x.course} ${x.plo} updated`);
+}
+function decline(id){
+  const note = ($('dr-'+id)?.value || '').trim();
+  if (!note) { $('dr-'+id).focus(); toast('Add a short reason'); return; }
+  const x = proposals.find(p=>p.id===id);
+  proposals = proposals.filter(p=>p.id!==id); declining = null;
+  decided.unshift({...x, result:'declined', on:new Date().toISOString().slice(0, 10), note});
+  render(); toast(`Declined. ${x.by} will see your reason.`);
+}
+
+/* ---------- Course Catalog (chair edits; a cross-listed course is edited by its lead program's chair) ---------- */
+const OWN = 'Data Science and Artificial Intelligence';
+function renderCat(){
+  $('cat-btns').innerHTML = `<button class="btn btn-sm" onclick="catExport()">${XL}Export</button>
+    <button class="btn btn-sm" onclick="toast('Would make the catalog document (Google Doc)')">Make catalog document</button>`;
+  const ed = c => editing && (c.lead || OWN) === OWN;
+  const field = (i, k, w) => `<input${w ? ` style="width:${w}px"` : ''} class="${w ? 'num' : ''}" value="${esc(DATA.catalog[i][k])}" oninput="DATA.catalog[${i}].${k}=this.value">`;
+  // 1. Course list (Academic Catalog 3.2, plus Offered)
+  $('cat-tbl').innerHTML = `<thead><tr><th rowspan="2" style="width:84px">Course ID</th><th rowspan="2">Course Title</th><th rowspan="2" style="width:130px">Classification</th>
+      <th rowspan="2" class="c" style="width:70px">Credits</th><th colspan="2" class="c" style="width:150px">Credit Hours</th><th rowspan="2" style="width:150px">Offered</th></tr>
+      <tr><th class="c">Lecture</th><th class="c">Field Work</th></tr></thead><tbody>${
+    DATA.catalog.map((c, i) => `${i === 0 || DATA.catalog[i - 1].cat !== c.cat ? `<tr class="grp"><td colspan="7">${esc(c.cat)}</td></tr>` : ''}<tr class="crow${catOpen[c.code] ? ' open' : ''}" aria-expanded="${!!catOpen[c.code]}" onclick="if(!event.target.closest('input,select,textarea,button'))toggleCat('${c.code}')">
+      <td class="mono"><span class="cv">&#9656;</span>${c.xl ? '<span class="xl-mark">*</span>' : ''}${c.code}</td>
+      <td>${ed(c) ? field(i, 'title') : esc(c.title)}${(c.lead || OWN) !== OWN ? ` <span class="chip grey" title="Led by ${esc(c.lead)}">${esc(c.lead.split(' ').filter(w => w !== 'and').map(w => w[0]).join(''))} lead</span>` : ''}</td>
+      <td>${ed(c) ? `<select onchange="DATA.catalog[${i}].cls=this.value">${['Major Required', 'Major Elective'].map(o => `<option ${o === c.cls ? 'selected' : ''}>${o}</option>`).join('')}</select>` : esc(c.cls)}</td>
+      <td class="c">${ed(c) ? field(i, 'credits', 56) : esc(c.credits)}</td>
+      <td class="c">${ed(c) ? field(i, 'lecture', 56) : esc(c.lecture)}</td>
+      <td class="c">${ed(c) ? field(i, 'field', 56) : esc(c.field)}</td>
+      <td>${ed(c) ? `<select onchange="DATA.catalog[${i}].offered=this.value">${['Fall', 'Spring', 'Fall · Spring', 'Fall (+Spring)', 'Spring (+Fall)'].map(o => `<option ${o === c.offered ? 'selected' : ''}>${o}</option>`).join('')}</select>` : esc(c.offered)}</td></tr>${catOpen[c.code] ? catProfile(c, i, ed(c)) : ''}`).join('')}</tbody>`;
+  $('cat-note').innerHTML = `<span class="xl-mark">*</span>${DATA.catalog.filter(c => c.xl).map(c => c.code).join(', ')} may be recognized either as courses offered by the school that provides the course or as major courses within the Program of Data Science and Artificial Intelligence. Each course counts only once toward graduation credit; students choose which program it counts toward.`;
+}
+// Course profile, expanded under its row: the course itself (not one semester's offering)
+// Curricular domains as a 4-axis spider: Primary 3, Strong 2.5, Reinforced 1.5, Introduced 0.75
+function domRadar(m){
+  const val = k => k === m.primary ? 3 : (m.strong || []).includes(k) ? 2.5 : m.also.includes(k) ? 1.5 : (m.intro || []).includes(k) ? .75 : 0;
+  const tag = k => k === m.primary ? 'Primary' : (m.strong || []).includes(k) ? 'Strong' : m.also.includes(k) ? 'Reinforced' : (m.intro || []).includes(k) ? 'Introduced' : 'Not linked';
+  const SHORT = {D1: 'Human', D2: 'Ethics', D3: 'Techniques', D4: 'Design'};
+  const cx = 130, cy = 78, R = 52, dirs = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+  const pt = (j, v) => `${cx + dirs[j][0] * R * v / 3},${cy + dirs[j][1] * R * v / 3}`;
+  const ring = f => OV.domains.map((d, j) => pt(j, 3 * f)).join(' ');
+  const lab = [[cx, cy - R - 12, 'middle'], [cx + R + 8, cy + 4, 'start'], [cx, cy + R + 20, 'middle'], [cx - R - 8, cy + 4, 'end']];
+  return `<svg class="cp-radar" viewBox="0 0 260 162" role="img" aria-label="Curricular domains">
+    ${[1 / 3, 2 / 3, 1].map(f => `<polygon points="${ring(f)}" fill="none" stroke="var(--border)"/>`).join('')}
+    ${dirs.map((d, j) => `<line x1="${cx}" y1="${cy}" x2="${cx + d[0] * R}" y2="${cy + d[1] * R}" stroke="var(--border)"/>`).join('')}
+    <polygon points="${OV.domains.map((d, j) => pt(j, val(d.key))).join(' ')}" fill="${dom(m.primary).color}" fill-opacity=".18" stroke="${dom(m.primary).color}" stroke-width="2" stroke-linejoin="round"/>
+    ${OV.domains.map((d, j) => `<circle cx="${pt(j, val(d.key)).split(',')[0]}" cy="${pt(j, val(d.key)).split(',')[1]}" r="3.5" fill="${d.color}"><title>${esc(d.name)}: ${tag(d.key)}</title></circle>
+      <text x="${lab[j][0]}" y="${lab[j][1]}" text-anchor="${lab[j][2]}" class="cp-rl${d.key === m.primary ? ' p' : ''}" fill="${d.color}">${d.key} ${SHORT[d.key]}<title>${esc(d.name)}: ${tag(d.key)}</title></text>`).join('')}
+  </svg>`;
+}
+const pfMark = (code, r) => (PF.mk[code] || {})[r.id];
+const pfCol = r => (PF.groups.find(g => g.name === r.group) || {}).color || '#888';
+// D: bubble matrix — 4 columns (Research, Engineering, Design / Planning, Governance + Domain) x 2 roles;
+// bubble area by strength (★ > ● > ○), colour by role group
+function roleBubbles(code){
+  const AB = {'Data Scientist / Researcher': 'Data Sci.', 'AI Researcher': 'AI Research', 'Data Engineer': 'Data Eng.', 'ML / AI Engineer': 'ML / AI Eng.', 'AI Product Manager': 'AI PM',
+              'UX / Service Designer for AI': 'UX / Service', 'AI Ethics & Governance': 'AI Ethics', 'Domain Data Specialist (Analyst · Researcher)': 'Analyst'};
+  const COLS = PF.groups.map(g => [{'Design / Planning': 'Design', 'Strategic / Governance': 'Governance', 'Domain Specialists': 'Domain'}[g.name] || g.name, [g.name]]);
+  const R = {S: 16, C: 11, R: 6}, CW = 62, RH = 50, TOP = 16;
+  let svg = '';
+  COLS.forEach(([head, groups], ci) => {
+    const x = ci * CW + CW / 2;
+    svg += `<text x="${x}" y="10" text-anchor="middle" class="bm-h" fill="${(PF.groups.find(g => g.name === groups[0]) || {}).color}">${head}</text>`;
+    pfRoles().filter(r => groups.includes(r.group)).slice(0, 2).forEach((r, ri) => {
+      const k = pfMark(code, r), rad = R[k] || 2.5, col = pfCol(r), y = TOP + ri * RH + 20;
+      svg += `<g><title>${esc(r.name)} (${esc(r.group)}): ${k && k !== '-' ? MARK[k][1] : 'not recommended'}</title>
+        <circle cx="${x}" cy="${y}" r="${rad}" fill="${R[k] ? col : 'var(--border-em)'}" fill-opacity="${k === 'S' ? .95 : k === 'C' ? .55 : k === 'R' ? .28 : 1}"/>
+        ${k === 'S' ? `<text x="${x}" y="${y + 4.5}" text-anchor="middle" class="bb-s">★</text>` : ''}
+        <text x="${x}" y="${y + 30}" text-anchor="middle" class="cp-rb${k === 'S' ? ' strong' : !R[k] ? ' none' : ''}">${AB[r.name]}</text></g>`;
+    });
+  });
+  return `<svg class="cp-roles-svg" viewBox="0 0 ${CW * COLS.length} ${TOP + RH * 2 + 6}" style="max-width:440px" role="img" aria-label="Pathways by role">${svg}</svg>
+    <div class="cp-rleg"><span><i class="bb" style="width:12px;height:12px;opacity:.95"></i>★ Signature</span><span><i class="bb" style="width:9px;height:9px;opacity:.55"></i>● Core</span><span><i class="bb" style="width:6px;height:6px;opacity:.3"></i>○ Recommended</span></div>`;
+}
+function catProfile(c, i, ed){
+  const code = c.code, m = OV.domainMap[code], lv = (typeof saved !== 'undefined' && saved[code]) || null;
+  const offs = DATA.offerings.filter(o => !o.ext && (o.base || o.code.split('-')[0]) === code)
+    .sort((a, b) => DATA.terms.indexOf(a.term) - DATA.terms.indexOf(b.term) || a.code.localeCompare(b.code));
+  const roles = pfRoles().map(r => [r, pfMark(code, r)]).filter(x => x[1] && x[1] !== '-')
+    .sort((a, b) => 'SCR'.indexOf(a[1]) - 'SCR'.indexOf(b[1]));
+  const dchip = (k, w) => `<span class="dchip ${w}" style="--c:${dom(k).color}">${k} ${esc(dom(k).name)}</span>`;
+  const by = k => lv ? PLOS.filter(p => { const v = lv[p.code] || ''; return k === 'A' ? v.includes('A') : k === 'R' ? v.includes('R') && !v.includes('A') : v === 'I'; }) : [];
+  const line = (k, v) => v ? `<div class="cp-ln"><span class="cp-k">${k}</span>${v}</div>` : '';
+  const sig = roles.filter(x => x[1] === 'S'), core = roles.filter(x => x[1] === 'C');
+  const terms = [...new Set(offs.map(o => o.term))];
+  const short = t => t.replace('Spring ', 'S’').replace('Fall ', 'F’').replace('’20', '’');
+  const fact = (label, body) => `<div class="cp-f"><div class="cp-l">${label}</div>${body || '<span class="sub">–</span>'}</div>`;
+  return `<tr class="cprof"><td colspan="7">
+    <div class="cp-facts">
+      ${fact('PLO weights', c.plo_pct ? PLOS.map((p, j) => `<div class="cp-bar" title="${esc(p.name)}${lv && lv[p.code] ? ' · ' + lv[p.code].split('').join('/') : ''}"><span class="cp-k">${p.code}</span><i style="--w:${c.plo_pct[j]}%;--c:${PLO_COLOR[p.code]}"></i><b>${c.plo_pct[j]}%</b></div>`).join('') : '')}
+      ${fact('Curricular domains', m ? domRadar(m) : '')}
+      ${fact('Pathways', roleBubbles(code))}
+      ${fact('Offerings', offs.map(o => `<div class="cp-ln"><span class="cp-k t">${short(o.term)}</span><button class="cp-lnk" onclick="openOffering(${o.id})" title="Open ${esc(o.code)} · ${esc(o.term)}">${esc(o.code)} ${esc(surname(o.prof === 'TBD' ? '' : (o.prof || '').split(',')[0].trim()))}</button></div>`).join(''))}
+    </div>
+    <div class="cp-grid">
+      <div><div class="cp-l">Description</div>
+        ${ed ? `<textarea rows="6" oninput="DATA.catalog[${i}].desc=this.value">${esc(c.desc)}</textarea>` : `<p class="cp-desc">${esc(c.desc)}</p>`}</div>
+      <div><div class="cp-l">Course learning outcomes</div>
+        ${c.clos && c.clos.length ? `<ol class="clo-ol">${c.clos.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : '<p class="sub">Not set yet.</p>'}</div>
+    </div></td></tr>`;
+}
+function toggleCat(code){ catOpen = catOpen[code] ? {} : {[code]: true}; renderCat(); }   // accordion: one course open at a time
+function catExport(){
+  const aoa = [['Level','Course ID','Course Title','Classification','Credits','Lecture','Field Work','Offered','Description'],
+    ...DATA.catalog.map(c => [c.cat, (c.xl ? '*' : '') + c.code, c.title, c.cls, Number(c.credits) || c.credits, Number(c.lecture) || c.lecture, c.field, c.offered, c.desc])];
+  const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = [16,10,44,16,8,8,10,16,90].map(w=>({wch:w}));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Course catalog');
+  XLSX.writeFile(wb, 'DS&AI Course Catalog.xlsx');
+}
+
+/* ---------- Offerings (by term, with course-design readiness) ---------- */
+function renderOff(){
+  $('term').innerHTML = DATA.terms.map(t=>`<option ${t===term?'selected':''}>${t}</option>`).join('');
+  const rows = DATA.offerings.filter(o => o.term === term && !o.ext).sort((a,b)=>a.code.localeCompare(b.code));
+  $('off-tbl').innerHTML = `<thead><tr><th style="width:100px">Course</th><th>Title</th><th style="width:190px">Instructor</th><th style="width:200px">Time</th><th style="width:130px">Location</th><th style="width:100px" class="num">Students</th><th style="width:110px">Status</th></tr></thead><tbody>${
+    rows.length ? rows.map(o => `<tr class="orow" onclick="openOffering(${o.id})">
+      <td class="mono">${esc(o.code)}</td><td>${esc(o.title)}</td><td>${esc(o.prof)}</td><td class="sub">${esc(o.time)}</td>
+      <td>${esc(o.loc || '–')}</td><td class="num">${o.n ?? '–'}</td>
+      <td><span class="chip ${o.status==='published'?'green':'grey'}">${o.status==='published'?'Published':'Draft'}</span></td></tr>`).join('')
+    : `<tr><td colspan="7" class="empty">No offerings for ${esc(term)}.</td></tr>`}</tbody>`;
+}
+/* ---------- Instructors: offerings by instructor x semester (assignments are made on each offering in TaeSylla) ---------- */
+let offView = 'sem';
+function setOffView(v){
+  offView = v;
+  $('ov-sem').classList.toggle('on', v === 'sem'); $('ov-ins').classList.toggle('on', v === 'ins');
+  $('off-sem').hidden = v !== 'sem'; $('off-ins').hidden = v !== 'ins';
+}
+const surname = n => n ? n.split(' ').pop() : 'TBD';
+const statusChip = o => `<span class="chip ${o.status==='published'?'green':'grey'}">${o.status==='published'?'Published':'Draft'}</span>`;
+// By semester, top: course x semester; each cell names who teaches it (and the section)
+function renderSemMatrix(){
+  const terms = DATA.terms, cur = window.__CUR.curTerm;
+  const offs = DATA.offerings.filter(o => !o.ext);
+  const base = o => o.base || o.code.split('-')[0];
+  const catOrder = DATA.catalog.map(c => c.code);
+  const bases = [...new Set(offs.map(base))].sort((a, b) => ((catOrder.indexOf(a) + 1) || 999) - ((catOrder.indexOf(b) + 1) || 999) || a.localeCompare(b));
+  const grp = b => (DATA.catalog.find(c => c.code === b) || {}).cat || 'Former course codes';
+  let h = `<thead><tr><th style="width:210px">Course</th>${terms.map(t => `<th class="c${t === cur ? ' cur' : ''}">${t.replace(' 20', ' ’')}</th>`).join('')}<th class="c" style="width:60px">Total</th></tr></thead><tbody>`, last = null;
+  for (const b of bases) {
+    if (grp(b) !== last) { last = grp(b); h += `<tr class="grp"><td colspan="${terms.length + 2}">${last}</td></tr>`; }
+    const mine = offs.filter(o => base(o) === b);
+    const t0 = (DATA.catalog.find(c => c.code === b) || {}).title || (mine[0] || {}).title || '';
+    h += `<tr><td><b class="mono">${b}</b><div class="sub">${esc(t0)}</div></td>${terms.map(t => `<td class="c${t === cur ? ' cur' : ''}">${
+      mine.filter(o => o.term === t).sort((x, y) => x.code.localeCompare(y.code)).map(o => {
+        const sec = o.code.includes('-') ? o.code.split('-')[1] : '';
+        return (o.prof || 'TBD').split(',').map(p => p.trim()).map(p => `<button class="ins-c nm${!p || p === 'TBD' ? ' tbd' : ''}" title="${esc(o.code)} · ${esc(p || 'TBD')}${o.n ? ' · ' + o.n + ' students' : ''}" onclick="openOffering(${o.id})">${esc(surname(p === 'TBD' ? '' : p))}${sec ? `<small>-${sec}</small>` : ''}</button>`).join('');
+      }).join('')}</td>`).join('')}<td class="c num"><b>${mine.length}</b></td></tr>`;
+  }
+  $('sem-tbl').innerHTML = h + '</tbody>';
+}
+let insSel = window.__CUR.me;
+function renderInsDetail(names){
+  if (!names.includes(insSel)) insSel = names[0];
+  $('ins-sel').innerHTML = names.map(n => `<option value="${esc(n)}" ${n === insSel ? 'selected' : ''}>${esc(n || 'TBD')}</option>`).join('');
+  const k = insSel, order = t => DATA.terms.indexOf(t);
+  const rows = DATA.offerings.filter(o => (o.prof || '').split(',').map(x => x.trim()).map(p => p === 'TBD' ? '' : p).includes(k))
+    .sort((a, b) => order(a.term) - order(b.term) || a.code.localeCompare(b.code));
+  $('insd-tbl').innerHTML = `<thead><tr><th style="width:120px">Semester</th><th style="width:100px">Course</th><th>Title</th><th style="width:200px">Time</th><th style="width:130px">Location</th><th style="width:100px" class="num">Students</th><th style="width:110px">Status</th></tr></thead><tbody>${
+    rows.map(o => `<tr class="orow" onclick="openOffering(${o.id})"><td>${esc(o.term)}</td>
+      <td class="mono">${o.ext ? '〔' + esc(o.code) + '〕' : esc(o.code)}</td><td>${esc(o.title)}</td><td class="sub">${esc(o.time)}</td>
+      <td>${esc(o.loc || '–')}</td><td class="num">${o.n ?? '–'}</td><td>${statusChip(o)}</td></tr>`).join('')}</tbody>`;
+}
+function renderIns(){
+  const terms = DATA.terms, by = {};
+  for (const o of DATA.offerings) for (const p of (o.prof || '').split(',').map(x => x.trim())) {
+    const k = p && p !== 'TBD' ? p : '';
+    ((by[k] = by[k] || {})[o.term] = by[k][o.term] || []).push(o);
+  }
+  const total = k => Object.values(by[k]).flat().filter(o => !o.ext).length;   // outside-the-major teaching shown, not counted
+  const own = k => (DATA.faculty_school[k] || '') === OWN;
+  const groups = [['Data Science and Artificial Intelligence', Object.keys(by).filter(k => k && own(k))],
+                  ['Other schools', Object.keys(by).filter(k => k && !own(k))],
+                  ['Not yet assigned', by[''] ? [''] : []]];
+  const cur = window.__CUR.curTerm;
+  let h = `<thead><tr><th style="width:210px">Instructor</th>${terms.map(t => `<th class="c${t === cur ? ' cur' : ''}">${t.replace(' 20', ' ’')}</th>`).join('')}<th class="c" style="width:60px">Total</th></tr></thead><tbody>`;
+  for (const [g, ks] of groups) {
+    if (!ks.length) continue;
+    h += `<tr class="grp"><td colspan="${terms.length + 2}">${g}</td></tr>`;
+    for (const k of ks.sort((a, b) => total(b) - total(a) || a.localeCompare(b))) {
+      h += `<tr><td>${k ? `<b>${esc(k)}</b>${!own(k) && DATA.faculty_school[k] ? `<div class="sub">${esc(DATA.faculty_school[k])}</div>` : ''}` : '<span class="sub">TBD</span>'}</td>${
+        terms.map(t => `<td class="c${t === cur ? ' cur' : ''}">${(by[k][t] || []).slice().sort((a, b) => a.code.localeCompare(b.code)).map(o =>
+          `<button class="ins-c${o.ext ? ' ext' : ''}" title="${esc(o.title)}${o.ext ? ' · outside the major (not counted)' : ''}${o.n ? ' · ' + o.n + ' students' : ''}" onclick="openOffering(${o.id})">${o.ext ? '〔' + esc(o.code) + '〕' : esc(o.code)}</button>`).join('')}</td>`).join('')}
+        <td class="c num"><b>${total(k)}</b></td></tr>`;
+    }
+  }
+  $('ins-tbl').innerHTML = h + '</tbody>';
+  renderInsDetail(groups.flatMap(g => g[1]));
+}
+function openOffering(id){ try { window.parent.location.hash = 'course/' + id; } catch (e) {} }
+
+
+/* ---------- Flow view: Course → CLO → PLO (Self-Study Figure 7), drawn live from the map ---------- */
+// Every CLO-PLO link on the map, shaded by the cell's highest level (A > R > I).
+// Cells with no CLO tagged pass through a "–" node, so gaps in CLO tagging stay visible.
+const LV_OP = {A: .6, R: .32, I: .16};
+const PLO_COLOR = {PLO1:'#1F4E79', PLO2:'#2E6DA4', PLO3:'#2A8C82', PLO4:'#4A79A5', PLO5:'#C89212', PLO6:'#B5506A'};
+function flowLinks(){
+  const out = [];
+  for (const g of GROUPS) for (const c of COURSES.filter(g.f)) for (const p of PLOS) {
+    const v = map[c][p.code] || '', clos = (DATA.map[c][p.code] || {}).clos || [];
+    const lv = v.includes('A') ? 'A' : v.includes('R') ? 'R' : v.includes('I') ? 'I' : '';
+    if (!lv) continue;
+    for (const n of (clos.length ? clos : ['–'])) out.push({c, n, p:p.code, lv});
+  }
+  return out;
+}
+function renderFlow(){
+  const links = flowLinks();
+  if (!links.length) { $('flow-wrap').innerHTML = '<div class="empty">No CLOs linked on the map yet.</div>'; return; }
+  const U = 8, MINH = 16, W = 1180, X0 = 110, X1 = 520, X2 = 900, NW = 24, BW = 12, TOP = 40;
+  const courses = [...new Set(links.map(l => l.c))];
+  const mid = [], course = {};
+  let y = TOP;
+  for (const c of courses) {
+    const nums = [...new Set(links.filter(l => l.c === c).map(l => l.n))].sort((a, b) => (a === '–') - (b === '–') || a - b);
+    const y0 = y;
+    for (const n of nums) {
+      const outs = links.filter(l => l.c === c && l.n === n).sort((a, b) => a.p.localeCompare(b.p));
+      const h = Math.max(outs.length * U, MINH);
+      mid.push({c, n, y, h, outs, color: n === '–' ? '#AEB7C2' : PLO_COLOR[outs[0].p]});
+      y += h + 3;
+    }
+    course[c] = {y: y0, h: y - 3 - y0};
+    y += 16;
+  }
+  const midH = y - TOP;
+  const tot = PLOS.map(p => links.filter(l => l.p === p.code).length);
+  const plH = tot.reduce((a, b) => a + b, 0) * U + 26 * (PLOS.length - 1);
+  let py = TOP + Math.max(0, (midH - plH) / 2);
+  const plo = {};
+  PLOS.forEach((p, i) => { plo[p.code] = {y: py, h: tot[i] * U, cur: py}; py += tot[i] * U + 26; });
+  const H = Math.max(y, py) + 20;
+  const ribbon = (x0, ya, x1, yb, w, color, attrs) => {
+    const xm = (x0 + x1) / 2;
+    return `<path d="M${x0},${ya}C${xm},${ya} ${xm},${yb} ${x1},${yb}" stroke="${color}" stroke-width="${w}" fill="none" class="rb" ${attrs}/>`;
+  };
+  let svg = '';
+  for (const m of mid) {
+    const cy = course[m.c]; cy.cur = cy.cur ?? cy.y;
+    svg += ribbon(X0 + BW, cy.cur + m.h / 2, X1, m.y + m.h / 2, m.h, '#C9D1DB', `data-c="${m.c}" data-p="${m.outs.map(o => o.p).join(' ')}"`);
+    cy.cur += m.h + 3;
+  }
+  // CLO -> PLO: incoming ribbons ordered by the source's height to keep crossings down
+  const segs = [];
+  for (const m of mid) m.outs.forEach((o, k) => segs.push({m, o, y0: m.y + (m.h - m.outs.length * U) / 2 + k * U + U / 2}));
+  segs.sort((a, b) => a.y0 - b.y0);
+  for (const s of segs) {
+    const t = plo[s.o.p];
+    svg += ribbon(X1 + NW, s.y0, X2, t.cur + U / 2, U - 1, PLO_COLOR[s.o.p], `data-c="${s.m.c}" data-p="${s.o.p}" opacity="${LV_OP[s.o.lv]}"`);
+    t.cur += U;
+  }
+  for (const c of courses) {
+    const k = course[c];
+    svg += `<g class="nd" data-c="${c}" onmouseenter="flowHl(this)" onmouseleave="flowHl(null)"><rect x="${X0}" y="${k.y}" width="${BW}" height="${Math.max(k.h, 4)}" rx="3" fill="#94A3B4"/>
+      <text x="${X0 - 10}" y="${k.y + k.h / 2 + 5}" text-anchor="end" class="fl-c">${c}</text></g>`;
+  }
+  for (const m of mid) svg += `<g class="nd" data-c="${m.c}" onmouseenter="flowHl(this)" onmouseleave="flowHl(null)"><rect x="${X1}" y="${m.y}" width="${NW}" height="${m.h}" rx="4" fill="${m.color}"/>
+      <text x="${X1 + NW / 2}" y="${m.y + m.h / 2 + 4}" text-anchor="middle" class="fl-n">${m.n}</text>${m.n === '–' ? '<title>No CLO tagged</title>' : ''}</g>`;
+  PLOS.forEach(p => { const t = plo[p.code]; svg += `<g class="nd" data-p="${p.code}" onmouseenter="flowHl(this)" onmouseleave="flowHl(null)">
+      <rect x="${X2}" y="${t.y}" width="${BW + 2}" height="${Math.max(t.h, 4)}" rx="3" fill="${PLO_COLOR[p.code]}"/>
+      <text x="${X2 + 24}" y="${t.y + t.h / 2 - 2}" class="fl-p" fill="${PLO_COLOR[p.code]}">${p.code}</text>
+      <text x="${X2 + 24}" y="${t.y + t.h / 2 + 16}" class="fl-pn">${esc(p.name)}</text></g>`; });
+  const head = `<text x="${X0 + BW / 2}" y="18" text-anchor="middle" class="fl-h">Course</text><text x="${X1 + NW / 2}" y="18" text-anchor="middle" class="fl-h">CLO</text><text x="${X2 + 6}" y="18" class="fl-h">PLO</text>`;
+  $('flow-wrap').innerHTML = `<svg id="flow" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Course to CLO to PLO flow">${head}${svg}</svg>
+    <div class="legend"><span class="lv-key"><i style="opacity:.6"></i>Assessed <i style="opacity:.32"></i>Reinforced <i style="opacity:.16"></i>Introduced</span><span>&ndash; = no CLO tagged. Hover to trace.</span></div>`;
+}
+function flowHl(g){
+  const svg = $('flow'); if (!svg) return;
+  svg.classList.toggle('hl', !!g);
+  svg.querySelectorAll('path.rb').forEach(p => {
+    const on = g && ((g.dataset.c && p.dataset.c === g.dataset.c) || (g.dataset.p && (p.dataset.p || '').split(' ').includes(g.dataset.p)));
+    p.classList.toggle('on', !!on);
+  });
+}
+
+
+/* ---------- Overview (Self-Study A1–A3 and B1): chair edits, everyone views and exports ---------- */
+const OV = window.__CUR.OV;
+const dom = k => OV.domains.find(d => d.key === k);
+const ta = (path, v, rows = 3) => `<textarea rows="${rows}" oninput="ovSet('${path}',this.value)">${esc(v)}</textarea>`;
+const inp = (path, v) => `<input value="${esc(v)}" oninput="ovSet('${path}',this.value)">`;
+function ovSet(path, v){
+  const ks = path.split('.'); let o = OV;
+  for (const k of ks.slice(0, -1)) o = o[k];
+  o[ks[ks.length - 1]] = v;
+}
+function renderOv(){
+  const ch = isChair(), ed = ch && editing;
+  if (!$('ov-actions').innerHTML) $('ov-actions').innerHTML = `<span class="updated" data-upd="ov"></span>
+    <button class="btn btn-sm" onclick="toast('Would export the overview as a Word / Google Doc section (Self-Study A–B1)')">Export</button>`;
+  // 1. at a glance
+  if ($('ov-facts')) $('ov-facts').innerHTML = OV.facts.map((f, i) => `<div class="fact"><div class="label">${esc(f[0])}</div>
+    <div class="fact-v">${ed ? inp(`facts.${i}.1`, f[1]) : esc(f[1])}</div></div>`).join('');
+  // 2. description + mission
+  $('ov-desc').innerHTML = OV.description.map((p, i) => ed ? ta(`description.${i}`, p, 4) : `<p>${esc(p)}</p>`).join('');
+  $('ov-mission').innerHTML = ed ? ta('mission', OV.mission, 3) : `<blockquote>${esc(OV.mission)}</blockquote>`;
+  $('ov-align').innerHTML = `<div class="label" style="margin:14px 0 8px">How the program delivers it</div><ul class="ov-ul">${
+    OV.alignment.map((a, i) => `<li>${ed ? inp(`alignment.${i}`, a) : esc(a)}</li>`).join('')}</ul>`;
+  // 3. graduates
+  $('ov-roles').innerHTML = OV.roles.map((r, i) => `<div class="role">
+    <div class="role-t">${ed ? inp(`roles.${i}.0`, r[0]) : esc(r[0])}</div>
+    <div class="role-d">${ed ? inp(`roles.${i}.1`, r[1]) : esc(r[1])}</div></div>`).join('');
+  $('ov-careers').innerHTML = ed ? ta('careers', OV.careers, 3) : `<p>${esc(OV.careers)}</p>`;
+  // 4. curriculum: domains, levels, pathway, figure
+  $('ov-domains').innerHTML = OV.domains.map((d, i) => `<div class="dom" style="--c:${d.color}">
+    <div class="dom-k">${d.key}</div><div><div class="dom-t">${ed ? inp(`domains.${i}.name`, d.name) : esc(d.name)}</div>
+    <div class="dom-d">${ed ? inp(`domains.${i}.focus`, d.focus) : esc(d.focus)}</div></div></div>`).join('');
+  $('ov-levels').innerHTML = OV.levels.map((l, i) => `<div class="lvl"><div class="lvl-t">${esc(l.name)}</div>
+    <div class="lvl-d">${ed ? inp(`levels.${i}.focus`, l.focus) : esc(l.focus)}</div></div>`).join('');
+  renderPathway();
+  renderDomainFlow(ed);
+}
+// Pathways: 'all' = the example pathway by term; a role name = that role's recommended courses
+// (Pathfinder for My Data & AI Journey: S signature, C core, R recommended). The chair can override per course.
+const PF = window.__CUR.PF;
+// Roles get a stable id; marks are kept by id so a role can be renamed. path = whose Pathfinder answer route the role shares.
+PF.roles.forEach((r, i) => { r.id = r.id || 'r' + (i + 1); r.orig = r.orig || r.name; r.path = r.path || r.name; r.hidden = !!r.hidden; });
+PF.mk = PF.mk || Object.fromEntries(Object.entries(PF.marks).map(([c, m]) => [c, Object.fromEntries(PF.roles.map(r => [r.id, m[r.name] || '-']))]));
+const PF_ROUTES = {
+  'Data Scientist / Researcher': 'Hands-on → Discover → Explain the world with data',
+  'AI Researcher': 'Hands-on → Discover → Invent new AI models',
+  'Data Engineer': 'Hands-on → Build systems → Build the data platform',
+  'ML / AI Engineer': 'Hands-on → Build systems → Put AI into products',
+  'UX / Service Designer for AI': 'Shaping → Products → Design the experience',
+  'AI Product Manager': 'Shaping → Products → Set the strategy',
+  'AI Ethics & Governance': 'Shaping → Society & fields → Shape AI rules',
+  'Domain Data Specialist (Analyst · Researcher)': 'Shaping → Society & fields → Apply data to a field'};
+const pfRoles = () => PF.roles.filter(r => !r.hidden);
+let pwSel = 'all';
+const MARK = {S: ['★', 'Signature'], C: ['●', 'Core'], R: ['○', 'Recommended']};
+function pwRec(role, code){
+  const r = PF.roles.find(x => x.name === role), m = r ? pfMark(code, r) : null;
+  return m && m !== '-' ? m : 'none';
+}
+// A term placement must match the semester the course is offered in (catalog Offered): x-1 = Fall, x-2 = Spring
+const semOf = t => t.endsWith('-1') ? 'Fall' : 'Spring';
+const offeredIn = code => (DATA.catalog.find(c => c.code === code) || {}).offered || '';
+const termOk = (code, t) => { const o = offeredIn(code); return !o || o.includes(semOf(t)); };
+function renderPathway(){
+  const ed = isChair() && editing, role = pfRoles().find(r => r.name === pwSel);
+  const gcol = g => (PF.groups.find(x => x.name === g) || {}).color || '#5B6B7D';
+  const name = c => (DATA.catalog.find(x => x.code === c) || {}).title || c;
+  // The role comes from the card picked in Pathfinder above (no separate picker here)
+  $('pw-title').textContent = role ? '· ' + role.name : '';
+  $('pw-focus').innerHTML = role ? esc(role.short) : 'Example sequence by term. Pick a role above to see its recommended courses here.';
+  const col = role ? gcol(role.group) : '';
+  let h = `<thead><tr><th style="width:150px"></th>${OV.terms.map(t => `<th class="c">${t}</th>`).join('')}</tr></thead><tbody>`;
+  const n = {S: 0, C: 0, R: 0};
+  for (const l of OV.levels) {
+    h += `<tr><td class="pw-l">${esc(l.name)}</td>`;
+    for (const t of OV.terms) {
+      const cs = OV.pathway.filter(p => p.level === l.name && p.terms.includes(t));
+      h += `<td>${cs.map(p => {
+        const r = role ? pwRec(role.name, p.code) : '';
+        if (role && r !== 'none' && p.terms[0] === t) n[r]++;
+        const cls = !role ? '' : r === 'none' ? ' off' : ' m' + r;
+        const ok = termOk(p.code, t);
+        return `<span class="pw-c${cls}${role && ed ? ' ed' : ''}${ok ? '' : ' bad'}"${role ? ` style="--c:${col}"` : ''} title="${esc(name(p.code))}${ok ? '' : ` · ⚠ offered ${esc(offeredIn(p.code))} only, but placed in a ${semOf(t)} term`}${role && r !== 'none' ? ' · ' + MARK[r][1] : ''}${p.offered ? ' · offered ' + esc(p.offered) : ''}${p.note ? ' · ' + esc(p.note) : ''}">${role && r !== 'none' ? `<b>${MARK[r][0]}</b>` : ''}${p.code}${ok ? '' : '<i class="pw-warn">⚠</i>'}</span>`;
+      }).join('')}</td>`;
+    }
+    h += `</tr>`;
+  }
+  $('ov-pathway').innerHTML = h + '</tbody>';
+  const bad = OV.pathway.flatMap(p => p.terms.filter(t => !termOk(p.code, t)).map(t => `${p.code} ${t}`));
+  const warn = bad.length ? `<span class="pw-bad">⚠ ${bad.length} placement${bad.length > 1 ? 's' : ''} not in an offered semester: ${bad.join(', ')}</span>` : '';
+  $('pw-legend').innerHTML = !role ? warn : warn + ['S', 'C', 'R'].map(k => `<span><span class="pw-c m${k}" style="--c:${col}"><b>${MARK[k][0]}</b>${MARK[k][1]}</span>${n[k]}</span>`).join('') +
+    `<span>Major: 7 courses (28 credits)</span>${ed ? '<span>Click a course to change: ★ → ● → ○ → not recommended.</span>' : ''}`;
+  $('ov-pathway-edit').innerHTML = !ed ? '' : pwEditTables();
+}
+// ---------- Pathways edit mode ----------
+const SYM = {S: '★', C: '●', R: '○', '-': '–'};
+function pwEditTables(){
+  const gs = PF.groups.map(g => g.name), vis = pfRoles();
+  const roles = `<div class="label" style="margin:22px 0 8px">Graduate roles (edit)</div><div class="tbl-wrap"><table class="tbl pw-ed"><thead><tr>
+      <th style="width:26%">Role</th><th style="width:16%">Group</th><th>One-line description</th><th style="width:24%">Pathfinder answer path</th><th class="c" style="width:64px">Shown</th></tr></thead><tbody>${
+    PF.roles.map((r, i) => `<tr class="${r.hidden ? 'hid' : ''}">
+      <td><input value="${esc(r.name)}" onchange="pfRename(${i},this.value)"></td>
+      <td><select onchange="PF.roles[${i}].group=this.value;pfChanged()">${gs.map(g => `<option ${g === r.group ? 'selected' : ''}>${esc(g)}</option>`).join('')}</select></td>
+      <td><input value="${esc(r.short)}" oninput="PF.roles[${i}].short=this.value" onchange="pfChanged()"></td>
+      <td><select onchange="PF.roles[${i}].path=this.value;pfChanged()" title="Which Pathfinder question route leads students to this role">${
+        Object.entries(PF_ROUTES).map(([k, t]) => `<option value="${esc(k)}" ${r.path === k ? 'selected' : ''}>${esc(t)}</option>`).join('')}
+        <option value="" ${!r.path ? 'selected' : ''}>Browse only (not reached by questions)</option></select></td>
+      <td class="c"><input type="checkbox" ${r.hidden ? '' : 'checked'} onchange="PF.roles[${i}].hidden=!this.checked;pfChanged()"></td></tr>`).join('')}</tbody></table></div>
+    <button class="btn btn-sm" style="margin-top:8px" onclick="pfAddRole()">+ Add role</button>`;
+  const ab = r => r.name.length > 14 ? r.name.split(/[ /(]/).filter(Boolean).map(w => w[0]).join('').slice(0, 4).toUpperCase() : r.name;
+  const marks = `<div class="label" style="margin:22px 0 8px">Recommended courses by role (edit)</div><div class="tbl-wrap"><table class="tbl pw-ed mk"><thead><tr><th style="width:84px">Course</th>${
+      vis.map(r => `<th class="c" title="${esc(r.name)}" style="color:${pfCol(r)}">${esc(ab(r))}</th>`).join('')}</tr></thead><tbody>${
+    DATA.catalog.map(c => `<tr><td class="mono">${c.code}</td>${vis.map(r => { const v = pfMark(c.code, r) || '-';
+      return `<td class="c"><select class="mk-s ${v}" onchange="pfSetMark('${c.code}','${r.id}',this.value)" aria-label="${esc(c.code)} for ${esc(r.name)}">${
+        ['S', 'C', 'R', '-'].map(k => `<option value="${k}" ${k === v ? 'selected' : ''}>${SYM[k]}</option>`).join('')}</select></td>`; }).join('')}</tr>`).join('')}</tbody></table></div>
+    <div class="legend"><span>★ Signature · ● Core · ○ Recommended · – not recommended</span></div>`;
+  const terms = `<div class="label" style="margin:22px 0 8px">Terms (edit)</div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Course</th><th>Level</th>${OV.terms.map(t => `<th class="c">${t}</th>`).join('')}</tr></thead><tbody>${
+    OV.pathway.map((p, i) => `<tr><td class="mono">${p.code}</td>
+      <td><select onchange="OV.pathway[${i}].level=this.value;renderOv()">${OV.levels.map(l => `<option ${l.name === p.level ? 'selected' : ''}>${l.name}</option>`).join('')}</select></td>
+      ${OV.terms.map(t => `<td class="c${termOk(p.code, t) ? '' : ' off-sem'}" title="${termOk(p.code, t) ? '' : 'Not offered in ' + semOf(t) + ' (' + esc(offeredIn(p.code)) + ')'}"><input type="checkbox" ${p.terms.includes(t) ? 'checked' : ''} onchange="ovTerm(${i},'${t}',this.checked)"></td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  return roles + marks + terms;
+}
+function pfChanged(){ pfSync(); renderOv(); renderActions(); }
+function pfRename(i, v){ const r = PF.roles[i]; if (pwSel === r.name) pwSel = v; r.name = v; pfChanged(); }
+function pfSetMark(code, id, v){ (PF.mk[code] = PF.mk[code] || {})[id] = v; pfChanged(); }
+function pfAddRole(){
+  const id = 'r' + (Math.max(...PF.roles.map(r => +r.id.slice(1))) + 1);
+  PF.roles.push({id, name: 'New role', group: PF.groups[0].name, short: '', path: '', hidden: false, orig: ''});
+  DATA.catalog.forEach(c => (PF.mk[c.code] = PF.mk[c.code] || {})[id] = '-');
+  pfChanged();
+}
+// Feed the embedded Pathfinder from PF (roles, descriptions, groups, marks, answer routes)
+function pfSync(){
+  const f = $('pf-frame'); let w; try { w = f && f.contentWindow; if (!w || !w.eval) return; w.eval('DATA'); } catch (e) { return; }
+  const D = w.eval('DATA'), RT = w.eval('ROUTE');
+  w.__pfOrig = w.__pfOrig || {roles: JSON.parse(JSON.stringify(D.roles)), route: JSON.parse(JSON.stringify(RT))};
+  const O = w.__pfOrig;
+  D.roles = pfRoles().map(r => { const base = O.roles.find(x => x.name === r.orig) || {};
+    return {...base, name: r.name, group: r.group, short: r.short, long: base.long || r.short, da200: base.da200 || ''}; });
+  for (const k of Object.keys(RT)) delete RT[k];
+  pfRoles().forEach(r => { if (r.path && O.route[r.path]) RT[r.name] = O.route[r.path]; });
+  D.courses.forEach(c => { c.marks = Object.fromEntries(pfRoles().map(r => [r.name, pfMark(c.code, r) || '-'])); });
+  try { w.eval('render(false)'); } catch (e) {}
+}
+function ovTerm(i, t, on){ const p = OV.pathway[i]; p.terms = OV.terms.filter(x => x === t ? on : p.terms.includes(x)); renderOv(); }
+
+// Figure 1: curricular domains -> Learning Pathway courses (primary domain wide, others narrow)
+function renderDomainFlow(ed){
+  const courses = OV.pathway.filter(p => OV.domainMap[p.code]);
+  const order = ['Fundamentals', 'Advanced', 'Interdisciplinary'];
+  courses.sort((a, b) => order.indexOf(a.level) - order.indexOf(b.level) || OV.terms.indexOf(a.terms[0]) - OV.terms.indexOf(b.terms[0]));
+  const P = 6, ST = 5, S = 2, IN = 1, CU = 2.4, W = 1320, X0 = 290, X1 = 540, CW = 380, X2 = 1140, NW = 14, TOP = 36, GAP = 8, MINH = 24;
+  const val = c => { const m = OV.domainMap[c.code]; return P + ST * (m.strong || []).length + S * m.also.length + IN * (m.intro || []).length; };
+  let y = TOP, lastLevel = null;
+  const cy = {};
+  for (const c of courses) {
+    if (lastLevel && c.level !== lastLevel) y += 14;
+    lastLevel = c.level;
+    const w = val(c) * CU, h = Math.max(w, MINH);
+    cy[c.code] = {y, h, w, cur: y + (h - w) / 2, out: y + (h - w) / 2};
+    y += h + GAP;
+  }
+  const H = y + 10;
+  const dv = {}; OV.domains.forEach(d => dv[d.key] = 0);
+  for (const c of courses) { const m = OV.domainMap[c.code]; dv[m.primary] += P; (m.strong || []).forEach(k => dv[k] += ST); m.also.forEach(k => dv[k] += S); (m.intro || []).forEach(k => dv[k] += IN); }
+  const dTot = Object.values(dv).reduce((a, b) => a + b, 0), dGap = 26;
+  const scale = (H - TOP - 10 - dGap * 3) / dTot;
+  let dy = TOP; const dn = {};
+  OV.domains.forEach(d => { const h = dv[d.key] * scale; dn[d.key] = {y: dy, h, cur: dy}; dy += h + dGap; });
+  // Learning Pathway levels: each course flows into its level
+  const lvl = order.filter(l => courses.some(c => c.level === l));
+  const tv = {}; lvl.forEach(l => tv[l] = 0);
+  for (const c of courses) tv[c.level] += cy[c.code].w;
+  const tGap = 30, tTot = Object.values(tv).reduce((a, b) => a + b, 0) + tGap * (lvl.length - 1);
+  let ty = TOP + Math.max(0, (H - TOP - 10 - tTot) / 2); const tn = {};
+  lvl.forEach(l => { tn[l] = {y: ty, h: tv[l], cur: ty}; ty += tv[l] + tGap; });
+  const curve = (x0, ya, x1, yb, w, color, op, attrs) => { const xm = (x0 + x1) / 2;
+    return `<path class="rb" ${attrs} d="M${x0},${ya}C${xm},${ya} ${xm},${yb} ${x1},${yb}" stroke="${color}" stroke-width="${Math.max(w, 1.5)}" fill="none" opacity="${op}"/>`; };
+  let svg = '';
+  const links = [];
+  for (const c of courses) {
+    const m = OV.domainMap[c.code];
+    [[m.primary, P], ...(m.strong || []).map(k => [k, ST]), ...m.also.map(k => [k, S]), ...(m.intro || []).map(k => [k, IN])].forEach(([k, v]) => links.push({c: c.code, k, v}));
+  }
+  links.sort((a, b) => cy[a.c].y - cy[b.c].y);
+  for (const l of links) {
+    const d = dn[l.k], t = cy[l.c], w0 = l.v * scale, w1 = l.v * CU;
+    svg += curve(X0 + NW, d.cur + w0 / 2, X1, t.cur + w1 / 2, (w0 + w1) / 2, dom(l.k).color, l.v >= ST ? .55 : l.v === S ? .38 : .3,
+                 `data-c="${l.c}" data-p="${l.k}" data-t="${courses.find(x => x.code === l.c).level}"`);
+    d.cur += w0; t.cur += w1;
+  }
+  for (const c of courses) {
+    const s = cy[c.code], w = s.w, n = tn[c.level];
+    svg += curve(X1 + CW, s.out + w / 2, X2, n.cur + w / 2, w, '#9AA8B8', .45, `data-c="${c.code}" data-t="${c.level}"`);
+    n.cur += w;
+  }
+  OV.domains.forEach(d => { const n = dn[d.key]; svg += `<g class="nd" data-p="${d.key}" onmouseenter="ovHl(this)" onmouseleave="ovHl(null)">
+    <rect x="${X0}" y="${n.y}" width="${NW}" height="${n.h}" rx="3" fill="${d.color}"/>
+    <text x="${X0 - 12}" y="${n.y + n.h / 2 - 4}" text-anchor="end" class="fl-c" style="font-size:13px">${d.key}</text>
+    <text x="${X0 - 12}" y="${n.y + n.h / 2 + 14}" text-anchor="end" class="fl-p" fill="${d.color}" style="font-size:14px">${esc(d.name)}</text></g>`; });
+  for (const c of courses) { const t = cy[c.code], m = OV.domainMap[c.code], col = dom(m.primary).color; svg += `<g class="nd" data-c="${c.code}" onmouseenter="ovHl(this)" onmouseleave="ovHl(null)">
+    <rect x="${X1}" y="${t.y}" width="${CW}" height="${t.h}" rx="4" fill="${col}" fill-opacity=".1" stroke="${col}" stroke-opacity=".35"/>
+    <rect x="${X1}" y="${t.y}" width="5" height="${t.h}" rx="2" fill="${col}"/>
+    <text x="${X1 + 14}" y="${t.y + t.h / 2 + 5}" class="fl-c" style="font-size:14px">${c.code}</text>
+    <text x="${X1 + 74}" y="${t.y + t.h / 2 + 5}" class="fl-pn">${esc((n => n.length > 30 ? n.slice(0, 29).trimEnd() + '…' : n)((DATA.catalog.find(x => x.code === c.code) || {}).title || ''))}<title>${esc((DATA.catalog.find(x => x.code === c.code) || {}).title || '')}</title></text>
+    ${c.offered ? `<text x="${X1 + CW - 8}" y="${t.y + t.h / 2 + 4}" text-anchor="end" class="fl-off${/·|\+/.test(c.offered) ? ' both' : ''}">${esc(c.offered)}</text>` : ''}</g>`; }
+  lvl.forEach(l => { const n = tn[l]; svg += `<g class="nd" data-t="${l}" onmouseenter="ovHl(this)" onmouseleave="ovHl(null)">
+    <rect x="${X2}" y="${n.y}" width="${NW}" height="${n.h}" rx="3" fill="#5B6B7D"/>
+    <text x="${X2 + NW + 10}" y="${n.y + n.h / 2 + 5}" class="fl-c" style="font-size:14px">${l}</text></g>`; });
+  $('ov-flow').innerHTML = `<svg id="ovflow" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Curricular domains to courses to Learning Pathway levels">
+    <text x="${X0 + NW / 2}" y="18" text-anchor="middle" class="fl-h">Curricular domains</text><text x="${X1 + CW / 2}" y="18" text-anchor="middle" class="fl-h">Learning Pathway courses</text><text x="${X2 + NW / 2}" y="18" text-anchor="middle" class="fl-h">Learning Pathway</text>${svg}</svg>
+    <div class="legend"><span>Ribbon width: primary &gt; strong &gt; reinforced &gt; introduced. Hover to trace.</span></div>`;
+  $('ov-dmap-edit').innerHTML = !ed ? '' : `<div class="label" style="margin:16px 0 8px">Domains per course (edit)</div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Course</th><th>Primary domain</th><th>Other domains</th></tr></thead><tbody>${
+    courses.map(c => { const m = OV.domainMap[c.code]; return `<tr><td class="mono">${c.code}</td>
+      <td><select onchange="ovPrimary('${c.code}',this.value)">${OV.domains.map(d => `<option value="${d.key}" ${d.key === m.primary ? 'selected' : ''}>${d.key} ${esc(d.name)}</option>`).join('')}</select></td>
+      <td>${OV.domains.filter(d => d.key !== m.primary).map(d => `<label class="chk">${d.key} <select onchange="ovLink('${c.code}','${d.key}',this.value)">${[['', '—'], ['I', 'Introduced'], ['R', 'Reinforced'], ['S', 'Strong']].map(([v, l]) => `<option value="${v}" ${((m.strong || []).includes(d.key) ? 'S' : m.also.includes(d.key) ? 'R' : (m.intro || []).includes(d.key) ? 'I' : '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`).join(' ')}</td></tr>`; }).join('')}</tbody></table></div>`;
+}
+function ovPrimary(c, k){ const m = OV.domainMap[c]; m.primary = k; m.also = m.also.filter(x => x !== k); m.intro = (m.intro || []).filter(x => x !== k); renderOv(); }
+function ovLink(c, k, v){ const m = OV.domainMap[c]; m.also = m.also.filter(x => x !== k); m.intro = (m.intro || []).filter(x => x !== k); m.strong = (m.strong || []).filter(x => x !== k); if (v === 'R') m.also.push(k); if (v === 'I') m.intro.push(k); if (v === 'S') m.strong.push(k); renderOv(); }
+function ovAlso(c, k, on){ const m = OV.domainMap[c]; m.also = OV.domains.map(d => d.key).filter(x => x === k ? on : m.also.includes(x)); renderOv(); }
+function ovHl(g){
+  const svg = $('ovflow'); if (!svg) return;
+  svg.classList.toggle('hl', !!g);
+  svg.querySelectorAll('path.rb').forEach(p => p.classList.toggle('on', !!(g && ((g.dataset.c && p.dataset.c === g.dataset.c) || (g.dataset.p && p.dataset.p === g.dataset.p)
+    || (g.dataset.t && (p.dataset.t || '').split(' ').includes(g.dataset.t))))));
+}
+
+/* ---------- shell ---------- */
+// From Learning Outcomes (edit): open the Course–PLO Map in edit mode with that PLO's column highlighted
+function goMap(code){
+  setTab('map'); if (!editing) startEdit();
+  const i = PLOS.findIndex(p => p.code === code) + 2;
+  const cells = document.querySelectorAll(`#cm tr > :nth-child(${i})`);
+  cells.forEach(c => c.classList.add('hlcol'));
+  $('cm').closest('.card').scrollIntoView({behavior: 'smooth', block: 'start'});
+  setTimeout(() => cells.forEach(c => c.classList.remove('hlcol')), 2600);
+}
+let pfLast = 'all';
+function fitPf(){
+  const f = $('pf-frame'); if (!f) return;
+  try {
+    const d = f.contentDocument, w = d && d.querySelector('.wrap');
+    if (w) f.style.height = (w.offsetHeight + 8) + 'px';
+    // a role picked in Pathfinder also drives the term grid below
+    const sel = d && d.querySelector('#cards .card.selected');
+    const r = sel ? sel.dataset.role : 'all';
+    if (r !== pfLast) { pfLast = r; pwSel = r; renderPathway(); }
+  } catch (e) {}
+}
+setInterval(fitPf, 600);
+function setTab(t){
+  tab = t; $('pop').hidden = true; selKey = null;
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+  const other = !window.__CUR.hasData;   // a program with nothing set up yet shows its empty state
+  for (const k of ['ov','lo','map','cat','pw','off']) $('t-'+k).hidden = other || k !== t;
+  $('t-empty').hidden = !other;
+  if (other) renderEmptyProg(t);
+  render();
+}
+function setRole(r){
+  if (editing) discard(); role = r; declining = null;
+  prog = PROGS[r][0];
+  $('role-chip').hidden = r !== 'chair'; 
+  setTab(tab);
+}
+function renderProgHead(){
+  const ps = PROGS[role] || [DSAI];
+  $('prog-name').textContent = prog;
+  $('prog-sel').hidden = ps.length < 2;
+  $('prog-sel').innerHTML = ps.map(p => `<option ${p === prog ? 'selected' : ''}>${esc(p)}</option>`).join('');
+}
+// A program with no graduate roles yet: its chair is invited to set them up; everyone else just sees a note
+function renderEmptyProg(t){
+  const chairOfIt = window.__CUR.isChairOfProg && role === 'chair';
+  $('empty-prog').innerHTML = t !== 'pw'
+    ? `<div class="ep-t">${esc(TAB_NAME[t])}</div><p class="sub">Nothing has been set up for ${esc(prog)} yet.</p>`
+    : `<div class="ep-t">Recommended pathways</div>
+       <div class="ep-box"><div class="ep-h">No graduate roles defined yet</div>
+       ${chairOfIt ? `<p>Define graduate roles and recommend courses for each, so students can explore careers and plan their courses in Pathfinder.</p><button class="btn btn-primary">Set up roles</button>`
+                   : `<p class="sub">The program chair has not set up graduate roles for ${esc(prog)}.</p>`}</div>`;
+}
+function render(){ renderProgHead(); document.body.classList.toggle('editing', editing); renderActions(); renderOv(); renderPlos(); renderMap(); renderProps(); renderCat(); renderOff(); renderSemMatrix(); renderIns(); renderFlow(); }
+render();
+
+document.querySelectorAll('[data-upd]').forEach(e => { const v = window.__CUR.upd[e.dataset.upd]; e.textContent = v ? 'Last updated ' + v : ''; });
+$('role-chip').hidden = !window.__CUR.isChairOfProg;   // tells a chair this is their program, even while editing is not open yet
+pfSync();
+</script>
+<script>
+// Curriculum page loader: reads the signed-in session from the TaeSylla page around this frame, loads the
+// program's data from Supabase, shapes it the way the page script expects (window.__CUR), then starts it.
+(async function () {
+  const P = window.parent;
+  const pe = expr => { try { return P.eval(expr); } catch (e) { return undefined; } };
+  const user = pe('supabaseUser'), URL_ = pe('SUPABASE_URL'), KEY = pe('SUPABASE_KEY');
+  const F = P.__curFetch || fetch.bind(window);   // __curFetch: local test harness only
+  const box = document.getElementById('cur-boot');
+  const fail = m => { box.innerHTML = `<div class="card"><p class="sub">${m}</p></div>`; fitFrame(); };
+  if (!user || !user.access_token) return fail('Please sign in to TaeSylla Pro first.');
+  const H = {apikey: KEY, Authorization: `Bearer ${user.access_token}`, 'Content-Type': 'application/json'};
+  const get = async (t, q) => { const r = await F(`${URL_}/rest/v1/${t}?${q}`, {headers: H}); if (!r.ok) throw new Error(`${t}: HTTP ${r.status}`); return r.json(); };
+  const rpc = async (fn, body) => { const r = await F(`${URL_}/rest/v1/rpc/${fn}`, {method: 'POST', headers: H, body: JSON.stringify(body || {})}); if (!r.ok) throw new Error(`${fn}: HTTP ${r.status}`); return r.json(); };
+  const inList = a => `(${a.map(x => `"${String(x).replace(/"/g, '')}"`).join(',')})`;
+  const day = s => (s || '').slice(0, 10);
+
+  try {
+    // 1. Programs of the signed-in user; ?p=CODE picks one when there are several
+    const progs = await rpc('outcome_my_programs');
+    if (!progs.length) return fail('Your faculty profile is not linked to a program yet.');
+    const want = new URLSearchParams(location.search).get('p');
+    const me = progs.find(p => p.code === want) || progs[0];
+    const code = me.code;
+
+    // 2. Program data
+    const [catalog, docs, plos] = await Promise.all([
+      get('outcome_catalog', `program_code=eq.${code}&order=sort_order.asc&select=*`),
+      get('outcome_program_docs', `program_code=eq.${code}&select=doc_key,content,updated_at`),
+      get('outcome_plos', `program_code=eq.${code}&is_active=eq.true&order=plo_code.asc&select=plo_id,plo_code,title,definition,performance_standard_pct`),
+    ]);
+    const doc = k => (docs.find(x => x.doc_key === k) || {});
+    const ploIds = plos.map(p => p.plo_id), ploCode = Object.fromEntries(plos.map(p => [p.plo_id, p.plo_code]));
+    const codes = catalog.map(c => c.course_id);
+    const [iloMap, cmap, props, courses, offs, fac, programs] = await Promise.all([
+      ploIds.length ? get('outcome_plo_ilo_map', `plo_id=in.(${ploIds.join(',')})&select=plo_id,ilo_code`) : [],
+      ploIds.length ? get('outcome_curriculum_map', `plo_id=in.(${ploIds.join(',')})&select=course_base_id,plo_id,levels,tagged_clo_numbers,approved_at`) : [],
+      ploIds.length ? get('outcome_map_proposals', `plo_id=in.(${ploIds.join(',')})&order=proposed_at.desc&select=*`) : [],
+      codes.length ? get('courses', `course_id=in.${inList(codes)}&select=course_id,title,competency_critical_thinking,competency_creative_thinking,competency_self_directed_learning,competency_communication,competency_diversity_empathy,competency_global_harmony`) : [],
+      codes.length ? get('course_offerings', `course_base_id=in.${inList(codes)}&select=offering_id,course_id,course_base_id,section,semester_year,professor,status,weekday_time,reference_timezone_student_location,title`) : [],
+      get('faculty_profiles', 'select=name_en,email,program'),
+      get('programs', 'select=code,name'),
+    ]);
+    const progName = c => (programs.find(p => p.code === c) || {}).name || c;
+    const nameOf = email => { const f = fac.find(x => (x.email || '').toLowerCase() === (email || '').toLowerCase()); return f ? f.name_en : (email || ''); };
+
+    // CLOs of each course's most recent offering that has any
+    const offIds = offs.map(o => o.offering_id);
+    const clos = offIds.length ? await get('outcome_clos', `offering_id=in.(${offIds.join(',')})&is_active=eq.true&order=sort_order.asc&select=offering_id,sort_order,text`) : [];
+
+    // Terms: Fall Y < Spring Y+1 < Fall Y+1
+    const tkey = t => { const [s, y] = (t || '').split(' '); return +y - (s === 'Spring' ? 0.5 : 0); };
+    const now = new Date(), m = now.getMonth() + 1, y = now.getFullYear();
+    const curTerm = m >= 2 && m <= 7 ? `Spring ${y}` : `Fall ${m === 1 ? y - 1 : y}`;
+    const ZONE = [['Seoul', 'Korea'], ['Korea', 'Korea'], ['Los_Angeles', 'US Pacific'], ['Pacific', 'US Pacific'], ['New_York', 'US Eastern'], ['Eastern', 'US Eastern'], ['China', 'China'], ['Shanghai', 'China']];
+    const loc = (...t) => { for (const s of t) for (const [k, v] of ZONE) if (s && s.includes(k)) return v; return ''; };
+    const latestClos = c => {
+      const os = offs.filter(o => o.course_base_id === c).sort((a, b) => tkey(b.semester_year) - tkey(a.semester_year));
+      for (const o of os) { const l = clos.filter(x => x.offering_id === o.offering_id); if (l.length) return l.map(x => x.text); }
+      return [];
+    };
+    const COMP = ['competency_critical_thinking', 'competency_creative_thinking', 'competency_self_directed_learning', 'competency_communication', 'competency_diversity_empathy', 'competency_global_harmony'];
+
+    const map = {};
+    for (const r of cmap) (map[r.course_base_id] = map[r.course_base_id] || {})[ploCode[r.plo_id]] = {levels: r.levels, clos: r.tagged_clo_numbers || []};
+    const DATA = {
+      plos: plos.map(p => ({code: p.plo_code, name: p.title, def: p.definition || '', ilo: (iloMap.find(x => x.plo_id === p.plo_id) || {}).ilo_code || '', std: p.performance_standard_pct == null ? '' : Math.round(p.performance_standard_pct)})),
+      map,
+      mapCourses: codes.filter(c => map[c]),
+      names: Object.fromEntries(catalog.map(c => [c.course_id, c.title])),
+      catalog: catalog.map(c => {
+        const k = courses.find(x => x.course_id === c.course_id);
+        const pct = k && COMP.every(f => k[f] != null) ? COMP.map(f => Math.round(+k[f] * 100)) : null;
+        return {code: c.course_id, title: c.title, cls: c.classification, credits: String(c.credits ?? ''), lecture: c.lecture_hours == null ? '' : String(c.lecture_hours),
+                field: c.field_hours == null ? '' : String(c.field_hours), offered: c.offered || '', desc: c.description || '', xl: c.cross_listed,
+                lead: c.lead_program ? progName(c.lead_program) : progName(code), cat: c.level, clos: latestClos(c.course_id), plo_pct: pct};
+      }),
+      offerings: offs.map(o => ({id: o.offering_id, term: o.semester_year, code: o.course_id || o.course_base_id, base: o.course_base_id,
+        title: o.title || (catalog.find(c => c.course_id === o.course_base_id) || {}).title || '', prof: o.professor || 'TBD',
+        time: /1899/.test(o.weekday_time || '') ? '' : (o.weekday_time || ''), status: o.status || 'draft',
+        loc: loc(o.reference_timezone_student_location, o.weekday_time), n: null})),
+      terms: [...new Set(offs.map(o => o.semester_year).filter(Boolean))].sort((a, b) => tkey(a) - tkey(b)),
+      faculty_school: Object.fromEntries(fac.map(f => [f.name_en, (f.program || [])[0] || ''])),
+    };
+    const ov = doc('overview').content || {}, pw = doc('pathway').content || {}, pfd = doc('pathfinder').content || {};
+    const OV = {...ov, domains: ov.domains || [], levels: ov.levels || [], domainMap: doc('domain_map').content || {},
+      terms: pw.terms || ['2-1', '2-2', '3-1', '3-2', '4-1', '4-2'],
+      pathway: (pw.courses || []).map(p => { const c = catalog.find(x => x.course_id === p.code) || {};
+        return {...p, offered: c.lead_program ? (c.lead_program === 'HS' ? 'All schools' : c.lead_program) : (c.offered || '')}; })};
+    const PF = {groups: pfd.groups || [], roles: (pfd.roles || []).map(r => ({...r, orig: r.orig || r.name})), marks: {},
+      mk: Object.fromEntries(codes.map(c => [c, Object.fromEntries((pfd.roles || []).map(r => [r.id, ((pfd.marks || {})[c] || {})[r.id] || '-']))]))};
+    const plo = id => ploCode[id];
+    const prop = x => ({id: x.proposal_id, course: x.course_base_id, plo: plo(x.plo_id), from: x.current_levels || '', to: x.proposed_levels || '',
+      by: nameOf(x.proposed_by), byEmail: x.proposed_by, term: '', when: day(x.proposed_at), why: x.reason || ''});
+    window.__CUR = {
+      DATA, OV, PF, curTerm, code, progName: me.name,
+      progNames: progs.map(p => p.name), progCodes: Object.fromEntries(progs.map(p => [p.name, p.code])),
+      me: pe('PROFESSOR && PROFESSOR.name') || nameOf(user.user && user.user.email),
+      role: 'faculty',                                   // Phase 2: read-only for everyone
+      isChairOfProg: !!me.is_chair,
+      hasData: catalog.length > 0 || docs.length > 0,
+      hasRoles: (pfd.roles || []).length > 0,
+      proposals: props.filter(x => x.status === 'open').map(prop),
+      decided: props.filter(x => x.status !== 'open').map(x => ({...prop(x), result: x.status, on: day(x.decided_at), note: x.decision_note || ''})),
+      upd: {
+        ov: day(doc('overview').updated_at), lo: '', cat: day(catalog.reduce((a, c) => (c.updated_at > a ? c.updated_at : a), '')),
+        map: cmap.reduce((a, r) => ((r.approved_at || '') > a ? r.approved_at : a), ''),
+        pw: day([doc('pathway').updated_at, doc('pathfinder').updated_at].filter(Boolean).sort().pop()),
+      },
+    };
+    box.remove();
+    const s = document.createElement('script'); s.textContent = document.getElementById('cur-main').textContent;
+    document.body.appendChild(s);
+  } catch (e) {
+    console.error(e);
+    fail('Could not load the curriculum: ' + (e.message || e));
+  }
+})();
+function fitFrame(){ try { if (window.frameElement) window.frameElement.style.height = (document.documentElement.scrollHeight + 4) + 'px'; } catch (e) {} }
+setInterval(fitFrame, 500);
+</script>
+</body>
+</html>

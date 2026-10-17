@@ -1,0 +1,692 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Pathfinder for My Data &amp; AI Journey</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Noto+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: question band across the top; role cards below that re-rank and re-weight with each answer; a clicked card opens to full width. */
+:root{
+  --bg:#f7f5fb; --surface:#ffffff; --ink:#221a33; --muted:#6b6380; --line:#e2dcef;
+  --purple:#502579; --purple-soft:#efe8f7; --star:#c0392b; --star-bg:#fff3d6; --core:#502579; --rec:#8a83a0;
+  --yes:#1f7a4d; --no:#9a3b3b; --match:#502579;
+  --g-research:#3c1f5c; --g-eng:#1f4e79; --g-design:#7f3f00; --g-gov:#385723; --g-domain:#595959;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Noto Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#17131f; --surface:#211b2c; --ink:#efeaf7; --muted:#a79fbb; --line:#3a3149;
+  --purple:#c7a6ef; --purple-soft:#2e2440; --star:#ff8a7a; --star-bg:#3a2a1c; --core:#c7a6ef; --rec:#9f97b4;
+  --yes:#5fd39a; --no:#f08a8a; --match:#c7a6ef;
+  --g-research:#8f6cc0; --g-eng:#5d9bd3; --g-design:#d39a5c; --g-gov:#86b56a; --g-domain:#a6a6a6; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#17131f; --surface:#211b2c; --ink:#efeaf7; --muted:#a79fbb; --line:#3a3149;
+  --purple:#c7a6ef; --purple-soft:#2e2440; --star:#ff8a7a; --star-bg:#3a2a1c; --core:#c7a6ef; --rec:#9f97b4;
+  --yes:#5fd39a; --no:#f08a8a; --match:#c7a6ef;
+  --g-research:#8f6cc0; --g-eng:#5d9bd3; --g-design:#d39a5c; --g-gov:#86b56a; --g-domain:#a6a6a6; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg); color:var(--ink); font-family:var(--body); font-size:15px; line-height:1.55}
+.wrap{max-width:1180px; margin:0 auto; padding-inline:20px; padding-block:28px 48px; display:grid; gap:22px}
+.eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+h1{font-family:var(--display); font-weight:700; font-size:clamp(28px,4vw,40px); line-height:1.05; margin:4px 0 0; text-wrap:balance; color:var(--purple)}
+.lede{max-width:70ch; color:var(--muted); margin:8px 0 0}
+
+/* question band */
+.qband{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:20px 22px; display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:20px 28px}
+@media (max-width:820px){ .qband{grid-template-columns:minmax(0,1fr)} }
+.qstep{font-family:var(--mono); font-size:11.5px; color:var(--muted); letter-spacing:.06em; text-transform:uppercase}
+.qtext{font-family:var(--display); font-weight:700; font-size:clamp(20px,2.4vw,26px); line-height:1.2; margin:6px 0 6px; text-wrap:balance}
+.qhint{color:var(--muted); font-size:14px; margin:0 0 16px}
+.yn{display:flex; gap:10px; max-width:420px}
+.btn{flex:1; font:inherit; font-weight:600; font-size:15px; padding:12px 14px; border-radius:10px; cursor:pointer; border:1.5px solid var(--line); background:var(--surface); color:var(--ink)}
+.btn.yes:hover,.btn.yes:focus-visible{border-color:var(--yes); color:var(--yes); outline:none}
+.btn.no:hover,.btn.no:focus-visible{border-color:var(--no); color:var(--no); outline:none}
+.tools{display:flex; gap:16px; margin-top:14px}
+.link{background:none; border:0; padding:0; font:inherit; font-size:13px; color:var(--purple); cursor:pointer; text-decoration:underline; text-underline-offset:3px}
+.link:disabled{color:var(--muted); cursor:default; text-decoration:none}
+.done{font-family:var(--display); font-weight:700; font-size:20px; margin:6px 0 4px}
+.trailbox{border-left:1px dashed var(--line); padding-left:20px; min-width:0}
+@media (max-width:820px){ .trailbox{border-left:0; border-top:1px dashed var(--line); padding:14px 0 0} }
+.trail{list-style:none; margin:8px 0 0; padding:0; display:grid; gap:6px}
+.trail li{display:grid; grid-template-columns:22px minmax(0,1fr) auto; gap:8px; align-items:start; font-size:13px; color:var(--muted)}
+.trail .n{font-family:var(--mono); font-size:11px; padding-top:2px}
+.ans{font-family:var(--mono); font-size:11px; font-weight:500; padding:1px 7px; border-radius:6px; border:1px solid currentColor}
+.ans.yes{color:var(--yes)} .ans.no{color:var(--no)}
+.trail .none{font-style:italic}
+
+/* role cards */
+.cardshead{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:6px 16px}
+.cardshead h2{font-family:var(--display); font-size:20px; margin:0}
+.legend{display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px; color:var(--muted)}
+.legend i{display:inline-block; width:22px; height:12px; border-radius:4px; vertical-align:-1px; margin-right:5px; background:var(--surface)}
+.cards{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; align-items:stretch}
+.card .open{align-content:start}
+@media (max-width:980px){ .cards{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:520px){ .cards{grid-template-columns:minmax(0,1fr)} }
+.card{position:relative; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 14px 12px; display:grid; gap:8px; align-content:start; min-width:0;
+  transition:border-color .25s, border-width .25s, opacity .25s, box-shadow .25s}
+.card .open{all:unset; cursor:pointer; display:grid; gap:8px}
+.card .open:focus-visible{outline:2px solid var(--purple); outline-offset:6px; border-radius:6px}
+.card[data-state="likely"]{border:2px solid var(--match) !important}
+.card[data-state="strong"]{border:3px solid var(--match) !important; box-shadow:0 0 0 5px var(--purple-soft), var(--shadow-hi)}
+.card[data-state="out"]{opacity:.4; box-shadow:none; filter:saturate(.4)}
+.card[data-state="out"]:hover{opacity:.8; filter:none}
+.gtag{justify-self:start; display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:#fff; padding:3px 8px; border-radius:999px}
+.rname{font-family:var(--display); font-weight:700; font-size:18px; line-height:1.15}
+.rshort{font-size:13px; color:var(--muted)}
+.badge{position:absolute; bottom:12px; right:12px; font-family:var(--mono); font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--match)}
+.sigline{font-size:12px; color:var(--muted)} .sigline b{color:var(--star); font-weight:600}
+
+.card.expanded{grid-column:1/-1; padding:20px 22px; gap:16px}
+.card.expanded .rname{font-size:clamp(24px,3vw,30px)}
+.card.expanded .rshort{font-size:15px; color:var(--ink); max-width:72ch}
+.meta{display:flex; flex-wrap:wrap; gap:8px 12px; font-size:13px}
+.meta div{border:1px solid var(--line); border-radius:10px; padding:6px 12px}
+.meta strong{font-family:var(--display); font-size:19px; margin-right:6px; font-variant-numeric:tabular-nums}
+.tiers{display:grid; gap:14px}
+.tier h3{display:flex; align-items:baseline; gap:8px; margin:0 0 2px; font-family:var(--display); font-size:17px}
+.tier .sub{margin:0 0 10px; color:var(--muted); font-size:13px}
+.tier.sig .sym{color:var(--star)} .tier.core .sym{color:var(--core)} .tier.rec .sym{color:var(--rec)}
+.courses{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:8px}
+.course{text-align:left; font:inherit; color:inherit; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:9px 11px; cursor:pointer; display:grid; gap:3px; min-width:0}
+.tier.sig .course{background:var(--star-bg); border-color:transparent}
+.course:hover,.course:focus-visible{border-color:var(--purple); outline:none}
+.course[aria-expanded="true"]{border-color:var(--purple); box-shadow:0 0 0 1px var(--purple)}
+.ccode{font-family:var(--mono); font-size:12px; color:var(--muted)}
+.ctitle{font-weight:600; font-size:14px; line-height:1.3}
+.coff{font-size:12px; color:var(--muted)}
+.empty{color:var(--muted); font-size:13px; margin:0}
+.detail{grid-column:1/-1; background:var(--surface); border:1.5px solid var(--purple); border-radius:12px; padding:16px 18px; display:grid; gap:12px}
+.detail h4{margin:0; font-family:var(--display); font-size:20px; line-height:1.2}
+.facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px}
+.fact{background:var(--bg); border-radius:8px; padding:8px 10px; font-size:13px; min-width:0}
+.fact span{display:block; font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+.detail h5{margin:0 0 4px; font-size:12px; font-family:var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+.detail p{margin:0; max-width:78ch}
+.detail ol{margin:0; padding-left:20px; display:grid; gap:4px; max-width:78ch}
+.themes{display:flex; flex-wrap:wrap; gap:6px}
+.themes span{font-size:12px; background:var(--purple-soft); color:var(--purple); border-radius:6px; padding:2px 8px}
+
+.count{font-family:var(--mono); font-size:12px; color:var(--muted)}
+.card.selected{outline:3px solid var(--match); outline-offset:3px; opacity:1 !important; filter:none !important}
+
+
+.card.selected .rshort{font-size:15px; color:var(--ink)}
+.outrow{display:flex; flex-wrap:wrap; gap:6px; align-items:center}
+.outrow .lbl{font-size:12px; color:var(--muted); margin-right:4px}
+.pill{font:inherit; font-size:12.5px; border:1px dashed var(--line); background:transparent; color:var(--muted); border-radius:999px; padding:4px 10px; cursor:pointer}
+.pill:hover,.pill:focus-visible{border-color:var(--purple); color:var(--purple); outline:none}
+.funnel{display:flex; gap:4px; align-items:center; flex-wrap:wrap}
+.funnel span{font-family:var(--mono); font-size:11px; padding:2px 7px; border-radius:6px; background:var(--purple-soft); color:var(--purple)}
+.funnel em{color:var(--muted); font-style:normal; font-size:11px}
+.cols{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; align-items:start}
+@media (max-width:900px){ .cols{grid-template-columns:minmax(0,1fr)} }
+.col{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px; display:grid; gap:8px; align-content:start; min-width:0}
+.col h3{display:flex; align-items:baseline; gap:8px; margin:0; font-family:var(--display); font-size:17px}
+.col .sub{margin:0 0 4px; color:var(--muted); font-size:12.5px}
+.col.sig .sym{color:var(--star)} .col.core .sym{color:var(--core)} .col.rec .sym{color:var(--rec)}
+.col.sig .course{background:var(--star-bg); border-color:transparent}
+.course .for{font-size:11.5px; color:var(--muted)}
+.relhead{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:6px 16px}
+.relhead h2{font-family:var(--display); font-size:20px; margin:0}
+.stepno{font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; display:block}
+
+
+.qhead{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:6px 16px}
+.qhead h2{font-family:var(--display); font-size:20px; margin:0}
+.qcards{display:flex; gap:12px; align-items:stretch}
+.qcards > .qc{flex:1 1 0; min-width:0}
+.qcards > .qc.current,.qcards > .qc.result{flex:2.4 1 0}
+@media (max-width:700px){ .qcards{flex-direction:column} .qcards > .qc{flex:none} }
+
+.qc{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px; display:grid; gap:6px; align-content:start; min-width:0; text-align:left; font:inherit; color:inherit}
+button.qc{cursor:pointer}
+button.qc:hover,button.qc:focus-visible{border-color:var(--purple); outline:none}
+.qc .qstep{display:flex; justify-content:space-between; align-items:center; gap:8px}
+.qc .qsmall{font-size:13.5px; line-height:1.35; font-weight:600}
+.qc .redo{font-size:11.5px; color:var(--muted)}
+.qc.current{border:2px solid var(--match) !important; padding:20px}
+.qc.result{border:3px solid var(--match) !important; padding:20px}
+
+
+
+.mono{width:44px; height:44px; border-radius:14px; display:grid; place-items:center; color:#fff; font-family:var(--display); font-weight:700; font-size:15px; letter-spacing:.02em; transform:rotate(-4deg)}
+.card .top{display:flex; justify-content:space-between; align-items:center; gap:8px}
+.card:not([data-state="out"]) .open:hover .mono{transform:rotate(4deg) scale(1.06); transition:transform .2s}
+.mono svg{width:24px; height:24px}
+.card.selected .mono{width:56px; height:56px; border-radius:18px}
+.card.selected .mono svg{width:30px; height:30px}
+.dots{display:flex; gap:5px; align-items:center}
+.dots i{width:8px; height:8px; border-radius:50%; background:var(--line)}
+.dots i.on{background:var(--match)}
+.btn{transition:transform .12s, border-color .15s, color .15s, box-shadow .15s}
+.btn:hover{transform:translateY(-2px); box-shadow:0 4px 0 var(--line)}
+.btn:active{transform:translateY(1px) scale(.98); box-shadow:none}
+.btn.yes::before{content:"\2714\FE0E"; margin-right:6px}
+.btn.no::before{content:"\2716\FE0E"; margin-right:6px}
+#confetti{position:fixed; inset:0; pointer-events:none; z-index:20}
+@media (prefers-reduced-motion:no-preference){
+  @keyframes pop{from{transform:scale(.96); opacity:.4} to{transform:none; opacity:1}}
+}
+
+
+:root{ --r:20px; --shadow:0 1px 0 rgba(34,26,51,.04), 0 6px 18px -8px rgba(80,37,121,.18); --shadow-hi:0 2px 0 rgba(34,26,51,.05), 0 14px 32px -12px rgba(80,37,121,.32);
+  --mesh1:#e9dcfb; --mesh2:#dcecff; --mesh3:#ffe9d6 }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --shadow:0 1px 0 rgba(0,0,0,.3), 0 8px 20px -10px rgba(0,0,0,.6); --shadow-hi:0 2px 0 rgba(0,0,0,.3), 0 16px 34px -12px rgba(0,0,0,.75); --mesh1:#2c2141; --mesh2:#1c2a3d; --mesh3:#33261c }}
+:root[data-theme="dark"]{ --shadow:0 1px 0 rgba(0,0,0,.3), 0 8px 20px -10px rgba(0,0,0,.6); --shadow-hi:0 2px 0 rgba(0,0,0,.3), 0 16px 34px -12px rgba(0,0,0,.75); --mesh1:#2c2141; --mesh2:#1c2a3d; --mesh3:#33261c }
+header{position:relative; border-radius:28px; padding:28px clamp(18px,4vw,36px); overflow:hidden; isolation:isolate;
+  background:radial-gradient(60% 120% at 0% 0%, var(--mesh1), transparent 60%), radial-gradient(50% 120% at 100% 10%, var(--mesh2), transparent 60%), radial-gradient(40% 90% at 70% 120%, var(--mesh3), transparent 60%), var(--surface)}
+h1{font-weight:800; font-variation-settings:"opsz" 96; letter-spacing:-.02em}
+.qhead h2,.cardshead h2,.relhead h2{font-weight:700; letter-spacing:-.01em}
+.qc,.card,.col,.detail{border-radius:var(--r); box-shadow:var(--shadow); border-color:transparent}
+.qc.current,.qc.result,.card[data-state="likely"],.card[data-state="strong"]{box-shadow:var(--shadow-hi)}
+.card{transition:border-color .25s, opacity .25s, box-shadow .25s, transform .2s}
+.card:not([data-state="out"]):hover{transform:translateY(-2px); box-shadow:var(--shadow-hi)}
+button.qc:hover{transform:translateY(-2px); box-shadow:var(--shadow-hi); transition:transform .2s, box-shadow .2s}
+.course{border-radius:14px}
+.btn{border-radius:14px}
+.gtag{border-radius:8px}
+
+
+#cols{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px}
+@media (max-width:980px){ #cols{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:520px){ #cols{grid-template-columns:minmax(0,1fr)} }
+.ccard{text-align:left; font:inherit; color:inherit; background:var(--surface); border:1px solid transparent; border-radius:16px; padding:12px 13px; cursor:pointer; display:grid; gap:4px; align-content:start; min-width:0; box-shadow:var(--shadow); transition:opacity .25s, box-shadow .2s, transform .2s, border-color .2s}
+.ccard:hover,.ccard:focus-visible{transform:translateY(-2px); box-shadow:var(--shadow-hi); outline:none}
+.ccard[aria-expanded="true"]{border-color:var(--purple)}
+.ccard.tS{background:var(--star-bg); border:2px solid var(--star)}
+.ccard.tC{border:2px solid var(--core)}
+.ccard.tR{border:1px dashed var(--rec)}
+.ccard.none{opacity:.42; box-shadow:none}
+.ccard.none:hover{opacity:.8}
+.chead{display:flex; justify-content:space-between; align-items:center; gap:6px}
+.tag{font-family:var(--mono); font-size:10.5px; letter-spacing:.03em; padding:2px 7px; border-radius:999px; white-space:nowrap}
+.tag.S{background:var(--star); color:var(--surface)}
+.tag.C{background:var(--core); color:var(--surface)}
+.tag.R{border:1px solid var(--rec); color:var(--rec)}
+#relSub{display:flex; gap:6px; flex-wrap:wrap}
+
+.qc.ghost{background:transparent; box-shadow:none; border:1.5px dashed var(--line) !important; opacity:.7}
+.qc.ghost .qsmall{color:var(--muted); font-weight:400}
+#qcount{font-family:var(--mono); font-size:12px; font-weight:500; color:var(--muted); margin-left:8px; letter-spacing:0}
+
+/* question accordion: one strip, panels joined by dividers */
+.qcards{gap:0 !important; background:var(--surface); border-radius:var(--r); box-shadow:var(--shadow); overflow:hidden}
+.qcards > .qc{border-radius:0 !important; box-shadow:none !important; border:0 !important; border-left:1px solid var(--line) !important; background:var(--surface); padding:16px 16px; transform:none !important}
+.qcards > .qc:first-child{border-left:0 !important}
+.qcards > .qc:not(.current):not(.result){flex:0 1 190px}
+.qcards > .qc.current,.qcards > .qc.result{flex:1 1 0; position:relative; padding:20px 24px; background:var(--surface)}
+.qcards > .qc.current::before,.qcards > .qc.result::before{content:""; position:absolute; left:0; right:0; top:0; height:4px; background:var(--match)}
+.qcards > button.qc:hover{background:var(--purple-soft)}
+.qcards > .qc.ghost{background:var(--bg); opacity:1}
+.qcards > .qc.ghost .qstep,.qcards > .qc.ghost .qsmall{opacity:.55}
+.qcards > .qc .qsmall{display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden}
+@media (max-width:700px){
+  .qcards > .qc{border-left:0 !important; border-top:1px solid var(--line) !important}
+  .qcards > .qc:first-child{border-top:0 !important}
+  .qcards > .qc:not(.current):not(.result){flex:none}
+}
+
+.dtag{justify-self:start; display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10.5px; letter-spacing:.04em; text-transform:uppercase; color:var(--dc)}
+.dtag::before{content:""; width:8px; height:8px; border-radius:2px; background:var(--dc)}
+.qc.current .dtag{margin-top:4px}
+.btn.opt{font-size:14px; line-height:1.3}
+.btn.opt:hover,.btn.opt:focus-visible{border-color:var(--match); color:var(--match); outline:none}
+.yn{max-width:560px}
+.ans.pick{color:var(--match); text-transform:none; white-space:normal; text-align:right}
+.qc .qstep{align-items:flex-start}
+.match{display:flex; align-items:center; gap:14px; margin:8px 0 4px}
+.mono.big{width:64px; height:64px; border-radius:20px; flex:none}
+.mono.big svg{width:34px; height:34px}
+.matchtxt{display:grid; gap:6px; min-width:0}
+.matchname{font-family:var(--display); font-weight:800; font-size:clamp(26px,3.4vw,38px); line-height:1.05; letter-spacing:-.02em; margin:0; color:var(--match); text-wrap:balance}
+.matchline{margin:4px 0 6px; font-size:15.5px; max-width:60ch}
+.qc.done .qstep{white-space:nowrap}
+.picked{font-family:var(--display); font-weight:700; font-size:17px; line-height:1.25; color:var(--match); display:flex; gap:6px; align-items:baseline}
+.qc.done .asked{font-weight:400; font-size:12.5px; color:var(--muted); -webkit-line-clamp:2}
+
+/* hover affordance */
+.card{cursor:pointer}
+.card .hint,.ccard .hint{font-family:var(--mono); font-size:11px; letter-spacing:.04em; color:var(--match); opacity:0; transform:translateY(3px); transition:opacity .18s, transform .18s}
+.card:hover .hint,.card:focus-within .hint,.ccard:hover .hint,.ccard:focus-visible .hint{opacity:1; transform:none}
+.card:hover,.card:focus-within{outline:1.5px solid var(--match); outline-offset:-1.5px; transform:translateY(-2px); box-shadow:var(--shadow-hi)}
+.card.selected:hover{outline:3px solid var(--match); outline-offset:3px}
+.card[data-state="out"]:hover,.card[data-state="out"]:focus-within{opacity:.95; filter:none}
+.ccard:hover,.ccard:focus-visible{outline:1.5px solid var(--match); outline-offset:-1.5px}
+.ccard.none:hover{opacity:.9}
+@media (prefers-reduced-motion:reduce){ .card:hover,.card:focus-within{transform:none} }
+
+
+/* click = expand in place (normal flow) */
+.more{display:grid; gap:8px; font-size:13px; border-top:1px dashed var(--line); padding-top:10px}
+.more .pl{font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+.more ul{margin:0; padding:0; list-style:none; display:grid; gap:3px}
+.more li b{color:var(--star); font-family:var(--mono); font-weight:500; margin-right:5px}
+.more .go{font-family:var(--mono); font-size:11px; color:var(--match)}
+.card .hint{display:block}
+
+.rdetail{background:var(--surface); border-radius:var(--r); box-shadow:var(--shadow-hi); outline:1.5px solid var(--match); outline-offset:-1.5px; padding:18px 22px; display:grid; gap:10px}
+.rdetail .match{margin:0}
+.rfacts{display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr); gap:16px}
+@media (max-width:700px){ .rfacts{grid-template-columns:minmax(0,1fr)} }
+.rfacts p{margin:2px 0 0}
+.rfacts .pl{font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+.rfacts ul{margin:4px 0 0; padding:0; list-style:none; display:grid; gap:3px}
+.rfacts li b{color:var(--star); font-family:var(--mono); font-weight:500; margin-right:6px}
+.rfoot{display:flex; justify-content:space-between; align-items:center; gap:12px}
+.rfoot .go{font-family:var(--mono); font-size:11px; color:var(--match)}
+/* hover: the card itself grows downward over its neighbours */
+.card{overflow:visible}
+.card .more{position:absolute; left:0; right:0; top:calc(100% - 1px); background:var(--surface); border-radius:0 0 var(--r) var(--r);
+  max-height:0; overflow:hidden; transition:max-height .32s cubic-bezier(.2,.7,.2,1), box-shadow .2s; z-index:1;}
+.card .morein{padding:4px 14px 14px; display:grid; gap:8px; font-size:13px; border-top:1px dashed var(--line); margin:0 14px; padding-left:0; padding-right:0; padding-top:10px}
+.card:hover .more,.card:focus-within .more{max-height:420px; box-shadow:var(--shadow-hi)}
+.card:hover,.card:focus-within{outline:none !important; border-bottom-left-radius:0; border-bottom-right-radius:0; transform:none !important}
+.card[data-state="likely"]:hover .more,.card[data-state="strong"]:hover .more{outline:none}
+.card .more .pl{font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+.card .more ul{margin:2px 0 0; padding:0; list-style:none; display:grid; gap:3px}
+.card .more li b{color:var(--star); font-family:var(--mono); font-weight:500; margin-right:5px}
+@media (hover:none){ .card .more{display:none} }
+@media (prefers-reduced-motion:reduce){ .card .more{transition:none} }
+/* seamless hover extension: card + extension read as one shape */
+#cards .card{border-radius:12px; border:1px solid var(--line)}
+#cards .card[data-state="likely"]{border:2px solid var(--match) !important}
+#cards .card[data-state="strong"]{border:3px solid var(--match) !important}
+#cards .card .more{--bw:1px; left:calc(-1 * var(--bw)); right:calc(-1 * var(--bw)); top:100%; border:var(--bw) solid var(--line); border-top:0; border-radius:0 0 12px 12px; background:var(--surface)}
+#cards .card[data-state="likely"] .more{--bw:2px; border-color:var(--match)}
+#cards .card[data-state="strong"] .more{--bw:3px; border-color:var(--match)}
+#cards .card .more{border-width:0}
+#cards .card:hover .more,#cards .card:focus-within .more{border-width:0 var(--bw) var(--bw) var(--bw)}
+#cards .card:hover,#cards .card:focus-within{border-bottom-color:transparent !important; border-bottom-left-radius:0; border-bottom-right-radius:0; box-shadow:0 -2px 14px -8px rgba(80,37,121,.25)}
+#cards .card[data-state="strong"]:hover{box-shadow:var(--shadow-hi)}
+#cards .card .morein{border-top:1px dashed var(--line)}
+.note{font-size:12px; color:var(--muted); max-width:95ch; margin:0}
+@media (prefers-reduced-motion:no-preference){ .detail{} @keyframes in{from{transform:translateY(4px); opacity:.6} to{transform:none; opacity:1}} }
+/* course card hover: grows downward over neighbours */
+#cols .ccard{position:relative; overflow:visible; --bw:1px; --bc:var(--line); --bs:solid; border:var(--bw) var(--bs) var(--bc)}
+#cols .ccard.tS{--bw:2px; --bc:var(--star)}
+#cols .ccard.tC{--bw:2px; --bc:var(--core)}
+#cols .ccard.tR{--bw:1px; --bc:var(--rec); --bs:dashed}
+#cols .ccard .cmore{position:absolute; left:calc(-1 * var(--bw)); right:calc(-1 * var(--bw)); top:100%; background:inherit; border:0 var(--bs) var(--bc);
+  max-height:0; overflow:hidden; transition:max-height .3s cubic-bezier(.2,.7,.2,1); z-index:1}
+#cols .ccard:hover,#cols .ccard:focus-visible{z-index:6; outline:none !important; transform:none !important; border-bottom-color:transparent; box-shadow:0 -2px 14px -8px rgba(80,37,121,.25)}
+#cols .ccard:hover .cmore,#cols .ccard:focus-visible .cmore{max-height:360px; border-width:0 var(--bw) var(--bw) var(--bw); box-shadow:var(--shadow-hi)}
+#cols .ccard .cmorein{display:grid; gap:6px; margin:0 13px; padding:9px 0 12px; border-top:1px dashed var(--line); font-size:12.5px}
+#cols .ccard .cm{display:block}
+#cols .ccard .pl{font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-right:4px}
+#cols .ccard .go{font-family:var(--mono); font-size:11px; color:var(--match)}
+#cols .ccard.none:hover{opacity:1}
+@media (hover:none){ #cols .ccard .cmore{display:none} }
+@media (prefers-reduced-motion:reduce){ #cols .ccard .cmore{transition:none} }
+/* lift: the hovered card pops up and over its neighbours */
+#cards .card,#cols .ccard{transition:transform .22s cubic-bezier(.2,.7,.2,1), box-shadow .22s, opacity .25s, filter .25s; transform-origin:50% 0}
+#cards .card:hover,#cards .card:focus-within,#cols .ccard:hover,#cols .ccard:focus-visible{transform:translateY(-12px) scale(1.07) !important; z-index:10;
+  box-shadow:0 -10px 30px -12px rgba(34,26,51,.45) !important}
+#cards .card:hover .more,#cards .card:focus-within .more,#cols .ccard:hover .cmore,#cols .ccard:focus-visible .cmore{box-shadow:0 34px 56px -16px rgba(34,26,51,.55), 0 12px 22px -10px rgba(34,26,51,.3)}
+@media (prefers-reduced-motion:reduce){ #cards .card:hover,#cards .card:focus-within,#cols .ccard:hover,#cols .ccard:focus-visible{transform:none !important} }
+/* highlight by fill instead of border */
+:root{ --tint-1:#f4effb; --tint-2:#e6d9f8; --tint-c:#f1ecfa }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --tint-1:#2a2238; --tint-2:#3b2d55; --tint-c:#2a2238 }}
+:root[data-theme="dark"]{ --tint-1:#2a2238; --tint-2:#3b2d55; --tint-c:#2a2238 }
+#cards .card,#cards .card[data-state="likely"],#cards .card[data-state="strong"]{border:1px solid var(--line) !important}
+#cards .card[data-state="likely"]{background:var(--tint-1)}
+#cards .card[data-state="strong"]{background:var(--tint-2); box-shadow:var(--shadow-hi)}
+#cards .card .more,#cards .card[data-state="likely"] .more,#cards .card[data-state="strong"] .more{--bw:1px; border-color:var(--line); background:inherit}
+#cards .card.selected{outline:none !important; background:var(--tint-2)}
+#cards .badge{bottom:12px; right:12px; padding:3px 8px; background:var(--purple-soft); color:var(--match)}
+#cards .card[data-state="strong"] .badge{background:var(--match); color:var(--surface)}
+#cols .ccard,#cols .ccard.tS,#cols .ccard.tC,#cols .ccard.tR{--bw:1px; --bc:var(--line); --bs:solid}
+#cols .ccard.tS{background:var(--star-bg)}
+#cols .ccard.tC{background:var(--tint-c)}
+#cols .ccard.tR{background:var(--surface)}
+#cols .ccard .cmore{background:inherit}
+#cards .badge{position:static !important; display:inline-block; padding:3px 8px; font-family:var(--mono); font-size:10.5px; letter-spacing:.05em; text-transform:uppercase}
+.card .tags{display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-width:0}
+.namerow{display:flex; align-items:center; gap:10px; min-width:0}
+.namerow .rname{min-width:0}
+#cards .card .top{min-height:22px}
+.gtag{background:none !important; color:var(--gc) !important; padding:0 !important; font-family:var(--body) !important; font-size:11.5px !important; font-weight:700; letter-spacing:.08em !important; text-transform:uppercase !important; display:inline-flex !important; align-items:center; gap:5px}
+.gtag svg{flex:none}
+/* highlight accent: teal, distinct from the purple brand */
+:root{ --match:#0b8f80; --tint-1:#e8f7f4; --tint-2:#c9efe7; --hi-ink:#06463f }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --match:#3fd4bf; --tint-1:#12302c; --tint-2:#18443e; --hi-ink:#d8fff8 }}
+:root[data-theme="dark"]{ --match:#3fd4bf; --tint-1:#12302c; --tint-2:#18443e; --hi-ink:#d8fff8 }
+#cards .badge{background:var(--tint-2) !important; color:var(--hi-ink) !important}
+#cards .card[data-state="strong"] .badge{background:var(--match) !important; color:var(--surface) !important}
+#cards .card[data-state="strong"] .rname{color:var(--hi-ink)}
+#cards .badge{white-space:nowrap; flex:none; font-size:10px !important; letter-spacing:.03em !important; padding:3px 7px !important}
+#cards .card .top{display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:nowrap}
+#cards .card .top .gtag{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.qc.current .dtag{color:var(--muted) !important; font-size:10px; opacity:.8}
+.qc.current .dtag::before{background:var(--muted)}
+.qc.done .asked{order:0; margin-top:2px}
+.qc.done .picked{margin-top:2px}
+/* square corners everywhere (progress dots stay round) */
+*,*::before,*::after{border-radius:0 !important}
+.dots i{border-radius:50% !important}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Taejae DS&amp;AI</div>
+    <h1>Pathfinder for My Data &amp; AI Journey</h1>
+    <p class="lede">Pick the option that sounds more like you. Three or four choices lead you to a role and the courses that get you there.</p>
+  </header>
+
+  <section aria-label="Questions" style="display:grid; gap:12px">
+    <div class="qhead"><h2><span class="stepno">Step 1 · Questions</span>What do you enjoy? <span class="count" id="qcount"></span></h2>
+      <div class="tools" style="margin:0"><button class="link" id="back">Back</button><button class="link" id="restart">Start over</button></div></div>
+    <div class="qcards" id="qcards"></div>
+  </section>
+
+  <section aria-label="Roles" style="display:grid; gap:12px">
+    <div class="cardshead"><h2><span class="stepno">Step 2 · Roles</span>Roles that fit your answers</h2><div class="funnel" id="funnel"></div></div>
+    <div class="cards" id="cards"></div>
+    <div class="outrow" id="outrow"></div>
+  </section>
+
+  <section aria-label="Courses" style="display:grid; gap:12px">
+    <div class="relhead"><h2><span class="stepno">Step 3 · Courses</span><span id="relTitle">Related courses</span></h2><span class="count" id="relSub"></span></div>
+    <div id="cols"></div>
+    <div id="detailBox"></div>
+  </section>
+
+  <p class="note">Recommendations, not official tracks. Courses and instructors follow the DS&amp;AI 2027–28 offering plan and the 2026 Academic Catalog; offerings and instructors may change. Fall is the 1st semester. Major: 28 credits (7 courses); minor: 20 credits (5 courses). Course learning objectives are shown where a finalized course worksheet exists. ★ signature · ● core · ○ extra recommended.</p>
+</div>
+
+<script>
+const DATA = {"courses": [{"code": "DA200", "title": "Design of AI and Data-driven Services", "level": "Fundamentals", "offered": "Fall", "instructor": "Prof. Jiyoung Kwahk", "desc": "A fully flipped, project-based course in which students learn to design human-centered service systems grounded in data science and AI. Through curated pre-class self-study and collaborative in-class workshops (no lectures), students build foundational skills across data science, AI, and human-centered design— examining the history and implications of data/AI, applying design thinking, and conducting user research to create personas and journey maps. They then translate concepts into tangible experiences through service blueprinting, information architecture, interaction and visual design, and iteratively develop, prototype, and evaluate intelligent services spanning front-end UX and back-end data modeling, analytics, visualization, and machine learning. Emphasizing teamwork, critique, and reflective learning throughout, the course culminates in final project presentations that demonstrate collaborative innovation and real-world application.", "overview": "Create human-centered service systems using data science & AI technologies.", "do": "Conduct user research, create personas, and apply design thinking methods.", "tools": "Service blueprints, UX prototyping, data modeling, visualization.", "output": "Final service prototype, interactive dashboard, and design strategy presentation.", "themes": ["Human-Centered Design", "Service Blueprint", "UX Prototyping", "Data/AI Literacy", "Storytelling", "Teamwork"], "clos": ["Articulate fundamental concepts of AI and data science (history, applications, future).", "Demonstrate proficiency in designing data-driven solutions applying AI to real-world problems.", "Critically evaluate ethical implications & human-centered values of AI services (privacy, bias, impact).", "Collaborate effectively in teams to develop AI models and data pipelines.", "Communicate effectively with a non-technical audience."], "marks": {"Data Scientist / Researcher": "C", "AI Researcher": "C", "Data Engineer": "C", "ML / AI Engineer": "C", "AI Product Manager": "S", "UX / Service Designer for AI": "S", "AI Ethics & Governance": "C", "Domain Data Specialist (Analyst · Researcher)": "C"}}, {"code": "DA201", "title": "Computational Thinking and Data Literacy", "level": "Fundamentals", "offered": "Fall & Spring (demand-based)", "instructor": "New faculty (joining 2027)", "desc": "An active-learning course covering the core of a standard Data Structures and Algorithms curriculum through four connected units. Students first build computational thinking fundamentals (decomposition, pattern recognition, abstraction, algorithms), then explore data journalism to critique data sources, craft narratives, and visualize social issues. The course then covers essential data structures and algorithms—arrays, linked lists, stacks, queues, trees, and graphs—before culminating in student-led projects that apply these skills to social and scientific problems. Through collaborative hands-on work, discussions, and peer-led presentations, students develop the critical thinking, teamwork, and iterative problem-solving needed to confidently tackle data-driven challenges.", "overview": "Build essential skills for computational problem-solving and data analysis.", "do": "Analyze patterns, build algorithms, and critique data journalism.", "tools": "Computational thinking, data structures (stacks/trees), Python basics.", "output": "Data-driven narratives, visualizations, and a final social impact project.", "themes": ["Decomposition & Abstraction", "Data Structures", "Algorithms", "Data Journalism", "Visualization", "Social Projects"], "clos": ["Implement and analyze fundamental data structures — including arrays, linked lists, stacks, queues, trees, heaps, hash tables, and graphs — using C++, and evaluate their time and space complexity.", "Design and evaluate algorithms using appropriate strategies (recursion, divide-and-conquer, greedy methods, graph algorithms, and hashing), justifying correctness and efficiency through formal analysis.", "Compare and select data structures and algorithms based on performance trade-offs, problem constraints, and scalability considerations.", "Communicate computational solutions clearly, presenting design decisions, algorithmic reasoning, and complexity analysis effectively to both technical and non-technical audiences."], "marks": {"Data Scientist / Researcher": "C", "AI Researcher": "C", "Data Engineer": "S", "ML / AI Engineer": "C", "AI Product Manager": "R", "UX / Service Designer for AI": "C", "AI Ethics & Governance": "R", "Domain Data Specialist (Analyst · Researcher)": "C"}}, {"code": "DA204", "title": "Exploring Data Ecosystems", "level": "Fundamentals", "offered": "Fall & Spring (demand-based)", "instructor": "Prof. Jiyoung Kwahk", "desc": "This course is a foundational course that immerses students in the dynamic world of data management and analysis, equipping them with essential skills for aspiring data professionals. Through a combination of engaging lectures and practical projects, students will learn the essentials of data modeling, database design, and SQL, while exploring the evolving landscape of the data industry. The curriculum encompasses crucial topics including database management systems, data governance, and cutting-edge database technologies, offering a comprehensive understanding of data's role in shaping our digital ecosystem. Upon completion, students will have developed their own database models, crafted complex SQL queries, and tackled real-world data challenges, preparing them for advanced studies and careers in data science, analytics, and related domains. This course seamlessly integrates theoretical concepts with hands-on applications, serving as the ideal launchpad for those eager to harness the power of data in our interconnected digital world.", "overview": "Immerse in data management and analysis essentials for aspiring data pros.", "do": "Design database models, craft complex SQL queries, and tackle real data challenges.", "tools": "DBMS, SQL, data modeling, data governance principles.", "output": "Functional database schemas, optimized query scripts, and governance plan.", "themes": ["Databases", "Data Modeling", "SQL", "Data Governance", "ETL Pipelines", "Industry Landscape"], "clos": [], "marks": {"Data Scientist / Researcher": "C", "AI Researcher": "R", "Data Engineer": "S", "ML / AI Engineer": "C", "AI Product Manager": "C", "UX / Service Designer for AI": "R", "AI Ethics & Governance": "S", "Domain Data Specialist (Analyst · Researcher)": "C"}}, {"code": "DA311", "title": "Computational Decision Science", "level": "Advanced", "offered": "Spring", "instructor": "Prof. Sayeed Shafayet Chowdhury", "desc": "A junior-level course on the mathematical and computational foundations of decision-making under uncertainty, blending theoretical models with real-world applications and human judgment. Unlike standard programming courses that produce deterministic outputs, students use Python to build algorithms that make smart choices with incomplete or changing data, focusing on three core skills: simulation, optimization, and state-space search. They model decision problems with trees and graphs, write Monte Carlo simulations to predict risk, use solvers to allocate resources, and are introduced to algorithmic agents that learn from their environment—while also learning to debug these models to ensure they are fair, unbiased, and genuinely helpful to users.", "overview": "Foundations of decision-making under uncertainty, blending theory with human judgment.", "do": "Build Python algorithms to make smart choices using Monte Carlo simulations & solvers.", "tools": "Python (NumPy/SciPy), Optimization, State-Space Search, and Decision Trees.", "output": "Robust, fair algorithmic agents that can navigate complex, changing environments.", "themes": ["Uncertainty", "Simulation", "Optimization", "Search (Trees/Graphs)", "Python", "Fairness"], "clos": [], "marks": {"Data Scientist / Researcher": "C", "AI Researcher": "R", "Data Engineer": "R", "ML / AI Engineer": "R", "AI Product Manager": "R", "UX / Service Designer for AI": "-", "AI Ethics & Governance": "-", "Domain Data Specialist (Analyst · Researcher)": "C"}}, {"code": "DA321", "title": "Data Analytics & Visualization", "level": "Advanced", "offered": "Spring", "instructor": "Prof. Jiyoung Kwahk", "desc": "A practice-oriented course that equips students to solve social, scientific, and business problems through advanced analytics and compelling visualization. Students apply techniques including regression, cluster analysis, association rule mining, text mining, sentiment analysis, time-series/sequence analysis, and machine learning, while mastering the principles of effective visual communication to build graphs, charts, maps, and interactive dashboards for diverse audiences. Emphasizing interpretation and critical evaluation, students learn to draw meaningful conclusions, communicate findings persuasively, and translate insights into strategic recommendations through hands-on projects and case studies—with ethics, data privacy, and societal impact woven throughout to foster responsible, holistic data-driven problem-solving.", "overview": "Leverage analytics and visualization to solve complex challenges.", "do": "Apply advanced techniques like regression, clustering, and text mining.", "tools": "Time-series analysis, interactive dashboards, visual communication.", "output": "Actionable insights, strategic recommendations, and compelling visualizations.", "themes": ["Regression & Clustering", "Text & Sentiment", "Time-Series Analysis", "Interactive Dashboards", "Data Storytelling", "Ethics & Privacy"], "clos": ["Frame data-driven questions and acquire, organize & prepare data using industry-standard tools.", "Apply descriptive, diagnostic, predictive & prescriptive analytics to derive insights.", "Critically assess strengths, limitations & ethical/societal implications of data, methods & visualization choices.", "Design clear, impactful visualizations & dashboards and communicate findings to diverse stakeholders.", "Synthesize insights into evidence-based, creative recommendations via a semester-long project."], "marks": {"Data Scientist / Researcher": "S", "AI Researcher": "R", "Data Engineer": "C", "ML / AI Engineer": "R", "AI Product Manager": "C", "UX / Service Designer for AI": "C", "AI Ethics & Governance": "C", "Domain Data Specialist (Analyst · Researcher)": "S"}}, {"code": "DA322", "title": "Predictive Analytics and Modeling in Practice", "level": "Advanced", "offered": "Fall", "instructor": "Prof. Sayeed Shafayet Chowdhury", "desc": "A rigorous course in predictive statistics and forecasting for structured business data, focused on the analytics of numbers and time rather than perception tasks like vision or NLP. Students extract actionable signals from historical tabular data to forecast trends and quantify risk, moving beyond linear regression into Generalized Linear Models (for counts, intervals, and binary outcomes), Time Series Analysis (ARIMA and modern additive models like Prophet), and tree-based ensembles (Gradient Boosting, XGBoost). Critically, the course stresses the business economics of modeling—evaluating models by ROI, lift analysis, and profit curves—so students learn to build robust forecasting pipelines that translate statistical insight into strategic value.", "overview": "Rigorous foundation in predictive statistics and forecasting for structured business data.", "do": "Extract actionable signals from historical tables to forecast trends and quantify business risk.", "tools": "GLMs, ARIMA, Prophet, Tree-Based Ensembles (XGBoost), Python for forecasting pipelines.", "output": "Strategic models evaluated by ROI, Lift, and Profit Curves for high-stakes decision making.", "themes": ["GLM", "ARIMA / Prophet", "XGBoost", "Forecasting", "ROI & Profit", "Pipelines"], "clos": ["Analyze and prepare structured and time-series data using profiling, imputation, feature engineering, and leakage-aware preprocessing.", "Fit, regularize, calibrate, and interpret statistical predictive models, including generalized linear and survival models.", "Build, tune, compare, and interpret tree-based ensemble models, including gradient boosting.", "Construct and evaluate time-series forecasts with time-aware validation and uncertainty quantification.", "Design, train, diagnose, and compare neural-network models and justify architecture and regularization choices.", "Evaluate predictive systems with technical and business metrics under ethical and operational constraints, and communicate evidence-based recommendations."], "marks": {"Data Scientist / Researcher": "S", "AI Researcher": "R", "Data Engineer": "C", "ML / AI Engineer": "R", "AI Product Manager": "R", "UX / Service Designer for AI": "-", "AI Ethics & Governance": "-", "Domain Data Specialist (Analyst · Researcher)": "C"}}, {"code": "DA332", "title": "Vision AI for Detection and Generation of Visual Information", "level": "Advanced", "offered": "Spring", "instructor": "Prof. Kendall Koe", "desc": "A course on how humans and machines perceive, interpret, and generate visual information, beginning with human visual perception and cognition before transitioning to state-of-the-art computer vision and AI. Key topics include image processing, object detection and recognition, scene understanding, and generative models (GANs, diffusion), with hands-on experience in deep learning architectures (CNNs, Vision Transformers) and practical tools (Python, PyTorch, OpenCV), plus advanced topics such as video analysis, 3D vision, and multimodal AI. Through projects and case studies in healthcare, robotics, autonomous vehicles, and creative industries, students learn to design, implement, and critically evaluate Vision AI systems while reflecting on human perception and the broader societal implications of visual AI.", "overview": "Explores how machines perceive, interpret, and generate visual information using deep learning.", "do": "Train models for object detection, scene segmentation, and create images via GANs/Diffusion.", "tools": "PyTorch, OpenCV, CNNs, Vision Transformers (ViT), Stable Diffusion, and Multimodal AI.", "output": "A functional vision system capable of real-world detection or creative generation.", "themes": ["CNN / ViT", "Detection", "Segmentation", "Generative AI", "Multimodal", "Society & Ethics"], "clos": [], "marks": {"Data Scientist / Researcher": "R", "AI Researcher": "C", "Data Engineer": "-", "ML / AI Engineer": "S", "AI Product Manager": "-", "UX / Service Designer for AI": "-", "AI Ethics & Governance": "-", "Domain Data Specialist (Analyst · Researcher)": "-"}}, {"code": "DA333", "title": "Practical Applications of Machine Learning", "level": "Advanced", "offered": "Spring", "instructor": "Prof. Sung Jun Park", "desc": "This course focuses on the practical application of machine learning and deep learning to real-world problems. Students will actively apply concepts such as supervised and unsupervised learning, data preprocessing, feature engineering, and a variety of machine learning algorithms through hands-on projects. The curriculum emphasizes implementing classification and clustering techniques, building neural networks, assessing model performance with appropriate metrics, and working with deep learning frameworks. Learners may also apply natural language processing (NLP), generative models, and ethical considerations to practical scenarios. By the end of the course, students will have developed the skills and experience necessary to design, implement, and evaluate machine learning and deep learning solutions for complex, real-world challenges.", "overview": "Apply supervised & unsupervised learning to solve real-world problems.", "do": "Preprocess data, build neural networks, and implement NLP models.", "tools": "Deep learning frameworks, feature engineering, metric evaluation.", "output": "Robust machine learning pipelines and deployed predictive models.", "themes": ["Supervised/Unsupervised Learning", "Preprocessing", "Feature Engineering", "Neural Networks", "Model Metrics", "NLP & Ethics"], "clos": ["Demonstrate understanding of core machine learning paradigms.", "Critically evaluate and select appropriate ML algorithms.", "Design and implement deep learning solutions.", "Interpret and assess model performance", "Identify and address ethical considerations in machine learning.", "Integrate machine learning workflows to solve practical problems."], "marks": {"Data Scientist / Researcher": "S", "AI Researcher": "C", "Data Engineer": "C", "ML / AI Engineer": "C", "AI Product Manager": "R", "UX / Service Designer for AI": "-", "AI Ethics & Governance": "C", "Domain Data Specialist (Analyst · Researcher)": "C"}}, {"code": "DA411", "title": "Computational Mathematics for Diverse Applications", "level": "Advanced", "offered": "Fall", "instructor": "New faculty (joining 2027)", "desc": "A course on the algorithmic foundations that let computers perceive, model, and interact with the physical world, taught from a computer science and robotics perspective with an emphasis on implementation over abstract proofs. Students represent space, motion, and physics in code—using linear algebra to position a robot arm, calculus to smooth motion trajectories, and numerical methods to stabilize noisy sensor data. Rather than solving equations by hand, they engineer robust computational pipelines in Python (NumPy/SciPy) to model complex geometries, simulate physics, and estimate system states in real time—skills essential for game development, robotics, and physical simulation.", "overview": "Algorithmic foundations for modeling physics, space, and motion using code.", "do": "Use linear algebra and calculus to position robots, smooth trajectories, and stabilize sensors.", "tools": "Python (NumPy/SciPy), Linear Algebra, Calculus, Numerical Methods, Physics Simulation.", "output": "Efficient software pipelines that simulate physical systems and process real-time sensor data.", "themes": ["Linear Algebra", "Calculus", "Numerical Methods", "Geometry", "Physics Sim", "NumPy/SciPy"], "clos": ["Formulate an open-ended real-world situation as a well-posed problem: identify the question actually being asked, the quantities that matter, and the assumptions and simplifications the model will rest on.", "Represent the data, uncertainty, and relationships in a formulated problem using an appropriate mathematical structure — sets, probability distributions, vectors, matrices, graphs, or state models — and explain why that structure fits the problem.", "Implement computational solutions in Python using modern scientific computing libraries to analyze data, optimize models, simulate systems, and evaluate mathematical algorithms.", "Interpret mathematical results and assess the assumptions, limitations, and computational trade-offs of different modeling approaches.", "Apply a technique from one area of the course to a problem framed in another — for example, using counting to size a probability space, entropy to choose between features, or linear algebra to analyse a network — and explain the connection.", "Select appropriate mathematical techniques for a given computational problem and justify those choices based on the characteristics of the data, assumptions of the model, and desired outcomes.", "Communicate mathematical reasoning and computational results effectively through visualizations, technical reports, and oral presentations."], "marks": {"Data Scientist / Researcher": "C", "AI Researcher": "C", "Data Engineer": "C", "ML / AI Engineer": "C", "AI Product Manager": "-", "UX / Service Designer for AI": "-", "AI Ethics & Governance": "-", "Domain Data Specialist (Analyst · Researcher)": "-"}}, {"code": "DA431", "title": "Next Generation AI: Linguistic, Multi-modal, Agentic, and Beyond", "level": "Advanced", "offered": "Spring (new from Spring 2027)", "instructor": "New faculty (joining 2027)", "desc": "A course on the frontier of AI that moves past text-only models to cover linguistic, multi-modal, and agentic systems, with hands-on experience in language understanding, vision-language processing, and cross-media generation (text-to-image, video, audio). It centers on three pillars: multi-modal intelligence (perceiving and synthesizing across text, visuals, and sound), agentic AI (autonomously interpreting situations, setting goals, and making decisions), and emerging frontiers \"beyond\" current paradigms such as physical-world grounding, neuro-symbolic reasoning, and the path toward AGI. With ethical considerations like deepfakes and multi-sensory manipulation integrated throughout, students learn to design sophisticated AI systems that combine multi-modal perception and autonomous agency to solve real-world problems.", "overview": "Frontier AI beyond text: multi-modal perception, autonomous agents, and cross-media generation.", "do": "Build holistic AI solutions using leading tools for vision-language and agentic workflows.", "tools": "Vision-Language Models (VLMs), Cross-Media Generation, Agentic AI Frameworks.", "output": "Sophisticated, multi-modal AI systems that autonomously perceive and act in complex scenarios.", "themes": ["Multimodal", "Agentic AI", "VLMs & Language", "Cross-Media", "Ethics & Deepfakes"], "clos": [], "marks": {"Data Scientist / Researcher": "R", "AI Researcher": "S", "Data Engineer": "R", "ML / AI Engineer": "C", "AI Product Manager": "C", "UX / Service Designer for AI": "C", "AI Ethics & Governance": "C", "Domain Data Specialist (Analyst · Researcher)": "-"}}, {"code": "DA432", "title": "AI in the Real World: Use Cases in Society and Business", "level": "Advanced", "offered": "Spring (new from Spring 2027)", "instructor": "Prof. Jiyoung Kwahk", "desc": "A course exploring how AI is transforming society, business, science, and engineering through practical use cases, giving students a solid foundation in AI concepts before examining applications across healthcare, government, education, media, finance, industry, and research. Via case studies, hands-on projects, and guest lectures, students investigate AI in domains such as personalized medicine, smart cities, financial services, supply chain management, climate science, materials discovery, and advanced manufacturing—including language technologies, generative AI, and autonomous agents—while addressing the strategic, managerial, and ethical considerations of responsible deployment. By the end, students can critically analyze, design, and evaluate AI solutions and understand the broad societal, business, and scientific implications of AI adoption.", "overview": "Exploration of AI applications across industries, focusing on real-world impact and strategic deployment.", "do": "Analyze case studies and design AI strategies for healthcare, finance, government, and business sectors.", "tools": "Case Analysis, Strategic Frameworks, Generative AI Tools, and Ethical Assessment Models.", "output": "Comprehensive AI adoption strategies and impact assessments for complex real-world scenarios.", "themes": ["Healthcare", "Finance", "Gov/Education", "Supply Chain", "Generative AI", "Strategy/Ethics"], "clos": [], "marks": {"Data Scientist / Researcher": "R", "AI Researcher": "-", "Data Engineer": "C", "ML / AI Engineer": "R", "AI Product Manager": "S", "UX / Service Designer for AI": "C", "AI Ethics & Governance": "C", "Domain Data Specialist (Analyst · Researcher)": "R"}}, {"code": "DA433", "title": "Affective Computing and Human-Robot Interaction", "level": "Advanced", "offered": "Fall", "instructor": "Prof. Sung Jun Park", "desc": "This course provides a comprehensive introduction to Affective Computing and Human-Robot Interaction (HRI), with a primary emphasis on the design and development of emotionally intelligent AI systems. Students will explore how AI systems can perceive, interpret, model, and respond to human emotions through multimodal signals such as facial expressions, voice, text, and behavioral cues. The course covers foundational topics in affective computing including emotion representation, Facial Action Coding System (FACS), affect recognition, emotion classification, multimodal affect sensing, and emotionally adaptive interaction design. Students will also examine how affective intelligence can be integrated into socially interactive systems such as virtual humans, conversational agents, voice interfaces, and embodied AI systems. In the HRI portion of the course, students will investigate key conceptual issues surrounding human interaction with socially expressive and embodied AI, including anthropomorphism, social presence, trust, emotional attachment, and ethical considerations in human-centered AI systems. Through hands-on technical projects, students will design and implement affective computing prototypes using AI and machine learning techniques. The course emphasizes both technical implementation and critical reflection on the psychological, social, and ethical implications of emotionally aware AI technologies. By the end of the course, students will be able to analyze, design, and develop affective AI systems that support emotionally adaptive and socially interactive experiences across a variety of application domains.", "overview": "Intersection of emotional intelligence and robotics; detecting and responding to human affect.", "do": "Design systems that recognize emotions and robots that interact naturally with humans.", "tools": "Affective sensing, emotion classification, dialog systems, and robot interaction design.", "output": "Emotion-aware social robots and empathetic digital assistants.", "themes": [], "clos": ["Explain the fundamental concepts, theories, and AI techniques underlying affective computing and human-robot interaction, including emotion representation, affect recognition, multimodal sensing, and socially interactive AI.", "Analyze how AI systems perceive, interpret, and respond to human emotions, and evaluate the psychological, technical, and ethical factors that influence emotionally intelligent human-AI interaction.", "Design an affective computing system by integrating emotion-aware AI techniques with appropriate interaction design principles to address a meaningful real-world problem.", "Implement and communicate a functional affective AI prototype and a publication-quality preprint that clearly presents the system motivation, design rationale, technical implementation, and expected evaluation."], "marks": {"Data Scientist / Researcher": "-", "AI Researcher": "R", "Data Engineer": "-", "ML / AI Engineer": "S", "AI Product Manager": "R", "UX / Service Designer for AI": "C", "AI Ethics & Governance": "R", "Domain Data Specialist (Analyst · Researcher)": "-"}}, {"code": "DA434", "title": "Embodied Intelligence: AI in Physical Systems", "level": "Advanced", "offered": "Fall", "instructor": "Prof. Kendall Koe", "desc": "This course introduces students to the scientific and computational foundations of intelligence situated in the physical world. The course examines how bodies, sensors, actuators, and learning algorithms interact to produce adaptive, robust behavior in robots and artificial agents. Students learn to model physical systems, design perception–action loops, implement control and planning methods, and apply reinforcement and imitation learning techniques to acquire motor skills. Emphasis is placed on the role of morphology, environmental dynamics, and physical constraints in shaping intelligent behavior. Students engage in four hands-on workshops involving simulation tools, deep reinforcement learning, differentiable physics, and advanced embodiment techniques. A semester-long project involves designing, implementing, and evaluating an embodied agent, either simulated or physical, demonstrating nontrivial sensorimotor intelligence. The course also addresses safety, ethics, and emerging applications of embodied AI in real-world domains.", "overview": "Intelligence situated in the physical world; sensors, actuators, and learning algorithms interact.", "do": "Design and implement embodied agents that learn motor skills through interaction.", "tools": "Simulation tools, Deep RL, Differentiable Physics, and advanced embodiment techniques.", "output": "A functioning simulated or physical agent demonstrating nontrivial sensorimotor intelligence.", "themes": ["Sensors/Actuators", "Control/Planning", "RL & Imitation", "Morphology", "Safety", "Simulation"], "clos": ["Apply classical state estimation and sensor fusion, and contrast with learned perception methods, for robot perception.", "Solve motion/task planning problems with classical search and optimization, and with learned/neural planners.", "Design control policies for physical agents using classical control theory and learned control (RL, imitation learning).", "Apply classical symbolic reasoning (task planning, behavior trees) and modern foundation-model-based reasoning (LLM/VLA policies) to sequence embodied behavior.", "Use PyBullet to prototype and evaluate embodied AI systems offline.", "Design, implement, and present a project integrating perception, planning, acting, and/or reasoning, with scope approved by the instructor."], "marks": {"Data Scientist / Researcher": "-", "AI Researcher": "R", "Data Engineer": "-", "ML / AI Engineer": "S", "AI Product Manager": "-", "UX / Service Designer for AI": "-", "AI Ethics & Governance": "-", "Domain Data Specialist (Analyst · Researcher)": "-"}}, {"code": "XD201", "title": "Technopreneurship and Innovation", "level": "Interdisciplinary", "offered": "Fall · Offered by Business Innovation (BI)", "instructor": "BI faculty, with the University of San Francisco", "desc": "Offered in conjunction with the School of Business Innovation, School of Natural Sciences, School of Data Science and Artificial Intelligence at Taejae University, and the University of San Francisco (USF), this course explores how scientific knowledge drives technological innovation and entrepreneurship. Students learn to transform scientific ideas into viable ventures by developing entrepreneurial, analytical, and innovation skills while examining emerging technologies, business applications, and the broader innovation ecosystem. Through discussions, case studies, group projects, presentations, guest lectures, and a final venture pitch with Silicon Valley technology experts and venture partners, students gain practical experience in designing and evaluating technology-based ventures.", "overview": "Explore how scientific knowledge drives technological innovation and entrepreneurial ventures.", "do": "Design business models, validate market fit, and pitch scientific ventures.", "tools": "Lean startup methodology, business canvas, venture design frameworks.", "output": "A scalable business proposal and pitch deck for a science-based venture.", "themes": ["Venture Design", "Innovation", "Tech Commercialization", "Interdisciplinary Teams", "Ecosystem"], "clos": [], "marks": {"Data Scientist / Researcher": "-", "AI Researcher": "-", "Data Engineer": "-", "ML / AI Engineer": "-", "AI Product Manager": "C", "UX / Service Designer for AI": "R", "AI Ethics & Governance": "-", "Domain Data Specialist (Analyst · Researcher)": "R"}}, {"code": "XD221", "title": "Quantitative Modeling in the Sciences", "level": "Interdisciplinary", "offered": "Spring · Offered by Natural Sciences (NS)", "instructor": "Prof. Andrea Abeje-Stine (NS)", "desc": "An interdisciplinary mathematics course that develops quantitative reasoning through core “principles of reasoning” (e.g., decomposition, compositionality, transformation, dimensional reduction, finite approximation). Topics span precalculus, discrete math, linear algebra, and introductory calculus, with applications to modeling in AI, and the social and natural sciences.", "overview": "", "do": "", "tools": "", "output": "", "themes": [], "clos": [], "marks": {"Data Scientist / Researcher": "R", "AI Researcher": "C", "Data Engineer": "-", "ML / AI Engineer": "-", "AI Product Manager": "-", "UX / Service Designer for AI": "-", "AI Ethics & Governance": "-", "Domain Data Specialist (Analyst · Researcher)": "R"}}, {"code": "XD231", "title": "Experimental Design and Statistics", "level": "Interdisciplinary", "offered": "Fall & Spring (demand-based)", "instructor": "Prof. Sung Jun Park", "desc": "This course provides a hands-on introduction to experimental design and statistical analysis involving data science and AI. Students will learn to formulate research questions, design experiments, and apply statistical techniques to analyze data in both human-subject and AI-focused experiments. Core topics include data sampling, variable measurement, hypothesis testing, and inferential statistics, with coverage of methods such as t-tests, ANOVA, and regression analysis. The course also explores ethical considerations for human-participant experiments and practical guidance on designing and evaluating AI services and interfaces. Throughout the course, students will work collaboratively on a semester-long project, crafting a comprehensive research proposal that includes a well-defined research goal, literature review, hypothesis, experimental design, and statistical analysis plan. By the end of the course, students internalize skills to produce research proposals that meet rigorous academic standards, positioning them to conduct impactful research in AI and data science.", "overview": "", "do": "", "tools": "", "output": "", "themes": [], "clos": [], "marks": {"Data Scientist / Researcher": "C", "AI Researcher": "C", "Data Engineer": "-", "ML / AI Engineer": "R", "AI Product Manager": "C", "UX / Service Designer for AI": "C", "AI Ethics & Governance": "-", "Domain Data Specialist (Analyst · Researcher)": "C"}}, {"code": "XD232", "title": "Applicable Psychology for Human-Centered AI and Design", "level": "Interdisciplinary", "offered": "Fall & Spring (demand-based)", "instructor": "Prof. Sung Jun Park", "desc": "This course introduces core psychological concepts (e.g., perception, attention, memory, emotion, motivation, and decision-making) selected specifically for their practical value in AI development and/or human-centered design. Students will learn how to translate foundational psychological principles into strategies for creating user-centered AI systems, intuitive interfaces, persuasive communications, and engaging service experiences. The focus is on understanding human mind and behavior in context and applying this knowledge to improve design decisions, anticipate user needs, and build ethically responsible technologies. Through case studies, discussions, and design exercises, students will gain hands-on experience in applying psychology to real-world challenges in AI and design innovation.", "overview": "Applying core psychological principles (perception, memory, emotion) to design better AI.", "do": "Analyze cognitive biases, design persuasive interfaces, and anticipate user needs.", "tools": "Cognitive Psychology Frameworks, UX Research Methods, Behavioral Design.", "output": "Ethical, human-centered AI design proposals grounded in psychological science.", "themes": ["Perception/Attention", "Memory", "Motivation", "Cognitive Biases", "Persuasive Design", "Ethics"], "clos": ["Explain core psychological principles (e.g., perception, attention, memory, emotion, motivation, and decision-making) that shape human experience and behavior in interaction contexts.", "Analyze human cognitive, emotional, and behavioral patterns to identify design-relevant problems and opportunities in products, systems, and services.", "Apply psychological principles to develop human experience concepts, articulating how theory informs design intent at the conceptual and experiential levels.", "Translate psychological insights into concrete design decisions by creating user scenarios, interaction flows, and representative design artifacts."], "marks": {"Data Scientist / Researcher": "-", "AI Researcher": "-", "Data Engineer": "-", "ML / AI Engineer": "-", "AI Product Manager": "C", "UX / Service Designer for AI": "S", "AI Ethics & Governance": "C", "Domain Data Specialist (Analyst · Researcher)": "R"}}, {"code": "XD321", "title": "Data-Driven Discovery Across the Sciences", "level": "Interdisciplinary", "offered": "Spring · Offered by Natural Sciences (NS)", "instructor": "Prof. Lisa Warden (NS)", "desc": "This advanced project-based course enables students to investigate scientific questions using real-world data and computational methods across domains such as biology, chemistry, physics, and Earth science. Students work individually or in small teams to complete a semester-long project, producing outputs such as a research report, prototype, or interactive dashboard, with feedback from lectures, seminars, and critique sessions.", "overview": "Investigate scientific questions across biology, chemistry, and physics using real-world data.", "do": "Design and execute a semester-long scientific research project driven by data analysis.", "tools": "Computational methods, statistical analysis tools, and scientific data visualization platforms.", "output": "A research report, functional prototype, or interactive dashboard presenting your findings.", "themes": ["Real-World Datasets", "Bio/Chem/Physics", "Research Methods", "Dashboards", "Analysis"], "clos": [], "marks": {"Data Scientist / Researcher": "C", "AI Researcher": "C", "Data Engineer": "R", "ML / AI Engineer": "-", "AI Product Manager": "-", "UX / Service Designer for AI": "-", "AI Ethics & Governance": "-", "Domain Data Specialist (Analyst · Researcher)": "C"}}, {"code": "XD401", "title": "Navigating Tomorrow: Emerging Technologies and Future Society", "level": "Interdisciplinary", "offered": "Fall · University-wide (all schools)", "instructor": "Faculty across all schools", "desc": "This course is a cross-disciplinary seminar on emerging technologies and their social implications. It begins by looking backward, asking how past technological revolutions reshaped human history and reordered society. It then turns to the frontiers of technology today and in the near future, examining how these developments may transform human society and its possible futures. Using case studies, debates, and future scenario exercises, students connect technological possibilities with ethical dilemmas, social benefits, and long-term risks. By the end of the course, students will be able to analyze emerging technologies as forces that both reflect and remake society, and to develop creative, critical, and collaborative approaches to navigating technological change in pursuit of more humane, inclusive, and sustainable futures.", "overview": "Cross-disciplinary seminar examining how emerging technologies reshape society and its futures.", "do": "Analyze historical tech revolutions, debate ethical dilemmas, and conduct future-scenario exercises.", "tools": "Case studies, ethical frameworks, foresight methods, and scenario planning.", "output": "Critical strategies for navigating technological change towards inclusive, sustainable futures.", "themes": ["Tech Revolutions", "Emerging Tech", "Social Impact", "Ethics & Risk", "Debates", "Futures Thinking"], "clos": [], "marks": {"Data Scientist / Researcher": "-", "AI Researcher": "C", "Data Engineer": "-", "ML / AI Engineer": "-", "AI Product Manager": "S", "UX / Service Designer for AI": "C", "AI Ethics & Governance": "S", "Domain Data Specialist (Analyst · Researcher)": "R"}}, {"code": "XD421", "title": "Strategies for Environmental and Urban Challenge", "level": "Interdisciplinary", "offered": "Fall · Offered by Natural Sciences (NS)", "instructor": "NS faculty", "desc": "This advanced project-based course addresses real-world sustainability problems in environmental and urban systems through a science- and technology-driven lens. Students develop research-based solutions for challenges such as climate resilience, smart-city innovation, and sustainable infrastructure, integrating systems thinking with ethical and policy awareness. Final outputs may include a prototype, design proposal, research paper, or public-facing tool.", "overview": "Address complex sustainability and urban resilience challenges through science-driven strategies.", "do": "Investigate environmental systems, analyze urban data, and develop strategic interventions.", "tools": "Systems Thinking, Environmental Modeling, Policy Analysis, and Urban Data Analytics.", "output": "A comprehensive strategic proposal or prototype for solving a real-world urban/environmental issue.", "themes": ["Sustainability", "Climate Resilience", "Smart Cities", "Systems Thinking", "Policy & Ethics", "Prototype/Proposal"], "clos": [], "marks": {"Data Scientist / Researcher": "-", "AI Researcher": "-", "Data Engineer": "-", "ML / AI Engineer": "-", "AI Product Manager": "-", "UX / Service Designer for AI": "-", "AI Ethics & Governance": "C", "Domain Data Specialist (Analyst · Researcher)": "R"}}], "roles": [{"name": "Data Scientist / Researcher", "group": "Research", "short": "Builds and validates new models and methods from data.", "long": "Turns messy data into models that predict, explain, and recommend — and tests whether they really work.", "da200": "L25 Predictive Modeling & ML"}, {"name": "AI Researcher", "group": "Research", "short": "Invents new AI methods and models; usually continues to graduate study.", "long": "Pushes the frontier of AI — multimodal models, agents, reasoning — and publishes what works.", "da200": "L1–3 AI foundations"}, {"name": "Data Engineer", "group": "Engineering", "short": "Builds the pipelines and databases that move and store data.", "long": "Designs the data systems everyone else depends on: models, databases, SQL, and governance.", "da200": "L20–22, L24 Data & infrastructure"}, {"name": "ML / AI Engineer", "group": "Engineering", "short": "Turns models, incl. LLMs, into reliable product features.", "long": "Ships AI that runs in the real world — vision, robots, emotion-aware agents — and keeps it working.", "da200": "L19 Prototyping, L25 ML"}, {"name": "AI Product Manager", "group": "Design / Planning", "short": "Decides what to build and why; aligns users, business, and tech.", "long": "Owns the 'why' and 'what' of an AI product, from user needs to strategy and launch.", "da200": "L5 Proposal, L13–14 UX strategy"}, {"name": "UX / Service Designer for AI", "group": "Design / Planning", "short": "Researches users and designs human-centered AI experiences.", "long": "Makes AI services useful, understandable, and trustworthy for real people.", "da200": "L6–17 HCD, UX, 5D, UI design"}, {"name": "AI Ethics & Governance", "group": "Strategic / Governance", "short": "Keeps AI fair, safe, transparent, and compliant.", "long": "Shapes the rules, audits, and policies that keep AI accountable to society.", "da200": "L4 Limits of AI, L8 Trust"}, {"name": "Domain Data Specialist (Analyst · Researcher)", "group": "Domain Specialists", "short": "Brings data and AI to a field you care about: business, health, science, policy, and more.", "long": "Uses data and AI to answer the questions of a field you love, from business analytics to research in neuroscience, health, or climate science.", "da200": "L23 Analytics & Visualization"}], "groups": ["Research", "Engineering", "Design / Planning", "Strategic / Governance", "Domain Specialists"]};
+const GROUP_COLOR = {"Research":"var(--g-research)","Engineering":"var(--g-eng)","Design / Planning":"var(--g-design)","Strategic / Governance":"var(--g-gov)","Domain Specialists":"var(--g-domain)"};
+const DOMAIN = {
+  T:{name:"Techniques & Applications", c:"var(--g-eng)"},
+  D:{name:"Design Thinking & System Perspectives", c:"var(--g-design)"},
+  H:{name:"Human-Centered Mindset", c:"var(--g-research)"},
+  G:{name:"Governance, Ethics & Societal Impact", c:"var(--g-gov)"}
+};
+const LEVEL = {1:"Direction", 2:"Role group", 3:"Role"};
+const Q = {
+  q1:{lv:1, d:"T", t:"Which sounds more like you: doing the hands-on technical work with data and AI, or shaping how data and AI are used by people and society?", h:"Hands-on: build models, write code, run analyses, or design data systems. Shaping: design services, set strategy and rules, or bring data to a field you care about.", yl:"Hands-on technical work", nl:"Shaping how it's used", y:"q2t", n:"q2a"},
+  q2t:{lv:2, d:"D", t:"What draws you more: discovering new knowledge, or building systems that run?", h:"Research means finding out what works. Engineering means making it work reliably for everyone else.", yl:"Discover new knowledge", nl:"Build systems that run", y:"q3r", n:"q3e"},
+  q2a:{lv:2, d:"H", t:"Which would you rather shape: products and experiences for people, or how AI works in society and in the fields it serves?", h:"Products: understand users and decide what a service should be and do. Society & fields: set the rules for AI, or bring data to a field such as business, health, science, or policy.", yl:"Products & experiences", nl:"Society & fields", y:"q3d", n:"q2g"},
+  q2g:{lv:2, d:"G", t:"Which would you rather do: shape the rules and impact of AI for society, or apply data to a field you care about?", h:"Rules: fairness and safety standards, AI policy, impact assessment. Field: answering questions in business, health, science, or policy with data.", yl:"Shape AI rules for society", nl:"Apply data to a field", y:"@AI Ethics & Governance", n:"q3s"},
+  q3r:{lv:3, d:"T", t:"Which would you rather do: invent a new kind of AI model, or use data to explain and forecast the real world?", h:"New AI: design models, agents, or multimodal systems and test them on benchmarks. Data: forecast demand, find causes, and test ideas with real-world data.", yl:"Invent new AI models", nl:"Explain the world with data", y:"@AI Researcher", n:"@Data Scientist / Researcher"},
+  q3e:{lv:3, d:"T", t:"Which would you rather build: the data platform everyone depends on, or AI that works inside apps, robots, and devices?", h:"Data platform: databases, SQL, pipelines, and data governance. AI in products: vision AI, emotion-aware agents, and robot behavior.", yl:"Build the data platform", nl:"Put AI into products", y:"@Data Engineer", n:"@ML / AI Engineer"},
+  q3d:{lv:3, d:"D", t:"Which would you rather own: how an AI service looks, feels, and works, or what gets built, why, and when?", h:"Experience: research users, map journeys, and prototype interfaces. Strategy: set the product vision, study use cases and markets, and own the roadmap.", yl:"Design the experience", nl:"Set the strategy", y:"@UX / Service Designer for AI", n:"@AI Product Manager"},
+  q3s:{lv:3, d:"H", t:"Which describes you better right now: you have a field where you'd like data to answer real questions, or you're still exploring?", h:"Field in mind: business, health, science, policy, sports, media… Still exploring: compare a few roles and their courses below.", yl:"I have a field in mind", nl:"Still exploring", y:"@Domain Data Specialist (Analyst · Researcher)", n:"@explore"}
+};
+// each role's yes/no route through the tree
+const ROUTE = {};
+(function walk(id, path){ const q = Q[id];
+  [[true,q.y],[false,q.n]].forEach(([a,nx]) => { const p = path.concat([[id,a]]); if (nx.startsWith("@")) ROUTE[nx.slice(1)] = p; else walk(nx, p); }); })("q1", []);
+
+const depth = (id, f) => { const q = Q[id]; const sub = nx => nx.startsWith("@") ? 0 : depth(nx, f); return 1 + f(sub(q.y), sub(q.n)); };
+const MAXQ = depth("q1", Math.max), MINQ = depth("q1", Math.min);
+const EXPLORE_PICKS = ["AI Ethics & Governance", "Domain Data Specialist (Analyst · Researcher)"];
+function doorOpeners(n){ // courses that are core or signature for the most roles (excluding DA200, which everyone takes)
+  return DATA.courses.filter(c => c.code !== "DA200")
+    .map(c => ({c, k: DATA.roles.filter(r => ["S","C"].includes(c.marks[r.name])).length}))
+    .sort((a,b) => b.k - a.k).slice(0, n);
+}
+const state = {path:[], node:"q1", final:null, expanded:null, open:null};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function fit(role){ // matched answers count, or -1 if an answer rules the role out
+  const route = ROUTE[role] || []; let m = 0;
+  for (const p of state.path){ const step = route.find(s => s[0] === p.id); if (!step) return -1; if (step[1] !== p.yes) return -1; m++; }
+  return m;
+}
+function cardState(role){
+  if (state.final && state.final !== "explore") return role === state.final ? "strong" : "out";
+  if (state.final === "explore") return EXPLORE_PICKS.includes(role) ? "likely" : "neutral";
+  if (!state.path.length) return "neutral";
+  const f = fit(role); if (f < 0) return "out";
+  const alive = DATA.roles.filter(r => fit(r.name) >= 0).length;
+  return alive <= 2 ? "strong" : "likely";
+}
+
+function confetti(){
+  if (reduce()) return;
+  const c = document.createElement("canvas"); c.id = "confetti"; document.body.appendChild(c);
+  const x = c.getContext("2d"); const W = c.width = innerWidth, H = c.height = innerHeight;
+  const css = getComputedStyle(document.documentElement);
+  const cols = ["--g-research","--g-eng","--g-design","--g-gov","--star"].map(v => css.getPropertyValue(v).trim());
+  const P = Array.from({length:90}, () => ({x:W/2 + (Math.random()-.5)*W*.3, y:H*.28, vx:(Math.random()-.5)*9, vy:-Math.random()*9-3, r:Math.random()*6+3, c:cols[Math.floor(Math.random()*cols.length)], a:Math.random()*6}));
+  let t = 0; (function f(){ x.clearRect(0,0,W,H); P.forEach(p => { p.vy += .28; p.x += p.vx; p.y += p.vy; p.a += .2;
+      x.save(); x.translate(p.x,p.y); x.rotate(p.a); x.fillStyle = p.c; x.fillRect(-p.r/2,-p.r/4,p.r,p.r/2); x.restore(); });
+    if (++t < 80) requestAnimationFrame(f); else c.remove(); })();
+}
+function answer(yes){
+  const q = Q[state.node]; state.path.push({id:state.node, yes});
+  const nx = yes ? q.y : q.n;
+  if (nx.startsWith("@")){ state.node = null; state.final = nx.slice(1); state.expanded = null; state.open = null; }
+  else state.node = nx;
+  render(true);
+  if (state.final && state.final !== "explore") confetti();
+}
+function back(){ if (!state.path.length) return; const last = state.path.pop(); state.node = last.id; state.final = null; state.expanded = null; state.open = null; render(true); }
+function restart(){ state.path = []; state.node = "q1"; state.final = null; state.expanded = null; state.open = null; render(true); }
+
+// accordion: animate each keyed child's height from where it was to where it is now
+function snap(box, key){ return new Map([...box.querySelectorAll(`[${key}]`)].map(el => [el.getAttribute(key), el.getBoundingClientRect()])); }
+function morph(box, key, before, fromZero){
+  if (reduce()) return;
+  box.querySelectorAll(`[${key}]`).forEach(el => {
+    const r1 = el.getBoundingClientRect(); const r0 = before.get(el.getAttribute(key));
+    const h0 = r0 ? r0.height : (fromZero ? 0 : null); if (h0 === null) return;
+    const w0 = r0 ? r0.width : r1.width;
+    if (Math.abs(r1.height - h0) < 2 && Math.abs(r1.width - w0) < 2) return;
+    el.style.overflow = "hidden";
+    el.animate([{height:h0+"px", maxWidth:w0+"px"},{height:r1.height+"px", maxWidth:r1.width+"px"}], {duration:360, easing:"cubic-bezier(.2,.7,.2,1)"}).onfinish = () => { el.style.overflow = ""; };
+  });
+}
+function goTo(i){ // return to answered question i
+  state.path = state.path.slice(0, i); state.node = i === 0 ? "q1" : null; state.final = null; state.expanded = null; state.open = null;
+  if (i > 0){ const last = state.path[i-1]; const nx = last.yes ? Q[last.id].y : Q[last.id].n; state.node = nx; }
+  render(true);
+}
+function renderQ(){
+  const done = state.path.map((p,i) => { const q = Q[p.id]; const pick = q.yl ? (p.yes ? q.yl : q.nl) : (p.yes ? "Yes" : "No");
+    return `<button class="qc done" data-slot="${i}" data-i="${i}" title="Click to change this answer">
+      <span class="qstep">${i+1} · ${LEVEL[q.lv]}</span>
+      <span class="qsmall asked">${esc(q.t)}</span>
+      <span class="picked"><span aria-hidden="true">✓</span> ${esc(pick)}</span>
+      <span class="redo">Click to change</span></button>`; }).join("");
+  let cur;
+  let ghosts = "", total = state.path.length + 1;
+  if (state.node){
+    const left = depth(state.node, Math.min);
+    total = state.path.length + left;
+    for (let k = 1; k < left; k++){ const n = state.path.length + 1 + k;
+      ghosts += `<div class="qc ghost" data-slot="${n-1}" aria-hidden="true"><span class="qstep">Question ${n} · ${n===2 ? "Career area" : "Role"}</span><span class="qsmall">${n===2 ? "Narrow down to a career area" : "Pick the role that fits you best"}</span></div>`; }
+  }
+  if (state.node){
+    const q = Q[state.node];
+    cur = `<div class="qc current" data-slot="${state.path.length}"><span class="qstep">Question ${state.path.length+1} of ${total} · ${LEVEL[q.lv]}<span class="dots" aria-hidden="true">${Array.from({length:total},(_,k)=>`<i class="${k<=state.path.length?"on":""}"></i>`).join("")}</span></span><span class="dtag" style="--dc:${DOMAIN[q.d].c}">${esc(DOMAIN[q.d].name)}</span><p class="qtext">${esc(q.t)}</p><p class="qhint">${esc(q.h)}</p>
+      <div class="yn">${q.yl ? `<button class="btn opt" id="yes">${esc(q.yl)}</button><button class="btn opt" id="no">${esc(q.nl)}</button>` : `<button class="btn yes" id="yes">Yes</button><button class="btn no" id="no">No</button>`}</div></div>`;
+  } else if (state.final === "explore"){
+    const doors = doorOpeners(3).map(x => `<b>${x.c.code}</b> ${esc(x.c.title)} <span class="coff">(core for ${x.k} roles)</span>`).join("<br>");
+    cur = `<div class="qc result" data-slot="${state.path.length}"><span class="qstep">Result · Explorer</span><p class="done">Keep your options open</p>
+      <p class="qhint">Still exploring is a good place to start. Your answers lean toward society and the fields AI serves, so <b>AI Ethics &amp; Governance</b> and <b>Domain Data Specialist (Analyst · Researcher)</b> are worth a closer look below. These courses keep many doors open:</p>
+      <p class="qhint" style="margin:0">${doors}</p></div>`;
+  } else {
+    const fr = DATA.roles.find(r => r.name === state.final);
+    cur = `<div class="qc result" data-slot="${state.path.length}"><span class="qstep">Your best match</span>
+      <div class="match"><span class="mono big" style="background:${GROUP_COLOR[fr.group]}" aria-hidden="true">${iconSVG(fr.name)}</span>
+        <div class="matchtxt"><span class="gtag" style="--gc:${GROUP_COLOR[fr.group]}">${gIcon(fr.group)}${esc(fr.group)}</span><p class="matchname">${esc(fr.name)}</p></div></div>
+      <p class="matchline">${esc(fr.long)}</p>
+      <p class="qhint" style="margin:0">Its card is highlighted below and its courses are listed at the bottom. Click an answered question to change it.</p></div>`;
+  }
+  const qb = $("#qcards"), hq = snap(qb, "data-slot");
+  qb.innerHTML = done + cur + ghosts;
+  morph(qb, "data-slot", hq, false);
+  $("#qcards").querySelectorAll("button.qc").forEach(b => b.onclick = () => goTo(+b.dataset.i));
+  const y = $("#yes"); if (y){ y.onclick = () => answer(true); $("#no").onclick = () => answer(false); }
+  $("#qcount").textContent = state.node ? `${total} quick questions` : `${state.path.length} questions answered`;
+  $("#back").disabled = !state.path.length; $("#back").onclick = back; $("#restart").onclick = restart;
+}
+
+function courseCard(c, forRoles){
+  const fr = forRoles && forRoles.length ? `<span class="for">${forRoles.map(esc).join(" · ")}</span>` : "";
+  return `<button class="course" data-code="${c.code}" aria-expanded="${state.open===c.code}"><span class="ccode">${c.code} · ${esc(c.level)}</span><span class="ctitle">${esc(c.title)}</span><span class="coff">${esc(c.offered)}</span>${fr}</button>`;
+}
+function detail(c){
+  const facts = [["Offered", c.offered], ["Instructor (planned)", c.instructor], ["Level", c.level], ["Credits", "4"]].map(([k,v]) => `<div class="fact"><span>${k}</span>${esc(v)}</div>`).join("");
+  const prof = c.overview ? `<div><h5>In one line</h5><p>${esc(c.overview)}</p></div>` : "";
+  const doo = c.do ? `<div><h5>What you'll do</h5><p>${esc(c.do)}${c.output?`<br><b>Output:</b> ${esc(c.output)}`:""}</p></div>` : "";
+  const themes = c.themes && c.themes.length ? `<div class="themes">${c.themes.map(t=>`<span>${esc(t)}</span>`).join("")}</div>` : "";
+  const clos = c.clos.length ? `<div><h5>Course learning objectives</h5><ol>${c.clos.map(x=>`<li>${esc(x)}</li>`).join("")}</ol></div>`
+                             : `<div><h5>Course learning objectives</h5><p class="empty">Not finalized yet; see the syllabus when the course opens.</p></div>`;
+  return `<div class="detail" id="detail"><div><span class="ccode">${c.code}</span><h4>${esc(c.title)}</h4></div>${themes}<div class="facts">${facts}</div>${prof}
+    <div><h5>Course description</h5><p>${esc(c.desc)}</p></div>${doo}${clos}<button class="link" data-close="1" style="justify-self:start">Close course details</button></div>`;
+}
+const alive = () => DATA.roles.filter(r => cardState(r.name) !== "out");
+function selectedRole(){ return state.expanded || (state.final && state.final !== "explore" ? state.final : null); }
+
+const INIT = {"Data Scientist / Researcher":"DS","AI Researcher":"AR","Data Engineer":"DE","ML / AI Engineer":"ML","AI Product Manager":"PM","UX / Service Designer for AI":"UX","AI Ethics & Governance":"EG","Domain Data Specialist (Analyst · Researcher)":"DA"};
+const initials = n => INIT[n] || n.slice(0,2).toUpperCase();
+const GICON = {
+ "Research": '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/>',
+ "Engineering": '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>',
+ "Design / Planning": '<path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/>',
+ "Strategic / Governance": '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',
+ "Domain Specialists": '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.5 3.5 5.5 3.5 8.5s-1 6-3.5 8.5c-2.5-2.5-3.5-5.5-3.5-8.5s1-6 3.5-8.5z"/>'
+};
+const gIcon = g => `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${GICON[g]||""}</svg>`;
+const ICON = {
+ "Data Scientist / Researcher": '<path d="M4 20V4"/><path d="M4 20h16"/><circle cx="8" cy="15" r="1.3"/><circle cx="11" cy="11.5" r="1.3"/><circle cx="14.5" cy="12.5" r="1.3"/><circle cx="17.5" cy="7.5" r="1.3"/><path d="M6.5 16.5L19 6"/>',
+ "AI Researcher": '<circle cx="5" cy="7" r="1.8"/><circle cx="5" cy="17" r="1.8"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="6" r="1.8"/><circle cx="19" cy="18" r="1.8"/><path d="M6.6 8l3.6 2.8M6.6 16l3.6-2.8M14 11l3.4-3.8M14 13l3.4 3.8"/>',
+ "Data Engineer": '<ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v13c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-13"/><path d="M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/>',
+ "ML / AI Engineer": '<rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/>',
+ "AI Product Manager": '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.2"/><path d="M12 12l7-7M16.5 3.5v3h3"/>',
+ "UX / Service Designer for AI": '<path d="M12 3l6 9-6 9-6-9z"/><circle cx="12" cy="12" r="1.6"/><path d="M12 3v7.4"/><path d="M4 21h16"/>',
+ "AI Ethics & Governance": '<path d="M12 3v18M7 21h10M5 6h14"/><path d="M5 6l-3 7a3 3 0 0 0 6 0z"/><path d="M19 6l-3 7a3 3 0 0 0 6 0z"/>',
+ "Domain Data Specialist (Analyst · Researcher)": '<path d="M4 20V13M8 20V9M12 20v-5"/><circle cx="16" cy="9" r="3.5"/><path d="M18.6 11.6L21 14"/><path d="M3 20h10"/>'
+};
+const iconSVG = n => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n]||""}</svg>`;
+function cardHTML(r, st){
+  const sig = DATA.courses.filter(c => c.marks[r.name] === "S").map(c => c.code);
+  const sel = selectedRole() === r.name;
+  const badge = st === "strong" ? (state.final === r.name ? "◎ Best match" : "◉ Strong fit") : st === "likely" ? (state.final === "explore" ? "◌ Worth a look" : "◌ Possible") : "";
+  const badge2 = sel && state.final !== r.name ? "▸ Viewing" : badge;
+  const core = DATA.courses.filter(c => ["S","C"].includes(c.marks[r.name])).length;
+  return `<button class="open" aria-pressed="${sel}"><span class="top"><span class="gtag" style="--gc:${GROUP_COLOR[r.group]}">${gIcon(r.group)}${esc(r.group)}</span>${badge2 ? `<span class="badge">${badge2}</span>` : ""}</span>
+      <span class="rname">${esc(r.name)}</span><span class="rshort">${esc(r.short)}</span></button>
+    <span class="hint">${sel ? "Its courses are sorted below ↓" : "Click to sort courses for this role"}</span>
+    <div class="more" aria-hidden="true"><div class="morein"><p style="margin:0">${esc(r.long)}</p>
+      <div><div class="pl">Signature courses</div><ul>${DATA.courses.filter(c => c.marks[r.name] === "S").map(c => `<li><b>${c.code}</b>${esc(c.title)}</li>`).join("")}</ul></div>
+      <div><span class="pl">Core incl. ★</span> ${core} courses (${core*4} credits)</div>
+      <div><span class="pl">In DA200</span> ${esc(r.da200)}</div></div></div>`;
+}
+
+function renderCards(animate){
+  const box = $("#cards");
+  const before = new Map([...box.children].map(el => [el.dataset.role, el.getBoundingClientRect()]));
+  const items = DATA.roles.map((r,i) => ({r, i, st:cardState(r.name), f:fit(r.name)}));
+  const sel = selectedRole();
+  const inSet = items.filter(x => x.st !== "out");
+  const outSet = items.filter(x => x.st === "out");
+  const rank = {strong:0, likely:1, neutral:state.final === "explore" ? 1.5 : 1, out:2};
+  inSet.sort((a,b) => rank[a.st]-rank[b.st] || b.f-a.f || a.i-b.i);
+  outSet.sort((a,b) => a.i - b.i);
+  box.innerHTML = inSet.concat(outSet).map(({r,st}) => `<article class="card${sel===r.name?" selected":""}" data-role="${esc(r.name)}" data-state="${st}">${cardHTML(r, st)}</article>`).join("");
+  $("#outrow").innerHTML = "";
+
+  const counts = [DATA.roles.length]; const saved = state.path.slice();
+  for (let k = 1; k <= saved.length; k++){ state.path = saved.slice(0,k); counts.push(DATA.roles.filter(r => fit(r.name) >= 0).length); }
+  state.path = saved;
+  $("#funnel").innerHTML = counts.map((n,i) => `${i?"<em>→</em>":""}<span>${n}</span>`).join("") + `<em>&nbsp;roles</em>`;
+  const pick = role => { state.expanded = state.expanded === role ? null : role; state.open = null; renderCards(true); renderCourses(); };
+  box.querySelectorAll(".card .open").forEach(b => b.onclick = () => pick(b.closest(".card").dataset.role));
+  $("#outrow").querySelectorAll(".pill").forEach(b => b.onclick = () => pick(b.dataset.role));
+  if (!reduce()) box.querySelectorAll(".card").forEach(el => { const b = before.get(el.dataset.role); if (!b) return; const h1 = el.getBoundingClientRect().height;
+    if (Math.abs(h1 - b.height) > 2){ el.style.overflow = "hidden"; el.animate([{height:b.height+"px"},{height:h1+"px"}], {duration:340, easing:"cubic-bezier(.2,.7,.2,1)"}).onfinish = () => { el.style.overflow = ""; }; } });
+  if (animate && !reduce()){
+    box.querySelectorAll(".card").forEach(el => { const b = before.get(el.dataset.role); const a = el.getBoundingClientRect();
+      if (!b){ el.animate([{opacity:0, transform:"scale(.96)"},{opacity:1, transform:"none"}], {duration:260, easing:"ease-out"}); return; }
+      const dx = b.left - a.left, dy = b.top - a.top; if (!dx && !dy) return;
+      el.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:"none"}], {duration:320, easing:"cubic-bezier(.2,.7,.2,1)"}); });
+  }
+}
+
+function renderCourses(){
+  const box = $("#cols");
+  const before = new Map([...box.querySelectorAll(".ccard")].map(el => [el.dataset.code, el.getBoundingClientRect()]));
+  const sel = selectedRole(); const W = {S:3, C:2, R:1};
+  const roles = sel ? [sel] : state.final === "explore" ? EXPLORE_PICKS.slice() : alive().map(r => r.name);
+  const idle = !sel && !state.path.length;   // nothing answered or picked yet: no badges
+  const items = DATA.courses.map((c, i) => {
+    let top = null, score = 0, fr = [];
+    if (idle) return {c, i, top, score, fr};
+    roles.forEach(r => { const m = c.marks[r]; if (W[m]){ score += W[m]; if (!top || W[m] > W[top]) top = m; } });
+    roles.forEach(r => { if (top && c.marks[r] === top) fr.push(r); });
+    return {c, i, top, score, fr};
+  });
+  items.sort((a,b) => (W[b.top]||0) - (W[a.top]||0) || b.fr.length - a.fr.length || b.score - a.score || a.i - b.i);
+  const n = {S:0, C:0, R:0}; items.forEach(x => { if (x.top) n[x.top]++; });
+  $("#relTitle").textContent = sel ? `Courses for ${sel}` : state.final === "explore" ? "Courses for the two roles worth a look" : (roles.length === DATA.roles.length ? "All DS&AI courses" : `Courses for the ${roles.length} roles still in play`);
+  if (idle){ $("#relTitle").textContent = "All DS&AI courses"; $("#relSub").innerHTML = `<span class="count">Pick a role to see which courses matter most.</span>`; }
+  else $("#relSub").innerHTML = `<span class="tag S">★ ${n.S} signature</span><span class="tag C">● ${n.C} core</span><span class="tag R">○ ${n.R} recommended</span>`;
+  const LABEL = {S:"★ Signature", C:"● Core", R:"○ Recommended"};
+  if (idle) box.classList.add("idle"); else box.classList.remove("idle");
+  box.innerHTML = items.map(x => {
+    const forTxt = sel || !x.top ? "" : `<span class="for">${x.fr.length === roles.length && roles.length > 1 ? "All remaining roles" : x.fr.map(esc).join(" · ")}</span>`;
+    return `<button class="ccard${x.top ? " t"+x.top : (idle ? "" : " none")}" data-code="${x.c.code}" aria-expanded="${state.open===x.c.code}">
+      <span class="chead"><span class="ccode">${x.c.code} · ${esc(x.c.level)}</span>${x.top ? `<span class="tag ${x.top}">${LABEL[x.top]}</span>` : ""}</span>
+      <span class="ctitle">${esc(x.c.title)}</span><span class="coff">${esc(x.c.offered)}</span>${forTxt}<span class="hint">${state.open===x.c.code ? "Hide details" : "Details →"}</span>
+      <span class="cmore" aria-hidden="true"><span class="cmorein">
+        ${x.c.overview ? `<span class="cm">${esc(x.c.overview)}</span>` : `<span class="cm">${esc(x.c.desc.split(". ")[0])}.</span>`}
+        <span class="cm"><span class="pl">Instructor (planned)</span> ${esc(x.c.instructor)}</span>
+        <span class="cm"><span class="pl">Offered</span> ${esc(x.c.offered)}</span>
+        <span class="cm"><span class="pl">Learning objectives</span> ${x.c.clos.length ? x.c.clos.length + " listed" : "not finalized yet"}</span>
+        <span class="cm go">Click for full details</span></span></span></button>`;
+  }).join("");
+  const openC = DATA.courses.find(c => c.code === state.open);
+  const db = $("#detailBox"), hd = snap(db, "data-acc");
+  db.innerHTML = openC ? detail(openC).replace('class="detail"', 'class="detail" data-acc="'+openC.code+'"') : "";
+  morph(db, "data-acc", hd, true);
+  box.querySelectorAll(".ccard").forEach(b => b.onclick = () => { state.open = state.open === b.dataset.code ? null : b.dataset.code; renderCourses(); const d = $("#detail"); if (d && d.scrollIntoView) d.scrollIntoView({behavior: reduce() ? "auto" : "smooth", block:"nearest"}); });
+  const cl = document.querySelector("#detailBox [data-close]"); if (cl) cl.onclick = () => { state.open = null; renderCourses(); };
+  if (!reduce()){
+    box.querySelectorAll(".ccard").forEach(el => { const b = before.get(el.dataset.code); if (!b) return; const a = el.getBoundingClientRect();
+      const dx = b.left - a.left, dy = b.top - a.top; if (!dx && !dy) return;
+      el.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:"none"}], {duration:360, easing:"cubic-bezier(.2,.7,.2,1)"}); });
+  }
+}
+
+const reduce = () => !window.matchMedia || matchMedia("(prefers-reduced-motion: reduce)").matches;
+function render(animate){ renderQ(); renderCards(animate); renderCourses(); }
+render(false);
+</script>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Program Design: roles and courses only (no header, no student questions), in the TaeSylla look */
+.wrap > header, section[aria-label="Questions"], #funnel{display:none !important}
+:root, :root:not([data-theme="light"]){
+  --bg:#f7f6f3; --surface:#ffffff; --ink:#1a1916; --muted:#6b6960; --line:#e5e3dc;
+  --purple:#185FA5; --purple-soft:#E6F1FB; --core:#185FA5; --rec:#9e9c96; --match:#185FA5;
+  --tint-1:#f2f7fc; --tint-2:#E6F1FB; --tint-c:#f2f7fc; --hi-ink:#0f3d6b; --star:#854F0B; --star-bg:#FAEEDA;
+  --display:"DM Sans", system-ui, sans-serif; --body:"DM Sans", system-ui, sans-serif; --mono:"DM Mono", ui-monospace, monospace;
+  --shadow:none; --shadow-hi:0 6px 18px -10px rgba(26,25,22,.25); color-scheme:light }
+html, body{background:transparent !important}
+body{font-family:var(--body); font-size:15px}
+.wrap{max-width:none; padding:0; gap:22px}
+.relhead h2, .cardshead h2{font-family:var(--body) !important; font-size:16px !important; font-weight:600 !important; letter-spacing:0 !important}
+.rname{font-family:var(--body) !important; font-weight:600 !important; letter-spacing:0 !important}
+#cards .card, #cols .ccard, .detail, .rdetail{border-radius:10px !important; border:1px solid var(--line) !important; box-shadow:none}
+#cards .card .more{border-radius:0 0 10px 10px !important}
+.tag, .badge, .gtag, .themes span{border-radius:10px !important}
+.dots i{border-radius:50% !important}
+.note{display:none}
+/* no hover previews here: hide the drop-down extensions and the lift */
+#cards .card .more, #cols .ccard .cmore, .card .hint, .ccard .hint{display:none !important}
+#cards .card:hover, #cards .card:focus-within, #cols .ccard:hover, #cols .ccard:focus-visible{transform:none !important; box-shadow:none !important; z-index:auto}
+#cards .card:hover{border-bottom-color:var(--line) !important; border-radius:10px !important}
+#cards .card:hover, #cols .ccard:hover{border-color:var(--match) !important}
+</style>
+<script>
+document.querySelectorAll('.stepno').forEach(e => e.remove());
+const h = document.querySelector('section[aria-label="Roles"] h2'); if (h) h.lastChild.textContent = 'Graduate roles';
+</script>
+</body></html>
