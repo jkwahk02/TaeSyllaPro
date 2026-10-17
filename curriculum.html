@@ -486,7 +486,7 @@ html,body{background:transparent;}
     <section id="t-pw" hidden>
       <div class="card">
         <div class="card-head"><div class="card-t">Recommended pathways</div><span class="updated" data-upd="pw"></span></div>
-        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180530" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
+        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180535" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
         <div class="pw-term">
           <div class="pw-th">Pathway by term <span id="pw-title"></span></div>
           <p class="pw-focus" id="pw-focus"></p>
@@ -1313,6 +1313,7 @@ render();
 document.querySelectorAll('[data-upd]').forEach(e => { const v = window.__CUR.upd[e.dataset.upd]; e.textContent = v ? 'Last updated ' + v : ''; });
 $('role-chip').hidden = !window.__CUR.isChairOfProg;   // tells a chair this is their program, even while editing is not open yet
 pfSync();
+setTab('ov');   // pages with tabs open on the first tab
 </script>
 <script>
 // Curriculum page loader: reads the signed-in session from the TaeSylla page around this frame, loads the

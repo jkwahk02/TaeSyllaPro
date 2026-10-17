@@ -922,7 +922,7 @@ function handleRoute() {
     setRailActive('rail-home');
   }
 }
-const CUR_VER = '202610180531';
+const CUR_VER = '202610180535';
 function setRailActive(id) {
   document.querySelectorAll('.rail-btn').forEach((b) => b.classList.toggle('active', b.id === id));
 }
@@ -4706,6 +4706,7 @@ async function loadData() {
       parsed_days: courses[i].scheduleDays.join('/'), parsed_startTime: courses[i].startTime, parsed_endTime: courses[i].endTime,
       parsed_timezone: courses[i].classTimezone,
     })));
+    if (!dataLoaded && location.hash) history.replaceState(null, '', location.pathname + location.search);
     dataLoaded = true;
     renderHome();
     handleRoute();
