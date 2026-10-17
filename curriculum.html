@@ -274,6 +274,9 @@ tr.cprof textarea{width:100%;border:1px solid var(--border-em);border-radius:6px
 .ep-box{border:1px dashed var(--border-em);border-radius:10px;padding:36px 24px;text-align:center;}
 .ep-h{font-size:16px;font-weight:600;margin-bottom:6px;}
 .ep-box p{margin:0 auto 14px;max-width:60ch;}
+/* overflow-x:auto also turns on a vertical scroll bar when anything pokes out (hover lists, the active tab's underline) */
+.tabs{overflow-y:hidden;}
+.tbl-wrap.tw-vis{overflow:visible;}
 .ro-badge{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border:1px solid var(--border-em);border-radius:8px;font-size:14px;font-weight:600;color:var(--text2);background:var(--surface2);cursor:default;}
 .tab.dirty::after{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber);margin-left:6px;vertical-align:2px;}
 .lnk{display:block;margin-top:6px;padding:0;border:none;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--blue);cursor:pointer;white-space:nowrap;}
@@ -465,7 +468,7 @@ html,body{background:transparent;}
     <section id="t-lo" hidden>
       <div class="card">
         <div class="card-head"><div class="card-t">Program learning outcomes</div><span class="updated" data-upd="lo"></span></div>
-        <div class="tbl-wrap"><table class="tbl" id="plo-tbl"></table></div>
+        <div class="tbl-wrap tw-vis"><table class="tbl" id="plo-tbl"></table></div>
       </div>
     </section>
 
@@ -1429,8 +1432,19 @@ pfSync();
     fail('Could not load the curriculum: ' + (e.message || e));
   }
 })();
-function fitFrame(){ try { if (window.frameElement) window.frameElement.style.height = (document.documentElement.scrollHeight + 4) + 'px'; } catch (e) {} }
-setInterval(fitFrame, 500);
+// Size the frame to the content. documentElement.scrollHeight can't shrink below the frame's own height,
+// so measure the page's content instead, plus any hover list that hangs below it.
+function fitFrame(){
+  try {
+    const fe = window.frameElement; if (!fe) return;
+    const root = document.querySelector('.shell') || document.body;
+    let b = root.getBoundingClientRect().bottom;
+    document.querySelectorAll('.hov:hover .tip, .hov:focus .tip').forEach(t => { b = Math.max(b, t.getBoundingClientRect().bottom); });
+    const h = Math.ceil(b + window.scrollY + 24);
+    if (Math.abs(parseFloat(fe.style.height || 0) - h) > 2) fe.style.height = h + 'px';
+  } catch (e) {}
+}
+setInterval(fitFrame, 300);
 </script>
 </body>
 </html>
