@@ -440,6 +440,7 @@ html,body{background:transparent;}
 .plo-add{margin-top:12px;}
 #plo-tbl td input:not(.code):not(.num){width:100%;}
 .tip.tip-note{padding:10px 14px;min-width:260px;font-size:15px;font-weight:400;line-height:1.45;text-transform:none;letter-spacing:0;color:var(--text2);white-space:normal;}
+.card-head .card-t + .sel{margin-left:0;}
 </style>
 </head>
 <body>
@@ -506,7 +507,7 @@ html,body{background:transparent;}
     <section id="t-pw" hidden>
       <div class="card">
         <div class="card-head"><div class="card-t">Recommended pathways</div></div>
-        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610180652" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
+        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610181430" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
         <div class="pw-term">
           <div class="pw-th">Pathway by term <span id="pw-title"></span></div>
           <p class="pw-focus" id="pw-focus"></p>
@@ -524,7 +525,7 @@ html,body{background:transparent;}
         <details class="done"><summary>Decided</summary><div id="prop-done"></div></details>
       </div>
       <div class="card">
-        <div class="card-head"><div class="card-t">Course &times; PLO <span class="card-aka">(curriculum map)</span></div></div>
+        <div class="card-head"><div class="card-t">Course &times; PLO <span class="card-aka">(curriculum map)</span></div><div class="head-btns"><button class="btn btn-sm xl-btn" onclick="mapExport()">Export</button></div></div>
         <div class="cm-wrap" id="cm-wrap"><table class="cm" id="cm"></table></div>
         <div class="legend" id="cm-legend">
           <span><span class="lv"><span class="on I">I</span><span class="on R">R</span><span class="on A">A</span></span>Introduced &middot; Reinforced &middot; Assessed</span>
@@ -544,22 +545,22 @@ html,body{background:transparent;}
         <button id="ov-sem" class="on" onclick="setOffView('sem')">By semester</button><button id="ov-ins" onclick="setOffView('ins')">By instructor</button></div></div>
       <div id="off-sem">
       <div class="card">
-        <div class="card-head"><div class="card-t">All semesters</div></div>
+        <div class="card-head"><div class="card-t">All semesters</div><div class="head-btns"><button class="btn btn-sm xl-btn" onclick="matrixExport('sem-tbl', 'Offerings by semester')">Export</button></div></div>
         <div class="tbl-wrap ro"><table class="tbl ins" id="sem-tbl"></table></div>
       </div>
       <div class="card">
-        <div class="card-head"><div class="card-t">Course offerings by semester</div><select class="sel" id="term" aria-label="Term" onchange="term=this.value;renderOff()"></select></div>
+        <div class="card-head"><div class="card-t">Course offerings by semester</div><select class="sel" id="term" aria-label="Semester" onchange="term=this.value;renderOff()"></select><div class="head-btns"><button class="btn btn-sm xl-btn" onclick="offExport('sem')">Export</button></div></div>
         <div class="tbl-wrap ro"><table class="tbl" id="off-tbl"></table></div>
       </div>
       </div>
       <div id="off-ins" hidden>
       <div class="card">
-        <div class="card-head"><div class="card-t">All instructors</div></div>
+        <div class="card-head"><div class="card-t">All instructors</div><div class="head-btns"><button class="btn btn-sm xl-btn" onclick="matrixExport('ins-tbl', 'Offerings by instructor')">Export</button></div></div>
         <div class="tbl-wrap ro"><table class="tbl ins" id="ins-tbl"></table></div>
         <p class="cat-note">〔 〕 Course outside the major; not counted in Total.</p>
       </div>
       <div class="card">
-        <div class="card-head"><div class="card-t">Course offerings by instructor</div><select class="sel" id="ins-sel" aria-label="Instructor" onchange="insSel=this.value;renderIns()"></select></div>
+        <div class="card-head"><div class="card-t">Course offerings by instructor</div><select class="sel" id="ins-sel" aria-label="Instructor" onchange="insSel=this.value;renderIns()"></select><div class="head-btns"><button class="btn btn-sm xl-btn" onclick="offExport('ins')">Export</button></div></div>
         <div class="tbl-wrap ro"><table class="tbl" id="insd-tbl"></table></div>
       </div>
       </div>
@@ -1023,15 +1024,80 @@ function catExport(){
 }
 
 /* ---------- Offerings (by term, with course-design readiness) ---------- */
+/* ---------- Course offerings: by semester / by instructor; each list has an "All" choice and an Excel export ---------- */
+const ALL = '*';
+const termOrder = t => DATA.terms.indexOf(t);
+const profsOf = o => (o.prof || '').split(',').map(x => x.trim()).map(p => p === 'TBD' ? '' : p);
+function semRows(){
+  return DATA.offerings.filter(o => !o.ext && (term === ALL || o.term === term))
+    .sort((a, b) => termOrder(a.term) - termOrder(b.term) || a.code.localeCompare(b.code));
+}
+function insRows(){
+  return DATA.offerings.filter(o => insSel === ALL ? true : profsOf(o).includes(insSel))
+    .sort((a, b) => termOrder(a.term) - termOrder(b.term) || a.code.localeCompare(b.code));
+}
 function renderOff(){
-  $('term').innerHTML = DATA.terms.map(t=>`<option ${t===term?'selected':''}>${t}</option>`).join('');
-  const rows = DATA.offerings.filter(o => o.term === term && !o.ext).sort((a,b)=>a.code.localeCompare(b.code));
-  $('off-tbl').innerHTML = `<thead><tr><th style="width:128px">Course</th><th>Title</th><th style="width:190px">Instructor</th><th style="width:200px">Time</th><th style="width:130px">Location</th><th style="width:100px" class="num">Students</th><th style="width:110px">Status</th></tr></thead><tbody>${
-    rows.length ? rows.map(o => `<tr class="orow" onclick="openOffering(${o.id})">
+  $('term').innerHTML = `<option value="${ALL}" ${term === ALL ? 'selected' : ''}>All semesters</option>` +
+    DATA.terms.map(t => `<option value="${esc(t)}" ${t === term ? 'selected' : ''}>${esc(t)}</option>`).join('');
+  const all = term === ALL, rows = semRows();
+  $('off-tbl').innerHTML = `<thead><tr>${all ? '<th style="width:120px">Semester</th>' : ''}<th style="width:128px">Course</th><th>Title</th><th style="width:190px">Instructor</th><th style="width:200px">Time</th><th style="width:130px">Location</th><th style="width:100px" class="num">Students</th><th style="width:110px">Status</th></tr></thead><tbody>${
+    rows.length ? rows.map(o => `<tr class="orow" onclick="openOffering(${o.id})">${all ? `<td>${esc(o.term)}</td>` : ''}
       <td class="mono">${esc(o.code)}</td><td>${esc(o.title)}</td><td>${esc(o.prof)}</td><td class="sub">${esc(o.time)}</td>
-      <td>${esc(o.loc || '–')}</td><td class="num">${o.n ?? '–'}</td>
-      <td><span class="chip ${o.status==='published'?'green':'grey'}">${o.status==='published'?'Published':'Draft'}</span></td></tr>`).join('')
-    : `<tr><td colspan="7" class="empty">No offerings for ${esc(term)}.</td></tr>`}</tbody>`;
+      <td>${esc(o.loc || '–')}</td><td class="num">${o.n ?? '–'}</td><td>${statusChip(o)}</td></tr>`).join('')
+    : `<tr><td colspan="${all ? 8 : 7}" class="empty">No offerings for ${esc(term)}.</td></tr>`}</tbody>`;
+}
+function renderInsDetail(names){
+  if (insSel !== ALL && !names.includes(insSel)) insSel = names[0];
+  $('ins-sel').innerHTML = `<option value="${ALL}" ${insSel === ALL ? 'selected' : ''}>All instructors</option>` +
+    names.map(n => `<option value="${esc(n)}" ${n === insSel ? 'selected' : ''}>${esc(n || 'TBD')}</option>`).join('');
+  const all = insSel === ALL, rows = insRows();
+  $('insd-tbl').innerHTML = `<thead><tr><th style="width:120px">Semester</th><th style="width:128px">Course</th><th>Title</th>${all ? '<th style="width:190px">Instructor</th>' : ''}<th style="width:200px">Time</th><th style="width:130px">Location</th><th style="width:100px" class="num">Students</th><th style="width:110px">Status</th></tr></thead><tbody>${
+    rows.map(o => `<tr class="orow" onclick="openOffering(${o.id})"><td>${esc(o.term)}</td>
+      <td class="mono">${o.ext ? '〔' + esc(o.code) + '〕' : esc(o.code)}</td><td>${esc(o.title)}</td>${all ? `<td>${esc(o.prof)}</td>` : ''}<td class="sub">${esc(o.time)}</td>
+      <td>${esc(o.loc || '–')}</td><td class="num">${o.n ?? '–'}</td><td>${statusChip(o)}</td></tr>`).join('')}</tbody>`;
+}
+// Excel: the list as shown (the semester or instructor picked, or All)
+function offExport(view){
+  const rows = view === 'ins' ? insRows() : semRows();
+  const aoa = [['Semester', 'Course', 'Title', 'Instructor', 'Time', 'Location', 'Students', 'Status'],
+    ...rows.map(o => [o.term, (o.ext ? '〔' + o.code + '〕' : o.code), o.title, o.prof, o.time, o.loc || '', o.n ?? '', o.status === 'published' ? 'Published' : 'Draft'])];
+  const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = [12, 11, 44, 26, 26, 12, 9, 10].map(w => ({wch: w}));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Course offerings');
+  const pick = view === 'ins' ? (insSel === ALL ? 'All instructors' : (insSel || 'TBD')) : (term === ALL ? 'All semesters' : term);
+  XLSX.writeFile(wb, `${window.__CUR.code} Course Offerings - ${pick}.xlsx`.replace(/[\\/:*?"<>|]/g, ''));
+}
+// Excel for the matrices (All semesters / All instructors): the table as shown, one cell per cell
+function matrixExport(id, name){
+  const t = $(id), aoa = [], merges = [];
+  for (const tr of t.querySelectorAll('tr')) {
+    const cells = [...tr.children];
+    if (tr.classList.contains('grp')) { merges.push({s: {r: aoa.length, c: 0}, e: {r: aoa.length, c: 0}}); aoa.push([cells[0].textContent.trim()]); continue; }
+    aoa.push(cells.map(td => {
+      const btns = td.querySelectorAll('button');
+      if (btns.length) return [...btns].map(b => b.textContent.trim()).join(', ');
+      const parts = [...td.children].map(e => e.textContent.trim()).filter(Boolean);
+      const v = parts.length > 1 ? parts.join(' · ') : td.textContent.trim();
+      return /^\d+$/.test(v) ? +v : v;
+    }));
+  }
+  const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = aoa[0].map((_, i) => ({wch: i === 0 ? 44 : 14}));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, name.slice(0, 31));
+  XLSX.writeFile(wb, `${window.__CUR.code} ${name}.xlsx`);
+}
+// Excel for the curriculum map: course x PLO levels (I / R / A) as on the page, with the CLOs tagged for each cell
+function mapExport(){
+  const head = ['Group', 'Course', 'Title', ...PLOS.map(p => `${p.code} ${p.name}`)];
+  const lv = [head], cl = [head];
+  for (const g of GROUPS) for (const c of COURSES.filter(g.f)) {
+    lv.push([g.t, c, DATA.names[c] || '', ...PLOS.map(p => map[c][p.code] || '')]);
+    cl.push([g.t, c, DATA.names[c] || '', ...PLOS.map(p => ((DATA.map[c] || {})[p.code] || {}).clos ? ((DATA.map[c][p.code].clos || []).map(n => 'CLO' + n).join(', ')) : '')]);
+  }
+  const wb = XLSX.utils.book_new();
+  for (const [aoa, name] of [[lv, 'Levels (I-R-A)'], [cl, 'Tagged CLOs']]) {
+    const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = [16, 10, 44, ...PLOS.map(() => 14)].map(w => ({wch: w}));
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  }
+  XLSX.writeFile(wb, `${window.__CUR.code} Curriculum Map.xlsx`);
 }
 /* ---------- Instructors: offerings by instructor x semester (assignments are made on each offering in TaeSylla) ---------- */
 let offView = 'sem';
@@ -1064,17 +1130,6 @@ function renderSemMatrix(){
   $('sem-tbl').innerHTML = h + '</tbody>';
 }
 let insSel = window.__CUR.me;
-function renderInsDetail(names){
-  if (!names.includes(insSel)) insSel = names[0];
-  $('ins-sel').innerHTML = names.map(n => `<option value="${esc(n)}" ${n === insSel ? 'selected' : ''}>${esc(n || 'TBD')}</option>`).join('');
-  const k = insSel, order = t => DATA.terms.indexOf(t);
-  const rows = DATA.offerings.filter(o => (o.prof || '').split(',').map(x => x.trim()).map(p => p === 'TBD' ? '' : p).includes(k))
-    .sort((a, b) => order(a.term) - order(b.term) || a.code.localeCompare(b.code));
-  $('insd-tbl').innerHTML = `<thead><tr><th style="width:120px">Semester</th><th style="width:128px">Course</th><th>Title</th><th style="width:200px">Time</th><th style="width:130px">Location</th><th style="width:100px" class="num">Students</th><th style="width:110px">Status</th></tr></thead><tbody>${
-    rows.map(o => `<tr class="orow" onclick="openOffering(${o.id})"><td>${esc(o.term)}</td>
-      <td class="mono">${o.ext ? '〔' + esc(o.code) + '〕' : esc(o.code)}</td><td>${esc(o.title)}</td><td class="sub">${esc(o.time)}</td>
-      <td>${esc(o.loc || '–')}</td><td class="num">${o.n ?? '–'}</td><td>${statusChip(o)}</td></tr>`).join('')}</tbody>`;
-}
 function renderIns(){
   const terms = DATA.terms, by = {};
   for (const o of DATA.offerings) for (const p of (o.prof || '').split(',').map(x => x.trim())) {
@@ -1481,6 +1536,7 @@ function renderUpd(){
 { const _setTab = setTab; setTab = function (t) { _setTab(t); renderUpd(); }; }
 $('role-chip').hidden = !window.__CUR.isChairOfProg;   // tells a chair this is their program, even while editing is not open yet
 pfSync();
+document.querySelectorAll('.xl-btn').forEach(b => b.insertAdjacentHTML('afterbegin', XL));   // Excel icon
 setTab('ov');   // pages with tabs open on the first tab
 </script>
 <script>
