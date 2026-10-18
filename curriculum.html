@@ -443,6 +443,9 @@ html,body{background:transparent;}
 .card-head .card-t + .sel{margin-left:0;}
 .pw-th{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .pw-th .head-btns{margin-left:auto;}
+.cat-print{position:fixed;left:-10000px;top:0;width:780px;background:#fff;}
+.cat-print .cp-facts{grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin:0;}
+.cat-print .cp-f:nth-child(3){grid-column:1 / -1;border-left:none;border-top:1px solid var(--border);}
 </style>
 </head>
 <body>
@@ -509,7 +512,7 @@ html,body{background:transparent;}
     <section id="t-pw" hidden>
       <div class="card">
         <div class="card-head"><div class="card-t">Recommended pathways</div></div>
-        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610181437" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
+        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610181442" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
         <div class="pw-term">
           <div class="pw-th">Pathway by term <span id="pw-title"></span><div class="head-btns"><button class="btn btn-sm xl-btn" onclick="pwExport()">Export</button></div></div>
           <p class="pw-focus" id="pw-focus"></p>
@@ -909,7 +912,8 @@ async function decline(id){
 /* ---------- Course Catalog (chair edits; a cross-listed course is edited by its lead program's chair) ---------- */
 const OWN = window.__CUR.progName;   // catalog rows this program leads are the ones its chair edits
 function renderCat(){
-  $('cat-btns').innerHTML = `<button class="btn btn-sm" onclick="catExport()">${XL}Export</button>`;
+  $('cat-btns').innerHTML = `<button class="btn btn-sm" onclick="catExport()">${XL}Export</button>
+    <button class="btn btn-sm" id="cat-word" onclick="catWord()"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" style="flex-shrink:0"><rect x="1" y="1" width="16" height="16" rx="3" fill="#2B579A"/><path d="M4.2 5.2l1.6 7.6 2.2-5.6 2.2 5.6 1.6-7.6" stroke="#fff" stroke-width="1.6" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>Word</button>`;
   const ed = c => false;   // Course Catalog: not editable for now
   const field = (i, k, w) => `<input${w ? ` style="width:${w}px"` : ''} class="${w ? 'num' : ''}" value="${esc(DATA.catalog[i][k])}" oninput="DATA.catalog[${i}].${k}=this.value">`;
   // 1. Course list (Academic Catalog 3.2, plus Offered)
@@ -1022,7 +1026,92 @@ function catExport(){
     ...DATA.catalog.map(c => [c.cat, (c.xl ? '*' : '') + c.code, c.title, c.cls, Number(c.credits) || c.credits, Number(c.lecture) || c.lecture, c.offered, c.desc])];
   const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = [16,10,44,16,8,12,16,90].map(w=>({wch:w}));
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Course catalog');
-  XLSX.writeFile(wb, 'DS&AI Course Catalog.xlsx');
+  XLSX.writeFile(wb, `${window.__CUR.code} Course Catalog (Cohort 2026 and after).xlsx`);
+}
+
+/* ---------- Course catalog as a Word document: the course list, then each course's profile as on the page ---------- */
+function loadLib(src, global){
+  if (window[global]) return Promise.resolve();
+  return new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error('Could not load ' + src)); document.head.appendChild(s); });
+}
+// The PLO weights, curricular domains and pathways panels, drawn as they are on the page, as one picture
+async function factsPicture(c, i, box){
+  box.innerHTML = `<table><tbody>${catProfile(c, i, false)}</tbody></table>`;
+  const facts = box.querySelector('.cp-facts');
+  facts.querySelectorAll('.cp-f')[3]?.remove();   // offerings go in as text
+  box.innerHTML = ''; box.appendChild(facts);
+  // side labels of the spider reach past its box on the page (overflow shows there); give them room in the picture
+  facts.querySelectorAll('svg.cp-radar').forEach(g => g.setAttribute('viewBox', '-40 0 340 162'));
+  const cv = await html2canvas(facts, {scale: 1.6, backgroundColor: '#ffffff', logging: false});
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+  return {data: new Uint8Array(await blob.arrayBuffer()), w: cv.width / 1.6, h: cv.height / 1.6};
+}
+async function catWord(){
+  const btn = document.getElementById('cat-word'); const label = btn ? btn.innerHTML : '';
+  const busy = t => { if (btn) { btn.disabled = true; btn.textContent = t; } };
+  busy('Preparing…');
+  const box = document.createElement('div'); box.className = 'cat-print';
+  document.body.appendChild(box);
+  try {
+    await loadLib('https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js', 'docx');
+    await loadLib('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', 'html2canvas');
+    const D = window.docx, F = 'Arial', W = 9360;   // US Letter, 1" margins: 6.5" = 9360 twips
+    const run = (text, o = {}) => new D.TextRun({text: String(text ?? ''), font: F, size: o.size || 20, bold: o.bold, color: o.color, italics: o.italics});
+    const para = (kids, o = {}) => new D.Paragraph({children: Array.isArray(kids) ? kids : [kids], spacing: {after: o.after ?? 80, before: o.before || 0}, keepNext: o.keepNext, alignment: o.align, heading: o.heading, pageBreakBefore: o.pageBreak});
+    const border = {style: D.BorderStyle.SINGLE, size: 4, color: 'C9CED6'};
+    const cell = (text, o = {}) => new D.TableCell({children: [para(run(text, {bold: o.bold, size: 18, color: o.color}), {after: 0})], width: {size: o.w, type: D.WidthType.DXA},
+      shading: o.fill ? {fill: o.fill, type: D.ShadingType.CLEAR, color: 'auto'} : undefined, columnSpan: o.span, margins: {top: 60, bottom: 60, left: 100, right: 100},
+      borders: {top: border, bottom: border, left: border, right: border}});
+    const prog = window.__CUR.progName, today = new Date().toLocaleDateString('sv-SE');
+    const body = [
+      para(run(prog, {size: 22, color: '5B6B7D'}), {after: 40}),
+      para(run('Course Catalog (Cohort 2026 and after)', {size: 36, bold: true}), {after: 120}),
+      para(run(`${DATA.catalog.length} courses · as of ${today}. * Cross-listed course.`, {size: 18, color: '5B6B7D'}), {after: 200}),
+    ];
+    // 1. Course list
+    const COLS = [1200, 4060, 1500, 800, 800, 1000];
+    const rows = [new D.TableRow({tableHeader: true, children: ['Course ID', 'Course Title', 'Classification', 'Credits', 'Credit Hours', 'Offered']
+      .map((h, k) => cell(h, {w: COLS[k], bold: true, fill: 'EEF1F5'}))})];
+    let last = null;
+    for (const c of DATA.catalog) {
+      if (c.cat !== last) { last = c.cat; rows.push(new D.TableRow({children: [cell(c.cat, {w: W, span: 6, bold: true, fill: 'F7F8FA', color: '3F4A57'})]})); }
+      rows.push(new D.TableRow({cantSplit: true, children: [(c.xl ? '*' : '') + c.code, c.title + ((c.lead || OWN) !== OWN ? `  (led by ${c.lead})` : ''), c.cls, c.credits, c.lecture, c.offered]
+        .map((v, k) => cell(v, {w: COLS[k]}))}));
+    }
+    body.push(new D.Table({rows, width: {size: W, type: D.WidthType.DXA}, columnWidths: COLS}));
+    // 2. Each course
+    body.push(para(run('Course descriptions', {size: 30, bold: true}), {pageBreak: true, after: 160}));
+    for (const [i, c] of DATA.catalog.entries()) {
+      busy(`Course ${i + 1} of ${DATA.catalog.length}…`);
+      const pic = await factsPicture(c, i, box);
+      const pw = 624, ph = Math.round(pic.h * pw / pic.w);   // 6.5" wide
+      const offs = DATA.offerings.filter(o => !o.ext && (o.base || o.code.split('-')[0]) === c.code)
+        .sort((a, b) => DATA.terms.indexOf(a.term) - DATA.terms.indexOf(b.term) || a.code.localeCompare(b.code));
+      body.push(
+        para([run(`${c.code}  `, {size: 26, bold: true}), run(c.title, {size: 26, bold: true})], {before: i ? 360 : 0, after: 40, keepNext: true}),
+        para(run([c.cat, c.cls, `${c.credits} credits`, c.offered ? 'Offered ' + c.offered : '', (c.lead || OWN) !== OWN ? 'Led by ' + c.lead : ''].filter(Boolean).join(' · '), {size: 18, color: '5B6B7D'}), {after: 120, keepNext: true}),
+        para(new D.ImageRun({data: pic.data, transformation: {width: pw, height: ph}}), {after: 120, keepNext: true}),
+        para(run('Offerings', {size: 18, bold: true, color: '5B6B7D'}), {after: 40, keepNext: true}),
+        para(run(offs.length ? offs.map(o => `${o.term} ${o.code} ${o.prof || 'TBD'}${o.former ? ' (earlier code)' : ''}`).join('  ·  ') : 'Not offered yet', {size: 18}), {after: 120}),
+        para(run('Description', {size: 18, bold: true, color: '5B6B7D'}), {after: 40, keepNext: true}),
+        para(run(c.desc || '–', {size: 20}), {after: 120}),
+        para(run('Course learning outcomes', {size: 18, bold: true, color: '5B6B7D'}), {after: 40, keepNext: true}),
+        ...(c.clos && c.clos.length ? c.clos.map((x, k) => para(run(`${k + 1}. ${x}`, {size: 20}), {after: 40})) : [para(run('Not set yet.', {size: 20, italics: true}))]),
+      );
+    }
+    const doc = new D.Document({
+      styles: {default: {document: {run: {font: F, size: 20}}}},
+      sections: [{properties: {page: {size: {width: 12240, height: 15840}, margin: {top: 1440, bottom: 1440, left: 1440, right: 1440}}},
+        footers: {default: new D.Footer({children: [para([run(`${prog} · Course Catalog · `, {size: 16, color: '8A94A3'}),
+          new D.TextRun({children: [D.PageNumber.CURRENT], font: F, size: 16, color: '8A94A3'})], {align: D.AlignmentType.RIGHT, after: 0})]})},
+        children: body}],
+    });
+    const blob = await D.Packer.toBlob(doc);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${window.__CUR.code} Course Catalog (Cohort 2026 and after).docx`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast('Word file ready');
+  } catch (e) { console.error(e); toast('Could not make the Word file: ' + (e.message || e)); }
+  finally { box.remove(); if (btn) { btn.disabled = false; btn.innerHTML = label; } }
 }
 
 /* ---------- Offerings (by term, with course-design readiness) ---------- */
