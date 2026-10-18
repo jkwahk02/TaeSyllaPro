@@ -512,7 +512,7 @@ html,body{background:transparent;}
     <section id="t-pw" hidden>
       <div class="card">
         <div class="card-head"><div class="card-t">Recommended pathways</div></div>
-        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610181553" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
+        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610181558" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
         <div class="pw-term">
           <div class="pw-th">Pathway by term <span id="pw-title"></span><div class="head-btns"><button class="btn btn-sm xl-btn" onclick="pwExport()">Export</button></div></div>
           <p class="pw-focus" id="pw-focus"></p>
@@ -1428,7 +1428,7 @@ function renderPathway(){
   const gcol = g => (PF.groups.find(x => x.name === g) || {}).color || '#5B6B7D';
   const name = c => (DATA.catalog.find(x => x.code === c) || {}).title || c;
   // The role comes from the card picked in Pathfinder above (no separate picker here)
-  $('pw-title').textContent = role ? '· ' + (role.multi ? role.multi.length + ' roles' : role.name) : '';
+  $('pw-title').textContent = role ? '· ' + (role.multi ? (role.multi.length === pfRoles().length ? 'all roles' : role.multi.length + ' roles') : role.name) : '';
   $('pw-focus').innerHTML = role ? esc(role.short) : 'Example sequence by term. Pick a role above to see its recommended courses here.';
   const col = role ? gcol(role.group) : '';
   let h = `<thead><tr><th style="width:150px"></th>${OV.terms.map(t => `<th class="c">${t}</th>`).join('')}</tr></thead><tbody>`;
@@ -1604,9 +1604,9 @@ function fitPf(){
     const d = f.contentDocument, w = d && d.querySelector('.wrap');
     if (w) f.style.height = (w.offsetHeight + 8) + 'px';
     // a role picked in Pathfinder also drives the term grid below
-    const fw = f.contentWindow, ns = fw && fw.pfSel ? fw.pfSel() : [], all = !ns.length || ns.length === fw.pfTotal();
-    const r = all ? 'all' : ns.join('|');
-    if (r !== pfLast) { pfLast = r; pwSel = all ? 'all' : ns.length === 1 ? ns[0] : ns; renderPathway(); }
+    const fw = f.contentWindow, ns = fw && fw.pfSel ? fw.pfSel() : [];   // all checked by default; none = the example pathway
+    const r = ns.length ? ns.join('|') : 'all';
+    if (r !== pfLast) { pfLast = r; pwSel = !ns.length ? 'all' : ns.length === 1 ? ns[0] : ns; renderPathway(); }
   } catch (e) {}
 }
 setInterval(fitPf, 600);

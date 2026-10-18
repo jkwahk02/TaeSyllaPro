@@ -616,7 +616,7 @@ function renderCourses(){
   const box = $("#cols");
   const before = new Map([...box.querySelectorAll(".ccard")].map(el => [el.dataset.code, el.getBoundingClientRect()]));
   const W = {S:3, C:2, R:1};
-  const chk = window.pfSel ? window.pfSel() : DATA.roles.map(r => r.name), sub = chk.length > 0 && chk.length < DATA.roles.length;
+  const chk = window.pfSel ? window.pfSel() : DATA.roles.map(r => r.name), sub = chk.length > 0;
   const sel = sub && chk.length === 1 ? chk[0] : null, roles = sub ? chk : DATA.roles.map(r => r.name);
   const idle = !sub;   // nothing answered or picked yet: no badges
   const items = DATA.courses.map((c, i) => {
@@ -732,7 +732,7 @@ window.pfChecked = null;
 const pfNames = () => DATA.roles.map(r => r.name);
 window.pfSel = () => pfChecked ? pfNames().filter(n => pfChecked.has(n)) : pfNames();
 window.pfIsChecked = n => !pfChecked || pfChecked.has(n);
-window.pfOn = n => { const k = pfSel().length; return k > 0 && k < pfNames().length && pfIsChecked(n); };
+window.pfOn = n => pfSel().length > 0 && pfIsChecked(n);
 window.pfTotal = () => pfNames().length;
 function pfRedraw(){ state.expanded = null; state.open = null; renderCards(true); renderCourses(); }
 window.pfToggle = n => { if (!pfChecked) pfChecked = new Set(pfNames()); pfChecked.has(n) ? pfChecked.delete(n) : pfChecked.add(n);
