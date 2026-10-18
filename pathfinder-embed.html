@@ -380,7 +380,7 @@ button.qc:hover{transform:translateY(-2px); box-shadow:var(--shadow-hi); transit
   </section>
 
   <section aria-label="Roles" style="display:grid; gap:12px">
-    <div class="cardshead"><h2><span class="stepno">Step 2 · Roles</span>Roles that fit your answers</h2><div class="funnel" id="funnel"></div></div>
+    <div class="cardshead"><h2><span class="stepno">Step 2 · Roles</span>Roles that fit your answers</h2><button type="button" class="allroles" id="allRoles" aria-pressed="true">All roles</button><div class="funnel" id="funnel"></div></div>
     <div class="cards" id="cards"></div>
     <div class="outrow" id="outrow"></div>
   </section>
@@ -694,9 +694,49 @@ body{font-family:var(--body); font-size:18px}
 .rclear:hover,.rclear:focus-visible{background:var(--match); color:var(--surface); border-color:var(--match)}
 .relclear{margin-left:12px; vertical-align:middle; font:600 14px/1 var(--body); padding:6px 12px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--match); cursor:pointer}
 .relclear:hover,.relclear:focus-visible{background:var(--match); color:var(--surface); border-color:var(--match)}
+.allroles{margin-left:12px; vertical-align:middle; font:600 15px/1 var(--body); padding:8px 15px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--muted); cursor:pointer}
+.allroles:hover{border-color:var(--match); color:var(--match)}
+.allroles[aria-pressed="true"]{background:var(--match); border-color:var(--match); color:var(--surface); cursor:default}
+#detailBox{display:none !important}
+#cols .ccard{cursor:default}
+#cols .ccard .ctip{display:none; position:absolute; left:0; top:calc(100% + 6px); z-index:40; width:min(420px, 92vw); padding:10px 14px 12px; background:var(--surface); color:var(--ink);
+  border:1px solid var(--line); border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,.12); font-size:16.5px; line-height:1.45; text-align:left; white-space:normal; gap:5px}
+#cols .ccard.up .ctip{top:auto; bottom:calc(100% + 6px)}
+#cols .ccard:nth-child(4n) .ctip,#cols .ccard:nth-child(4n-1) .ctip{left:auto; right:0}
+#cols .ccard:hover .ctip,#cols .ccard:focus-visible .ctip{display:grid}
+#cols .ccard:hover,#cols .ccard:focus-visible{z-index:41}
+.ctip-h{font-weight:600; font-size:17.5px}
+.ctip-h code{font-family:var(--mono); font-weight:700; margin-right:8px}
+.ctip-d{color:var(--muted)}
+.ctip-r{display:flex; gap:10px}
+.ctip-r > span{flex:0 0 78px; color:var(--muted); font-size:14px; text-transform:uppercase; letter-spacing:.04em; padding-top:2px}
 </style>
 <script>
 document.querySelectorAll('.stepno').forEach(e => e.remove());
 const h = document.querySelector('section[aria-label="Roles"] h2'); if (h) h.lastChild.textContent = 'Graduate roles';
+
+function clearRole(){ state.expanded = null; state.open = null; renderCards(true); renderCourses(); }
+document.getElementById('allRoles').onclick = clearRole;
+const pfEsc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const _renderCourses = renderCourses;
+renderCourses = function () {
+  state.open = null;
+  _renderCourses();
+  const ar = document.getElementById('allRoles'); if (ar) ar.setAttribute('aria-pressed', String(!state.expanded));
+  document.querySelectorAll('#cols .ccard').forEach(b => {
+    const c = DATA.courses.find(x => x.code === b.dataset.code); if (!c) return;
+    b.onclick = null; b.removeAttribute('aria-expanded'); b.setAttribute('aria-describedby', 'tip-' + c.code);
+    const first = c.overview || (c.desc || '').split('. ')[0] + '.';
+    b.insertAdjacentHTML('beforeend', `<span class="ctip" role="tooltip" id="tip-${c.code}"><span class="ctip-h"><code>${c.code}</code>${pfEsc(c.title)}</span>
+      <span class="ctip-d">${pfEsc(first)}</span>
+      <span class="ctip-r"><span>Level</span>${pfEsc(c.level)}</span><span class="ctip-r"><span>Offered</span>${pfEsc(c.offered)}</span>
+      ${c.instructor ? `<span class="ctip-r"><span>Instructor</span>${pfEsc(c.instructor.replace(/^Prof\.\s*/, ''))}</span>` : ''}
+      <span class="ctip-r"><span>CLOs</span>${c.clos && c.clos.length ? c.clos.length + ' listed' : 'not finalized yet'}</span></span>`);
+    // near the bottom of the frame the tip opens upward so it isn't cut off
+    b.onmouseenter = b.onfocus = () => { const t = b.querySelector('.ctip'); b.classList.remove('up');
+      if (b.getBoundingClientRect().bottom + t.offsetHeight + 16 > document.documentElement.scrollHeight - window.scrollY) b.classList.add('up'); };
+  });
+};
+renderCourses();
 </script>
 </body></html>

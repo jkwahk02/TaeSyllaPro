@@ -441,6 +441,8 @@ html,body{background:transparent;}
 #plo-tbl td input:not(.code):not(.num){width:100%;}
 .tip.tip-note{padding:10px 14px;min-width:260px;font-size:15px;font-weight:400;line-height:1.45;text-transform:none;letter-spacing:0;color:var(--text2);white-space:normal;}
 .card-head .card-t + .sel{margin-left:0;}
+.pw-th{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.pw-th .head-btns{margin-left:auto;}
 </style>
 </head>
 <body>
@@ -507,9 +509,9 @@ html,body{background:transparent;}
     <section id="t-pw" hidden>
       <div class="card">
         <div class="card-head"><div class="card-t">Recommended pathways</div></div>
-        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610181430" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
+        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610181437" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
         <div class="pw-term">
-          <div class="pw-th">Pathway by term <span id="pw-title"></span></div>
+          <div class="pw-th">Pathway by term <span id="pw-title"></span><div class="head-btns"><button class="btn btn-sm xl-btn" onclick="pwExport()">Export</button></div></div>
           <p class="pw-focus" id="pw-focus"></p>
           <div class="tbl-wrap"><table class="tbl pw" id="ov-pathway"></table></div>
           <div class="legend" id="pw-legend"></div>
@@ -1098,6 +1100,26 @@ function mapExport(){
     XLSX.utils.book_append_sheet(wb, ws, name);
   }
   XLSX.writeFile(wb, `${window.__CUR.code} Curriculum Map.xlsx`);
+}
+// Excel for Pathway by term, for the role picked above (or the example pathway when none is picked)
+function pwExport(){
+  const role = pfRoles().find(r => r.name === pwSel);
+  const name = c => (DATA.catalog.find(x => x.code === c) || {}).title || c;
+  const tag = code => { if (!role) return code; const r = pwRec(role.name, code); return r === 'none' ? `(${code})` : `${MARK[r][0]} ${code}`; };
+  const grid = [['', ...OV.terms]], list = [['Level', 'Term', 'Course', 'Title', ...(role ? ['For ' + role.name] : [])]];
+  for (const l of OV.levels) {
+    grid.push([l.label || l.name, ...OV.terms.map(t => OV.pathway.filter(p => p.level === l.name && p.terms.includes(t)).map(p => tag(p.code)).join(', '))]);
+    for (const t of OV.terms) for (const p of OV.pathway.filter(p => p.level === l.name && p.terms.includes(t))) {
+      const r = role ? pwRec(role.name, p.code) : '';
+      list.push([l.label || l.name, t, p.code, name(p.code), ...(role ? [r === 'none' ? 'Not recommended' : MARK[r][1]] : [])]);
+    }
+  }
+  grid.push([], [role ? `${role.name}: ★ Signature · ● Core · ○ Recommended · (code) not recommended for this role` : 'Example pathway by term (no role picked)']);
+  const wb = XLSX.utils.book_new();
+  const g = XLSX.utils.aoa_to_sheet(grid); g['!cols'] = [18, ...OV.terms.map(() => 26)].map(w => ({wch: w}));
+  const li = XLSX.utils.aoa_to_sheet(list); li['!cols'] = [18, 8, 10, 46, 18].map(w => ({wch: w}));
+  XLSX.utils.book_append_sheet(wb, g, 'Pathway by term'); XLSX.utils.book_append_sheet(wb, li, 'Course list');
+  XLSX.writeFile(wb, `${window.__CUR.code} Pathway by term - ${role ? role.name : 'Example'}.xlsx`.replace(/[\/:*?"<>|]/g, ''));
 }
 /* ---------- Instructors: offerings by instructor x semester (assignments are made on each offering in TaeSylla) ---------- */
 let offView = 'sem';
