@@ -380,7 +380,7 @@ button.qc:hover{transform:translateY(-2px); box-shadow:var(--shadow-hi); transit
   </section>
 
   <section aria-label="Roles" style="display:grid; gap:12px">
-    <div class="cardshead"><h2><span class="stepno">Step 2 · Roles</span>Roles that fit your answers</h2><label class="selall"><input type="checkbox" id="selAll" checked> Select all</label><div class="funnel" id="funnel"></div></div>
+    <div class="cardshead"><h2><span class="stepno">Step 2 · Roles</span>Roles that fit your answers</h2><label class="selall"><input type="checkbox" id="selAll"> Select all</label><span class="rhint" id="roleHint">Check one or more roles to see their courses</span><div class="funnel" id="funnel"></div></div>
     <div class="cards" id="cards"></div>
     <div class="outrow" id="outrow"></div>
   </section>
@@ -720,6 +720,16 @@ body{font-family:var(--body); font-size:18px}
 #cards .card[data-on="true"] .rchk::after{content:""; width:5px; height:10px; border:solid var(--surface); border-width:0 2px 2px 0; transform:translate(0,-1px) rotate(45deg)}
 #cards .card[data-on="false"]{opacity:.55}
 #cards .rclear{display:none}
+section[aria-label="Roles"] .cardshead{justify-content:flex-start; align-items:center; flex-wrap:wrap}
+section[aria-label="Roles"] .cardshead .funnel{margin-left:auto}
+.rhint{margin-left:14px; vertical-align:middle; font-size:15px; color:var(--match); font-weight:500}
+.rhint::before{content:"☐ "; font-weight:700}
+.rhint[hidden]{display:none}
+@keyframes rnudge{0%{transform:scale(1); box-shadow:0 0 0 0 rgba(80,37,121,.55); border-color:var(--match)} 35%{transform:scale(1.18)} 100%{transform:scale(1); box-shadow:0 0 0 10px rgba(80,37,121,0); border-color:var(--line)}}
+#cards.nudge .rchk{animation:rnudge 1.1s ease-out both}
+#cards.nudge .card:nth-child(2) .rchk{animation-delay:.1s} #cards.nudge .card:nth-child(3) .rchk{animation-delay:.2s} #cards.nudge .card:nth-child(4) .rchk{animation-delay:.3s}
+#cards.nudge .card:nth-child(5) .rchk{animation-delay:.4s} #cards.nudge .card:nth-child(6) .rchk{animation-delay:.5s} #cards.nudge .card:nth-child(7) .rchk{animation-delay:.6s}
+#cards.nudge .card:nth-child(8) .rchk{animation-delay:.7s} #cards.nudge .card:nth-child(n+9) .rchk{animation-delay:.8s}
 </style>
 <script>
 document.querySelectorAll('.stepno').forEach(e => e.remove());
@@ -728,7 +738,7 @@ const h = document.querySelector('section[aria-label="Roles"] h2'); if (h) h.las
 function clearRole(){ state.expanded = null; state.open = null; renderCards(true); renderCourses(); }
 
 // checked roles: null = all (the default)
-window.pfChecked = null;
+window.pfChecked = new Set();   // nothing checked to start; the check boxes are nudged until the first pick
 const pfNames = () => DATA.roles.map(r => r.name);
 window.pfSel = () => pfChecked ? pfNames().filter(n => pfChecked.has(n)) : pfNames();
 window.pfIsChecked = n => !pfChecked || pfChecked.has(n);
@@ -738,6 +748,13 @@ function pfRedraw(){ state.expanded = null; state.open = null; renderCards(true)
 window.pfToggle = n => { if (!pfChecked) pfChecked = new Set(pfNames()); pfChecked.has(n) ? pfChecked.delete(n) : pfChecked.add(n);
   if (pfChecked.size === pfNames().length) pfChecked = null; pfRedraw(); };
 document.getElementById('selAll').onchange = e => { pfChecked = e.target.checked ? null : new Set(); pfRedraw(); };
+// While nothing is checked and the user is idle for a few seconds, the check boxes pulse one after another
+let pfLastAct = Date.now();
+['pointerdown', 'pointermove', 'keydown', 'wheel'].forEach(t => document.addEventListener(t, () => { pfLastAct = Date.now(); }, {passive: true}));
+setInterval(() => {
+  if (pfSel().length || Date.now() - pfLastAct < 4000 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cs = document.getElementById('cards'); cs.classList.remove('nudge'); void cs.offsetWidth; cs.classList.add('nudge');
+}, 6000);
 const pfEsc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const _renderCourses = renderCourses;
 renderCourses = function () {
@@ -745,8 +762,9 @@ renderCourses = function () {
   _renderCourses();
   { const k = pfSel().length, all = pfNames().length, sa = document.getElementById('selAll');
     if (sa) { sa.checked = k === all; sa.indeterminate = k > 0 && k < all; }
+    const hn = document.getElementById('roleHint'); if (hn) hn.hidden = k > 0;
     const rc = document.getElementById('relClear');
-    if (rc) { rc.textContent = '✓ Select all roles'; rc.hidden = k === all; rc.onclick = () => { pfChecked = null; pfRedraw(); }; } }
+    if (rc) { rc.textContent = '✓ Select all roles'; rc.hidden = k === all || k === 0; rc.onclick = () => { pfChecked = null; pfRedraw(); }; } }
   document.querySelectorAll('#cols .ccard').forEach(b => {
     const c = DATA.courses.find(x => x.code === b.dataset.code); if (!c) return;
     b.onclick = null; b.removeAttribute('aria-expanded'); b.setAttribute('aria-describedby', 'tip-' + c.code);
