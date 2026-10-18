@@ -720,6 +720,9 @@ body{font-family:var(--body); font-size:18px}
 #cards .card[data-on="true"] .rchk::after{content:""; width:5px; height:10px; border:solid var(--surface); border-width:0 2px 2px 0; transform:translate(0,-1px) rotate(45deg)}
 #cards .card[data-on="false"]{opacity:.55}
 #cards .rclear{display:none}
+#cols .ccard .chead{flex-wrap:wrap; gap:4px 6px}
+#cols .ccard .for{display:grid; gap:2px}
+#cols .ccard .for > span{display:block}
 section[aria-label="Roles"] .cardshead{justify-content:flex-start; align-items:center; flex-wrap:wrap}
 section[aria-label="Roles"] .cardshead .funnel{margin-left:auto}
 .rhint{margin-left:14px; vertical-align:middle; font-size:15px; color:var(--match); font-weight:500}
@@ -748,6 +751,28 @@ function pfRedraw(){ state.expanded = null; state.open = null; renderCards(true)
 window.pfToggle = n => { if (!pfChecked) pfChecked = new Set(pfNames()); pfChecked.has(n) ? pfChecked.delete(n) : pfChecked.add(n);
   if (pfChecked.size === pfNames().length) pfChecked = null; pfRedraw(); };
 document.getElementById('selAll').onchange = e => { pfChecked = e.target.checked ? null : new Set(); pfRedraw(); };
+// Two or more roles checked: every mark a course has among them is shown (a course can be ★ for some roles and ● for others),
+// with the roles named; the counts at the top count each course once per mark.
+const _renderCoursesM = renderCourses;
+renderCourses = function () {
+  _renderCoursesM();
+  const chk = pfSel(); if (chk.length < 2) return;
+  const LB = {S: '★ Signature', C: '● Core', R: '○ Recommended'}, n = {S: 0, C: 0, R: 0};
+  const esc2 = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  document.querySelectorAll('#cols .ccard').forEach(b => {
+    const c = DATA.courses.find(x => x.code === b.dataset.code); if (!c) return;
+    const by = {S: [], C: [], R: []}; chk.forEach(r => { const m = c.marks[r]; if (by[m]) by[m].push(r); });
+    ['S', 'C', 'R'].forEach(k => { if (by[k].length) n[k]++; });
+    const head = b.querySelector('.chead'); head.querySelectorAll('.tag').forEach(t => t.remove());
+    const show = ['S', 'C'].filter(k => by[k].length); if (!show.length && by.R.length) show.push('R');
+    head.insertAdjacentHTML('beforeend', show.map(k => `<span class="tag ${k}">${LB[k]}</span>`).join(''));
+    const txt = show.map(k => `${LB[k].split(' ')[0]} ${by[k].length === chk.length ? 'all selected roles' : by[k].join(', ')}`).join('  ·  ');
+    let f = b.querySelector('.for'); if (!f && txt) { b.querySelector('.coff').insertAdjacentHTML('afterend', '<span class="for"></span>'); f = b.querySelector('.for'); }
+    if (f) { f.innerHTML = show.map(k => `<span class="for-${k}">${LB[k].split(' ')[0]} ${esc2(by[k].length === chk.length ? 'all selected roles' : by[k].join(', '))}</span>`).join(''); f.hidden = !txt; }
+  });
+  const rs = document.getElementById('relSub');
+  if (rs) rs.innerHTML = `<span class="tag S">★ ${n.S} signature</span><span class="tag C">● ${n.C} core</span><span class="tag R">○ ${n.R} recommended</span>`;
+};
 // While nothing is checked and the user is idle for a few seconds, the check boxes pulse one after another
 let pfLastAct = Date.now();
 ['pointerdown', 'pointermove', 'keydown', 'wheel'].forEach(t => document.addEventListener(t, () => { pfLastAct = Date.now(); }, {passive: true}));
