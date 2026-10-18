@@ -380,7 +380,7 @@ button.qc:hover{transform:translateY(-2px); box-shadow:var(--shadow-hi); transit
   </section>
 
   <section aria-label="Roles" style="display:grid; gap:12px">
-    <div class="cardshead"><h2><span class="stepno">Step 2 · Roles</span>Roles that fit your answers</h2><button type="button" class="allroles" id="allRoles" aria-pressed="true">All roles</button><div class="funnel" id="funnel"></div></div>
+    <div class="cardshead"><h2><span class="stepno">Step 2 · Roles</span>Roles that fit your answers</h2><label class="selall"><input type="checkbox" id="selAll" checked> Select all</label><div class="funnel" id="funnel"></div></div>
     <div class="cards" id="cards"></div>
     <div class="outrow" id="outrow"></div>
   </section>
@@ -589,14 +589,14 @@ function renderCards(animate){
   const rank = {strong:0, likely:1, neutral:state.final === "explore" ? 1.5 : 1, out:2};
   inSet.sort((a,b) => rank[a.st]-rank[b.st] || b.f-a.f || a.i-b.i);
   outSet.sort((a,b) => a.i - b.i);
-  box.innerHTML = inSet.concat(outSet).map(({r,st}) => `<article class="card${sel===r.name?" selected":""}" data-role="${esc(r.name)}" data-state="${st}">${cardHTML(r, st)}</article>`).join("");
+  box.innerHTML = inSet.concat(outSet).map(({r,st}) => `<article class="card${window.pfOn && pfOn(r.name)?" selected":""}" data-role="${esc(r.name)}" data-state="${st}" data-on="${window.pfIsChecked ? pfIsChecked(r.name) : true}">${cardHTML(r, st)}<span class="rchk" aria-hidden="true"></span></article>`).join("");
   $("#outrow").innerHTML = "";
 
   const counts = [DATA.roles.length]; const saved = state.path.slice();
   for (let k = 1; k <= saved.length; k++){ state.path = saved.slice(0,k); counts.push(DATA.roles.filter(r => fit(r.name) >= 0).length); }
   state.path = saved;
   $("#funnel").innerHTML = counts.map((n,i) => `${i?"<em>→</em>":""}<span>${n}</span>`).join("") + `<em>&nbsp;roles</em>`;
-  const pick = role => { state.expanded = state.expanded === role ? null : role; state.open = null; renderCards(true); renderCourses(); };
+  const pick = role => { if (window.pfToggle) pfToggle(role); };
   box.querySelectorAll(".card .open").forEach(b => b.onclick = () => pick(b.closest(".card").dataset.role));
   const sc = box.querySelector(".card.selected");
   if (sc && state.expanded) { const x = document.createElement("button"); x.type = "button"; x.className = "rclear"; x.title = "Show all courses";
@@ -615,9 +615,10 @@ function renderCards(animate){
 function renderCourses(){
   const box = $("#cols");
   const before = new Map([...box.querySelectorAll(".ccard")].map(el => [el.dataset.code, el.getBoundingClientRect()]));
-  const sel = selectedRole(); const W = {S:3, C:2, R:1};
-  const roles = sel ? [sel] : state.final === "explore" ? EXPLORE_PICKS.slice() : alive().map(r => r.name);
-  const idle = !sel && !state.path.length;   // nothing answered or picked yet: no badges
+  const W = {S:3, C:2, R:1};
+  const chk = window.pfSel ? window.pfSel() : DATA.roles.map(r => r.name), sub = chk.length > 0 && chk.length < DATA.roles.length;
+  const sel = sub && chk.length === 1 ? chk[0] : null, roles = sub ? chk : DATA.roles.map(r => r.name);
+  const idle = !sub;   // nothing answered or picked yet: no badges
   const items = DATA.courses.map((c, i) => {
     let top = null, score = 0, fr = [];
     if (idle) return {c, i, top, score, fr};
@@ -628,13 +629,13 @@ function renderCourses(){
   items.sort((a,b) => (W[b.top]||0) - (W[a.top]||0) || b.fr.length - a.fr.length || b.score - a.score || a.i - b.i);
   const n = {S:0, C:0, R:0}; items.forEach(x => { if (x.top) n[x.top]++; });
   { const rc = $("#relClear"); rc.hidden = !state.expanded; rc.onclick = () => { state.expanded = null; state.open = null; renderCards(true); renderCourses(); }; }
-  $("#relTitle").textContent = sel ? `Courses for ${sel}` : state.final === "explore" ? "Courses for the two roles worth a look" : (roles.length === DATA.roles.length ? "All DS&AI courses" : `Courses for the ${roles.length} roles still in play`);
+  $("#relTitle").textContent = sel ? `Courses for ${sel}` : state.final === "explore" ? "Courses for the two roles worth a look" : (roles.length === DATA.roles.length ? "All DS&AI courses" : `Courses for the ${roles.length} selected roles`);
   if (idle){ $("#relTitle").textContent = "All DS&AI courses"; $("#relSub").innerHTML = `<span class="count">Pick a role to see which courses matter most.</span>`; }
   else $("#relSub").innerHTML = `<span class="tag S">★ ${n.S} signature</span><span class="tag C">● ${n.C} core</span><span class="tag R">○ ${n.R} recommended</span>`;
   const LABEL = {S:"★ Signature", C:"● Core", R:"○ Recommended"};
   if (idle) box.classList.add("idle"); else box.classList.remove("idle");
   box.innerHTML = items.map(x => {
-    const forTxt = sel || !x.top ? "" : `<span class="for">${x.fr.length === roles.length && roles.length > 1 ? "All remaining roles" : x.fr.map(esc).join(" · ")}</span>`;
+    const forTxt = sel || !x.top ? "" : `<span class="for">${x.fr.length === roles.length && roles.length > 1 ? "All selected roles" : x.fr.map(esc).join(" · ")}</span>`;
     return `<button class="ccard${x.top ? " t"+x.top : (idle ? "" : " none")}" data-code="${x.c.code}" aria-expanded="${state.open===x.c.code}">
       <span class="chead"><span class="ccode">${x.c.code} · ${esc(x.c.level)}</span>${x.top ? `<span class="tag ${x.top}">${LABEL[x.top]}</span>` : ""}</span>
       <span class="ctitle">${esc(x.c.title)}</span><span class="coff">${esc(x.c.offered)}</span>${forTxt}<span class="hint">${state.open===x.c.code ? "Hide details" : "Details →"}</span>
@@ -710,19 +711,42 @@ body{font-family:var(--body); font-size:18px}
 .ctip-d{color:var(--muted)}
 .ctip-r{display:flex; gap:10px}
 .ctip-r > span{flex:0 0 78px; color:var(--muted); font-size:14px; text-transform:uppercase; letter-spacing:.04em; padding-top:2px}
+.selall{display:inline-flex; align-items:center; gap:8px; margin-left:14px; vertical-align:middle; font:600 15px/1 var(--body); color:var(--muted); cursor:pointer; user-select:none}
+.selall input{width:18px; height:18px; accent-color:var(--match); cursor:pointer; margin:0}
+#cards .card{cursor:pointer}
+#cards .card .top{padding-right:34px}
+.rchk{position:absolute; top:10px; right:10px; width:20px; height:20px; border-radius:5px; border:1.5px solid var(--line); background:var(--surface); pointer-events:none; display:grid; place-items:center}
+#cards .card[data-on="true"] .rchk{background:var(--match); border-color:var(--match)}
+#cards .card[data-on="true"] .rchk::after{content:""; width:5px; height:10px; border:solid var(--surface); border-width:0 2px 2px 0; transform:translate(0,-1px) rotate(45deg)}
+#cards .card[data-on="false"]{opacity:.55}
+#cards .rclear{display:none}
 </style>
 <script>
 document.querySelectorAll('.stepno').forEach(e => e.remove());
 const h = document.querySelector('section[aria-label="Roles"] h2'); if (h) h.lastChild.textContent = 'Graduate roles';
 
 function clearRole(){ state.expanded = null; state.open = null; renderCards(true); renderCourses(); }
-document.getElementById('allRoles').onclick = clearRole;
+
+// checked roles: null = all (the default)
+window.pfChecked = null;
+const pfNames = () => DATA.roles.map(r => r.name);
+window.pfSel = () => pfChecked ? pfNames().filter(n => pfChecked.has(n)) : pfNames();
+window.pfIsChecked = n => !pfChecked || pfChecked.has(n);
+window.pfOn = n => { const k = pfSel().length; return k > 0 && k < pfNames().length && pfIsChecked(n); };
+window.pfTotal = () => pfNames().length;
+function pfRedraw(){ state.expanded = null; state.open = null; renderCards(true); renderCourses(); }
+window.pfToggle = n => { if (!pfChecked) pfChecked = new Set(pfNames()); pfChecked.has(n) ? pfChecked.delete(n) : pfChecked.add(n);
+  if (pfChecked.size === pfNames().length) pfChecked = null; pfRedraw(); };
+document.getElementById('selAll').onchange = e => { pfChecked = e.target.checked ? null : new Set(); pfRedraw(); };
 const pfEsc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const _renderCourses = renderCourses;
 renderCourses = function () {
   state.open = null;
   _renderCourses();
-  const ar = document.getElementById('allRoles'); if (ar) ar.setAttribute('aria-pressed', String(!state.expanded));
+  { const k = pfSel().length, all = pfNames().length, sa = document.getElementById('selAll');
+    if (sa) { sa.checked = k === all; sa.indeterminate = k > 0 && k < all; }
+    const rc = document.getElementById('relClear');
+    if (rc) { rc.textContent = '✓ Select all roles'; rc.hidden = k === all; rc.onclick = () => { pfChecked = null; pfRedraw(); }; } }
   document.querySelectorAll('#cols .ccard').forEach(b => {
     const c = DATA.courses.find(x => x.code === b.dataset.code); if (!c) return;
     b.onclick = null; b.removeAttribute('aria-expanded'); b.setAttribute('aria-describedby', 'tip-' + c.code);

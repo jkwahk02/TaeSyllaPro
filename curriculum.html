@@ -512,7 +512,7 @@ html,body{background:transparent;}
     <section id="t-pw" hidden>
       <div class="card">
         <div class="card-head"><div class="card-t">Recommended pathways</div></div>
-        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610181548" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
+        <iframe id="pf-frame" src="pathfinder-embed.html?v=202610181553" onload="window.pfSync && pfSync()" title="Graduate roles and their courses"></iframe>
         <div class="pw-term">
           <div class="pw-th">Pathway by term <span id="pw-title"></span><div class="head-btns"><button class="btn btn-sm xl-btn" onclick="pwExport()">Export</button></div></div>
           <p class="pw-focus" id="pw-focus"></p>
@@ -1193,7 +1193,7 @@ function mapExport(){
 }
 // Excel for Pathway by term, for the role picked above (or the example pathway when none is picked)
 function pwExport(){
-  const role = pfRoles().find(r => r.name === pwSel);
+  const role = pwRole();
   const name = c => (DATA.catalog.find(x => x.code === c) || {}).title || c;
   const tag = code => { if (!role) return code; const r = pwRec(role.name, code); return r === 'none' ? `(${code})` : `${MARK[r][0]} ${code}`; };
   const grid = [['', ...OV.terms]], list = [['Level', 'Term', 'Course', 'Title', ...(role ? ['For ' + role.name] : [])]];
@@ -1409,7 +1409,13 @@ const PF_ROUTES = {
 const pfRoles = () => PF.roles.filter(r => !r.hidden);
 let pwSel = 'all';
 const MARK = {S: ['★', 'Signature'], C: ['●', 'Core'], R: ['○', 'Recommended']};
+// the role(s) checked in Pathfinder: one role, or several shown together (each course gets its best mark among them)
+function pwRole(){
+  if (Array.isArray(pwSel)) return {name: pwSel.join(' + '), short: pwSel.join(' · '), group: '', multi: pwSel};
+  return pfRoles().find(r => r.name === pwSel);
+}
 function pwRec(role, code){
+  if (Array.isArray(pwSel) && role === pwSel.join(' + ')) { const ms = pwSel.map(n => pwRec(n, code)); return ['S', 'C', 'R'].find(k => ms.includes(k)) || 'none'; }
   const r = PF.roles.find(x => x.name === role), m = r ? pfMark(code, r) : null;
   return m && m !== '-' ? m : 'none';
 }
@@ -1418,11 +1424,11 @@ const semOf = t => t.endsWith('-1') ? 'Fall' : 'Spring';
 const offeredIn = code => (DATA.catalog.find(c => c.code === code) || {}).offered || '';
 const termOk = (code, t) => { const o = offeredIn(code); return !o || o.includes(semOf(t)); };
 function renderPathway(){
-  const ed = false, role = pfRoles().find(r => r.name === pwSel);   // Pathways: not editable for now
+  const ed = false, role = pwRole();   // Pathways: not editable for now
   const gcol = g => (PF.groups.find(x => x.name === g) || {}).color || '#5B6B7D';
   const name = c => (DATA.catalog.find(x => x.code === c) || {}).title || c;
   // The role comes from the card picked in Pathfinder above (no separate picker here)
-  $('pw-title').textContent = role ? '· ' + role.name : '';
+  $('pw-title').textContent = role ? '· ' + (role.multi ? role.multi.length + ' roles' : role.name) : '';
   $('pw-focus').innerHTML = role ? esc(role.short) : 'Example sequence by term. Pick a role above to see its recommended courses here.';
   const col = role ? gcol(role.group) : '';
   let h = `<thead><tr><th style="width:150px"></th>${OV.terms.map(t => `<th class="c">${t}</th>`).join('')}</tr></thead><tbody>`;
@@ -1598,9 +1604,9 @@ function fitPf(){
     const d = f.contentDocument, w = d && d.querySelector('.wrap');
     if (w) f.style.height = (w.offsetHeight + 8) + 'px';
     // a role picked in Pathfinder also drives the term grid below
-    const sel = d && d.querySelector('#cards .card.selected');
-    const r = sel ? sel.dataset.role : 'all';
-    if (r !== pfLast) { pfLast = r; pwSel = r; renderPathway(); }
+    const fw = f.contentWindow, ns = fw && fw.pfSel ? fw.pfSel() : [], all = !ns.length || ns.length === fw.pfTotal();
+    const r = all ? 'all' : ns.join('|');
+    if (r !== pfLast) { pfLast = r; pwSel = all ? 'all' : ns.length === 1 ? ns[0] : ns; renderPathway(); }
   } catch (e) {}
 }
 setInterval(fitPf, 600);
