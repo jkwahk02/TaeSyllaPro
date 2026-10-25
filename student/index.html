@@ -572,6 +572,10 @@ button,input{font-family:inherit;}
 .pg-band{background:#2E7D5B;color:#fff;padding:36px 36px 40px;margin:0 0 32px;}
 .pg-band h1{margin:0;font-size:clamp(32px,3.6vw,52px);font-weight:300;letter-spacing:-.02em;line-height:1.08;color:#fff;}
 .pg-band p{margin:14px 0 0;max-width:62ch;color:rgba(255,255,255,.82);font-size:17px;line-height:1.55;}
+
+/* full width, as on Paideia: the page uses the whole window, with side margins that grow with it */
+.topbar{padding-left:max(clamp(16px,4vw,80px),env(safe-area-inset-left,0px));padding-right:max(clamp(16px,4vw,80px),env(safe-area-inset-right,0px));}
+.main{max-width:none;padding-left:max(clamp(16px,4vw,80px),env(safe-area-inset-left,0px));padding-right:max(clamp(16px,4vw,80px),env(safe-area-inset-right,0px));}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&display=swap">
