@@ -545,6 +545,15 @@ button,input{font-family:inherit;}
 .tb-dd-head{padding:10px 14px 8px;border-bottom:1px solid var(--border);}
 .tb-dd-head div{font-size:17px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .tb-dd-head div:first-child{font-weight:500;color:var(--text);}
+
+/* About page */
+.about-body{padding:18px 22px;font-size:17px;line-height:1.6;color:var(--text2);}
+.about-body p{margin:0 0 12px;}
+.about-body a{color:var(--blue);}
+.about-body .by{font-size:15px;color:var(--text3);margin:0;}
+.about-dl{margin:0;}
+.about-dl dt{font-weight:600;color:var(--text);}
+.about-dl dd{margin:2px 0 14px;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -608,6 +617,7 @@ button,input{font-family:inherit;}
   <div class="tb-tabs">
     <button class="rail-btn active" id="rail-home" onclick="location.hash=''">Home</button>
     <button class="rail-btn" id="rail-finder" onclick="location.hash='finder'">Course Finder</button>
+    <button class="rail-btn" id="rail-about" onclick="location.hash='about'">About</button>
   </div>
   <div class="tb-right">
     <div style="position:relative;">
@@ -636,6 +646,7 @@ button,input{font-family:inherit;}
     </div>
     <div id="page-course" style="display:none;"></div>
     <div id="page-finder" style="display:none;"></div>
+    <div id="page-about" style="display:none;"></div>
   </div>
 </div>
 
@@ -725,7 +736,7 @@ function goToCourse(id) {
 }
 window.addEventListener('hashchange', handleRoute);
 function showPage(id) {
-  ['page-home', 'page-course', 'page-finder'].forEach(p => { document.getElementById(p).style.display = p === id ? 'block' : 'none'; });
+  ['page-home', 'page-course', 'page-finder', 'page-about'].forEach(p => { document.getElementById(p).style.display = p === id ? 'block' : 'none'; });
 }
 function handleRoute() {
   if (!dataLoaded) return; // loadStudentData() calls handleRoute() again once ready
@@ -739,6 +750,11 @@ function handleRoute() {
     // A course can be reached from Home or the Course Finder: keep that rail item active, and "Back" goes there.
     setRailActive(courseOrigin().rail);
     if (isNewCourse) window.scrollTo(0, 0);
+  } else if (location.hash === '#about') {
+    showPage('page-about');
+    renderAbout();
+    setRailActive('rail-about');
+    window.scrollTo(0, 0);
   } else if (location.hash === '#finder') {
     lastListRoute = 'finder';
     showPage('page-finder');
@@ -750,6 +766,22 @@ function handleRoute() {
     renderHome();
     setRailActive('rail-home');
   }
+}
+function renderAbout() {
+  const el = document.getElementById('page-about');
+  if (!el) return;
+  el.innerHTML = `
+    <p class="cp-title" style="margin-bottom:20px;">About TaeSylla</p>
+    <div class="settings-grid">
+      <div class="settings-card">
+        <div class="settings-card-hd"><div class="settings-card-title">What TaeSylla is</div></div>
+        <div class="about-body"><p>TaeSylla shows the syllabus of the courses you take. Each syllabus is written and published by your instructor, so what you read is what the course follows.</p><p>The name comes from the Greek <i>σίλλυβος</i> (sillybos), the label tied to a scroll that told a reader what was inside. It is where the word <i>syllabus</i> comes from.</p><p>TaeSylla is one of the four apps of <a href="https://jkwahk02.github.io/Paideia/">Paideia</a>, the Taejae Learning Suite: Telos for purpose, TaeSylla for the course, Ergon for the work and Arete for excellence.</p><p class="by">Created by Jiyoung Kwahk</p></div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-card-hd"><div class="settings-card-title">Guide</div></div>
+        <div class="about-body"><dl class="about-dl"><dt>Home</dt><dd>Your courses this semester, the courses you planned in Telos, and the courses you have taken.</dd><dt>Course Finder</dt><dd>Every course with a published syllabus, so you can look ahead when you plan.</dd><dt>A course page</dt><dd>Main, Assessment, Rubrics, Communication, Schedule and Readings.</dd><dt>Syllabus PDF</dt><dd>Download syllabus (PDF) on a course page when you need the syllabus itself, for example for an application or a credit transfer.</dd></dl></div>
+      </div>
+    </div>`;
 }
 function setRailActive(id) {
   document.querySelectorAll('.rail-btn').forEach((b) => b.classList.toggle('active', b.id === id));

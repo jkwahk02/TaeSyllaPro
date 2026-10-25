@@ -541,6 +541,15 @@ button,input{font-family:inherit;}
 .tb-dd-head{padding:10px 14px 8px;border-bottom:1px solid var(--border);}
 .tb-dd-head div{font-size:17px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .tb-dd-head div:first-child{font-weight:500;color:var(--text);}
+
+/* About page */
+.about-body{padding:18px 22px;font-size:17px;line-height:1.6;color:var(--text2);}
+.about-body p{margin:0 0 12px;}
+.about-body a{color:var(--blue);}
+.about-body .by{font-size:15px;color:var(--text3);margin:0;}
+.about-dl{margin:0;}
+.about-dl dt{font-weight:600;color:var(--text);}
+.about-dl dd{margin:2px 0 14px;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -613,6 +622,7 @@ button,input{font-family:inherit;}
     <button class="rail-btn" id="rail-finder" onclick="location.hash='finder'">Course Finder</button>
     <button class="rail-btn" id="rail-curriculum" onclick="location.hash='curriculum'">Curriculum</button>
     <button class="rail-btn" id="rail-dashboard" onclick="showToast('Dashboard — coming soon')">Dashboard</button>
+    <button class="rail-btn" id="rail-about" onclick="location.hash='about'">About</button>
     <button class="rail-btn" id="rail-settings" onclick="location.hash='settings'">Settings</button>
   </div>
   <div class="tb-right">
@@ -642,6 +652,7 @@ button,input{font-family:inherit;}
     </div>
     <div id="page-course" style="display:none;"></div>
     <div id="page-settings" style="display:none;"></div>
+    <div id="page-about" style="display:none;"></div>
     <div id="page-finder" style="display:none;"></div>
     <div id="page-curriculum" style="display:none;"></div>
   </div>
@@ -872,6 +883,17 @@ function handleRoute() {
     confirmDiscardIfDirty(() => { location.hash = targetHash.replace(/^#/, ''); });
     return;
   }
+  // About: its own page; every other route hides it
+  const aboutEl = document.getElementById('page-about');
+  if (location.hash === '#about') {
+    ['page-course', 'page-home', 'page-settings', 'page-finder', 'page-curriculum'].forEach(id => { document.getElementById(id).style.display = 'none'; });
+    aboutEl.style.display = 'block';
+    renderAbout();
+    setRailActive('rail-about');
+    window.scrollTo(0, 0);
+    return;
+  }
+  aboutEl.style.display = 'none';
   if (m) {
     // Only reset the edit session when actually navigating to a different
     // course. Re-firing on the same course/hash (rare, but possible) leaves
@@ -3210,6 +3232,22 @@ function handleSignOut() {
 // ── SETTINGS PAGE (own page, not a popup — see #settings route in
 // handleRoute) — profile/timezone card + Google Calendar connect, same idea
 // as Telos's Settings tab. ──
+function renderAbout() {
+  const el = document.getElementById('page-about');
+  if (!el) return;
+  el.innerHTML = `
+    <p class="cp-title" style="margin-bottom:20px;">About TaeSylla</p>
+    <div class="settings-grid">
+      <div class="settings-card">
+        <div class="settings-card-hd"><div class="settings-card-title">What TaeSylla is</div></div>
+        <div class="about-body"><p>TaeSylla is where each Taejae course is designed. Faculty set a course&rsquo;s learning outcomes, assessment, rubrics, schedule and readings in one place and publish the syllabus that students read. Program chairs keep the curriculum map that ties courses to program outcomes.</p><p>The name comes from the Greek <i>σίλλυβος</i> (sillybos), the label tied to a scroll that told a reader what was inside. It is where the word <i>syllabus</i> comes from.</p><p>TaeSylla is one of the four apps of <a href="https://jkwahk02.github.io/Paideia/">Paideia</a>, the Taejae Learning Suite: Telos for purpose, TaeSylla for the course, Ergon for the work and Arete for excellence.</p><p class="by">Created by Jiyoung Kwahk</p></div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-card-hd"><div class="settings-card-title">Guide</div></div>
+        <div class="about-body"><dl class="about-dl"><dt>Home</dt><dd>Your courses this semester, upcoming and past, with your weekly timetable.</dd><dt>Course Finder</dt><dd>Every course offering. Courses you do not teach open read only.</dd><dt>Curriculum</dt><dd>The curriculum map of your program. Program chairs edit it.</dd><dt>A course page</dt><dd>Main, Learning Outcomes, Assessment, Rubrics, Communication, Schedule, Readings, Learning Activities and Lesson Plans. Press Edit, change what you need, then Save.</dd><dt>Publish</dt><dd>Publishing shows the syllabus to students and locks editing. Unpublish to change it, then publish again.</dd><dt>Syllabus document</dt><dd>Make Syllabus Document turns the course into the Google Doc of its syllabus.</dd><dt>Google Calendar</dt><dd>Connect it once, here in Settings or on the Paideia page, to export the class dates of a course to its own calendar.</dd><dt>Settings</dt><dd>Your profile and the Google Calendar connection.</dd></dl></div>
+      </div>
+    </div>`;
+}
 function renderSettingsPage() {
   const el = document.getElementById('page-settings');
   if (!el) return;
