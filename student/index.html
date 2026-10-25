@@ -576,6 +576,17 @@ button,input{font-family:inherit;}
 /* full width, as on Paideia: the page uses the whole window, with side margins that grow with it */
 .topbar{padding-left:max(clamp(16px,4vw,80px),env(safe-area-inset-left,0px));padding-right:max(clamp(16px,4vw,80px),env(safe-area-inset-right,0px));}
 .main{max-width:none;padding-left:max(clamp(16px,4vw,80px),env(safe-area-inset-left,0px));padding-right:max(clamp(16px,4vw,80px),env(safe-area-inset-right,0px));}
+
+/* phones: the bar becomes two rows, logo + account on top and the tabs below, scrolling sideways if they do not fit */
+@media (max-width:760px){
+  .topbar{height:auto;flex-wrap:wrap;padding-top:8px;}
+  .tb-logo{font-size:20px;margin-right:auto;height:44px;}
+  .tb-logo .app-logo{width:28px;height:28px;}
+  .tb-name,.tb-user .role-badge{display:none;}
+  .tb-tabs{order:3;width:100%;height:44px;overflow-x:auto;scrollbar-width:none;}
+  .tb-tabs::-webkit-scrollbar{display:none;}
+  .tb-tabs .rail-btn{font-size:16px;padding:0 12px;flex:none;}
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&display=swap">
