@@ -563,6 +563,11 @@ button,input{font-family:inherit;}
 
 /* role badge beside the name */
 .tb-user .role-badge{font-family:inherit;font-size:10px;font-weight:600;background:var(--blue-l);color:var(--blue);padding:2px 7px;border-radius:20px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;flex:none;}
+
+/* page header band, as on Ergon: the app's highlight colour, a large light title, a one-line lead */
+.pg-band{background:#2E7D5B;color:#fff;padding:36px 36px 40px;margin:0 0 32px;}
+.pg-band h1{margin:0;font-size:clamp(32px,3.6vw,52px);font-weight:300;letter-spacing:-.02em;line-height:1.08;color:#fff;}
+.pg-band p{margin:14px 0 0;max-width:62ch;color:rgba(255,255,255,.82);font-size:17px;line-height:1.55;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -3252,7 +3257,7 @@ function renderAbout() {
   const el = document.getElementById('page-about');
   if (!el) return;
   el.innerHTML = `
-    <p class="cp-title" style="margin-bottom:20px;">About TaeSylla</p>
+    <div class="pg-band"><h1>About TaeSylla</h1><p>Course design and syllabus at Taejae.</p></div>
     <div class="settings-grid">
       <div class="settings-card">
         <div class="settings-card-hd"><div class="settings-card-title">What TaeSylla is</div></div>
@@ -3269,7 +3274,7 @@ function renderSettingsPage() {
   if (!el) return;
   const roleLabel = PROFESSOR.isChair ? 'Program Chair' : 'Faculty';
   el.innerHTML = `
-    <p class="cp-title" style="margin-bottom:20px;">Settings</p>
+    <div class="pg-band"><h1>Settings</h1><p>Your profile and the Google Calendar connection.</p></div>
     <div class="settings-grid">
       <div class="settings-card">
         <div class="settings-card-hd">
