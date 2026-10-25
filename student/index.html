@@ -555,8 +555,18 @@ button,input{font-family:inherit;}
 .about-dl{margin:0;}
 .about-dl dt{font-weight:600;color:var(--text);}
 .about-dl dd{margin:2px 0 14px;}
+
+/* logo and title as on Paideia: Marcellus 25 px with a 16 px keyword after a middle dot */
+.tb-logo{font-family:'Marcellus','Times New Roman',serif;font-size:25px;font-weight:400;letter-spacing:.06em;gap:12px;}
+.tb-logo .app-logo{width:34px;height:34px;}
+.tb-logo .role-badge{font-family:'Marcellus','Times New Roman',serif;font-size:16px;font-weight:400;letter-spacing:.03em;text-transform:none;background:none;color:var(--text2);padding:0;border-radius:0;}
+.tb-logo .role-badge::before{content:'· ';}
+
+/* role badge beside the name */
+.tb-user .role-badge{font-family:inherit;font-size:10px;font-weight:600;background:var(--blue-l);color:var(--blue);padding:2px 7px;border-radius:20px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;flex:none;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&display=swap">
 </head>
 <body>
 
@@ -613,7 +623,7 @@ button,input{font-family:inherit;}
 <div class="topbar">
   <div class="tb-logo" role="link" tabindex="0" title="Home" onclick="location.hash=''" onkeydown="if(event.key==='Enter')location.hash=''">
     <svg class="app-logo" viewBox="0 0 76 76" aria-hidden="true"><rect width="76" height="76" rx="18" fill="#2E7D5B"/><polyline points="22,20 22,54 56,54" stroke="#fff" stroke-opacity=".6" stroke-width="2.5" fill="none"/><line x1="22" y1="20" x2="56" y2="54" stroke="#fff" stroke-opacity=".35" stroke-width="2.5"/><g fill="#fff"><circle cx="22" cy="20" r="3.4"/><circle cx="22" cy="37" r="3"/><circle cx="22" cy="54" r="4.4"/><circle cx="39" cy="54" r="3"/><circle cx="56" cy="54" r="3.4"/></g></svg>
-    TaeSylla <span class="role-badge">Student</span>
+    TaeSylla
   </div>
   <div class="tb-tabs">
     <button class="rail-btn active" id="rail-home" onclick="location.hash=''">Home</button>
@@ -628,6 +638,7 @@ button,input{font-family:inherit;}
           <div class="tb-name" id="tb-name">—</div>
           <div class="tb-role" id="tb-role" hidden>—</div>
         </div>
+        <span class="role-badge">Student</span>
         <span class="caret">▾</span>
       </button>
       <div class="tb-dropdown" id="tb-dropdown">
