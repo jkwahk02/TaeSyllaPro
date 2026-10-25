@@ -10,7 +10,10 @@
   --bg:#f7f6f3; --surface:#fff; --surface2:#f2f1ed; --surface3:#eceae4;
   --border:rgba(0,0,0,0.08); --border-em:rgba(0,0,0,0.14);
   --text:#1a1916; --text2:#6b6960; --text3:#9e9c96;
-  --blue:#185FA5; --blue-l:#E6F1FB; --blue-m:#378ADD; --blue-b:#B5D4F4;
+  --blue:#2E7D5B; --blue-l:#E6F4EC; --blue-m:#4FA37C; --blue-b:#B7DCC8;
+  /* the highlight is TaeSylla green (the --blue names stay so nothing else has to change);
+     the curriculum-map marks and rubric level 3 keep their own blue */
+  --map-blue:#185FA5; --map-blue-b:#B5D4F4;
   --amber:#854F0B; --amber-l:#FAEEDA; --amber-b:#EF9F27; --amber-d:#633806;
   --green:#3B6D11; --green-l:#EAF3DE; --green-b:#C0DD97;
   --red:#A32D2D; --red-l:#FCEBEB;
@@ -305,8 +308,8 @@ button,input{font-family:inherit;}
 .fi{height:50px;border:1px solid rgba(0,0,0,0.14);border-radius:8px;padding:0 16px;font-size:21px;outline:none;transition:border-color .15s;}
 .fi:focus{border-color:#378ADD;}
 .auth-err{font-size:18px;color:#A32D2D;min-height:19px;text-align:center;}
-.auth-submit{height:50px;border-radius:8px;background:#185FA5;color:#fff;border:none;font-size:20px;font-weight:600;cursor:pointer;transition:background .15s;}
-.auth-submit:hover{background:#0C447C;}
+.auth-submit{height:50px;border-radius:8px;background:#2E7D5B;color:#fff;border:none;font-size:20px;font-weight:600;cursor:pointer;transition:background .15s;}
+.auth-submit:hover{background:#1F5B41;}
 .auth-submit:disabled{opacity:.6;cursor:default;}
 
 /* SETUP BANNER */
@@ -378,9 +381,9 @@ button,input{font-family:inherit;}
 .lo-pm-cell.on{border-style:solid;}
 .lo-lvs{display:inline-flex;gap:3px;}
 .lo-lvs span{width:22px;height:20px;border-radius:4px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text3);opacity:.55;}
-.lo-lvs span.on.I{background:#F1F6FC;color:var(--blue);border:1px solid var(--blue-b);opacity:1;}
-.lo-lvs span.on.R{background:var(--blue-b);color:#0d3f6e;opacity:1;}
-.lo-lvs span.on.A{background:var(--blue);color:#fff;opacity:1;}
+.lo-lvs span.on.I{background:#F1F6FC;color:var(--map-blue);border:1px solid var(--map-blue-b);opacity:1;}
+.lo-lvs span.on.R{background:var(--map-blue-b);color:#0d3f6e;opacity:1;}
+.lo-lvs span.on.A{background:var(--map-blue);color:#fff;opacity:1;}
 .lo-clo-cell{display:flex;gap:14px;align-items:flex-start;padding-right:14px;}
 .lo-clo-text{flex:1;min-width:0;font-size:18px;line-height:1.45;color:var(--text);}
 .lo-clo-text .lo-ta{width:100%;}
@@ -392,8 +395,8 @@ button,input{font-family:inherit;}
 .lo-cell{width:100%;min-width:74px;height:50px;border-radius:var(--r);border:1px dashed transparent;background:transparent;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;font-family:inherit;cursor:default;}
 .lo-matrix.editing .lo-cell{border-color:var(--border-em);cursor:pointer;}
 .lo-matrix.editing .lo-cell:hover{background:var(--surface2);}
-.lo-cell.P{background:var(--blue);border:1px solid var(--blue);color:#fff;}
-.lo-cell.S{background:#F1F6FC;border:1px solid var(--blue-b);color:var(--blue);font-weight:500;}
+.lo-cell.P{background:var(--map-blue);border:1px solid var(--map-blue);color:#fff;}
+.lo-cell.S{background:#F1F6FC;border:1px solid var(--map-blue-b);color:var(--map-blue);font-weight:500;}
 .lo-cell.sel{outline:3px solid var(--amber-b,#EF9F27);outline-offset:2px;}
 .lo-plus{color:var(--text3);font-size:20px;font-weight:400;}
 .lo-del-td{text-align:right;padding-right:0 !important;}
@@ -421,8 +424,8 @@ button,input{font-family:inherit;}
 .lo-opt button.on{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-b);}
 .lo-opt .d{font-size:13px;color:var(--text2);line-height:1.35;}
 .lo-sw{min-width:112px;height:26px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;padding:0 10px;flex-shrink:0;}
-.lo-sw.P{background:var(--blue);color:#fff;}
-.lo-sw.S{background:#F1F6FC;border:1px solid var(--blue-b);color:var(--blue);font-weight:500;}
+.lo-sw.P{background:var(--map-blue);color:#fff;}
+.lo-sw.S{background:#F1F6FC;border:1px solid var(--map-blue-b);color:var(--map-blue);font-weight:500;}
 .lo-sw.none{border:1px dashed var(--border-em);color:var(--text3);font-weight:500;}
 .lo-cons-row{display:grid;grid-template-columns:minmax(200px,1.3fr) 2fr minmax(170px,auto);gap:16px;align-items:center;padding:11px 0;border-bottom:1px solid var(--border);font-size:17px;}
 .lo-cons-row:last-child{border-bottom:none;}
@@ -464,7 +467,7 @@ button,input{font-family:inherit;}
 .rb-grid td{padding:12px 8px;border-bottom:1px solid var(--border);vertical-align:top;font-size:15px;line-height:1.45;}
 .rb-grid td.rb-lv{color:var(--text2);}
 .rb-lvh span{display:inline-flex;width:20px;height:20px;border-radius:4px;align-items:center;justify-content:center;font-size:12px;margin-right:6px;color:#fff;}
-.rb-lvh.l4 span{background:var(--teal);} .rb-lvh.l3 span{background:var(--blue);} .rb-lvh.l2 span{background:var(--amber-b);} .rb-lvh.l1 span{background:var(--red);}
+.rb-lvh.l4 span{background:var(--teal);} .rb-lvh.l3 span{background:var(--map-blue);} .rb-lvh.l2 span{background:var(--amber-b);} .rb-lvh.l1 span{background:var(--red);}
 .rb-ccode{display:inline-block;font-family:'DM Mono',monospace;font-size:13px;color:var(--text3);margin-right:6px;}
 .rb-cname{font-weight:600;font-size:16px;}
 .rb-grp td{background:var(--surface2);padding:9px 10px;font-size:15px;}
@@ -574,7 +577,7 @@ button,input{font-family:inherit;}
 <div id="login-wall">
   <div class="auth-card">
     <div class="auth-hd">
-      <div style="font-size:19px;font-weight:600;color:#185FA5;margin-bottom:7px;">TaeSylla</div>
+      <div style="font-size:19px;font-weight:600;color:#2E7D5B;margin-bottom:7px;">TaeSylla</div>
       <div class="auth-title">Sign in</div>
       <div class="auth-sub">Use your Taejae email to sign in</div>
     </div>
@@ -599,7 +602,7 @@ button,input{font-family:inherit;}
 <div id="pw-change-wall" style="display:none;">
   <div class="auth-card">
     <div class="auth-hd">
-      <div style="font-size:19px;font-weight:600;color:#185FA5;margin-bottom:7px;">TaeSylla</div>
+      <div style="font-size:19px;font-weight:600;color:#2E7D5B;margin-bottom:7px;">TaeSylla</div>
       <div class="auth-title" id="pw-wall-title">Set your password</div>
       <div class="auth-sub" id="pw-wall-desc">This is your first sign-in. Please set a new password to continue.</div>
     </div>
