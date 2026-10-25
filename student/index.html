@@ -102,6 +102,8 @@ button,input{font-family:inherit;}
 .badge-draft{background:var(--amber-l);color:var(--amber);}
 .badge-muted{background:var(--surface2);color:var(--text3);}
 .course-card.no-syllabus, .list-row.no-syllabus{cursor:default;}
+.preview-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;padding:12px 16px;border-radius:var(--r-lg);background:var(--amber-l);color:var(--amber-d);font-size:17px;}
+.preview-bar .cp-input{width:160px;height:38px;}
 .cc-title{font-size:23px;font-weight:600;color:var(--text);line-height:1.35;margin-bottom:12px;}
 .cc-meta{font-size:19px;color:var(--text2);display:flex;align-items:center;gap:7px;margin-bottom:7px;}
 .cc-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:5px;}
@@ -1383,6 +1385,31 @@ async function restoreSession() {
   return true;
 }
 
+// Temporary (2026-10-25): these faculty accounts stay in the student app to look around instead of
+// going on to the faculty app, and can view any student's Home (?student=<student id>). Remove after the review.
+const PREVIEW_EMAILS = ['kjy@taejae.ac.kr'];
+async function previewStudent(email, headers) {
+  const id = (new URLSearchParams(location.search).get('student') || '').trim();
+  let name = '';
+  if (id) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/students?id=eq.${encodeURIComponent(id)}&select=name_en`, { headers }).catch(() => null);
+    const d = r && r.ok ? await r.json() : [];
+    name = (d[0] && d[0].name_en) || '';
+  }
+  return { id, name: name || 'Preview', email, preview: true };
+}
+function previewBarHtml() {
+  return `<div class="preview-bar">
+    <span>Preview of the student app${STUDENT.id ? ` as <b>${esc(STUDENT.name)}</b> (${esc(STUDENT.id)})` : ''}. Enter a student ID to see that student's Home.</span>
+    <input id="pv-sid" class="cp-input" value="${esc(STUDENT.id)}" placeholder="Student ID" onkeydown="if(event.key==='Enter')setPreviewStudent()">
+    <button class="btn" onclick="setPreviewStudent()">View</button>
+  </div>`;
+}
+function setPreviewStudent() {
+  const v = document.getElementById('pv-sid').value.trim();
+  location.search = v ? `?student=${encodeURIComponent(v)}` : '';
+}
+
 // TaeSylla has two apps, like Telos: this one for students, ../ for faculty.
 // After sign-in, or after a refresh that restored the session: the student, top bar, data.
 async function enterApp(email, restored) {
@@ -1390,30 +1417,35 @@ async function enterApp(email, restored) {
   const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${supabaseUser.access_token}` };
   const stRes = await fetch(`${SUPABASE_URL}/rest/v1/students?email=eq.${encodeURIComponent(authEmail)}&select=id,name_en,must_change_password`, { headers });
   const stData = stRes.ok ? await stRes.json() : [];
+  let preview = null;
   if (!Array.isArray(stData) || !stData.length) {
-    // A professor who signs in here (a bookmark, a shared course link) goes on to the faculty app,
-    // with the session and the same #course/... address.
-    const facRes = await fetch(`${SUPABASE_URL}/rest/v1/faculty_profiles?email=eq.${encodeURIComponent(authEmail)}&select=email`, { headers }).catch(() => null);
-    const fac = facRes && facRes.ok ? await facRes.json() : [];
-    if (fac.length) {
-      saveAuthSession(true);
-      location.replace(new URL('../', location.href.split('#')[0]).href + location.hash);
+    if (PREVIEW_EMAILS.includes(authEmail)) {
+      preview = await previewStudent(authEmail, headers);
+    } else {
+      // A professor who signs in here (a bookmark, a shared course link) goes on to the faculty app,
+      // with the session and the same #course/... address.
+      const facRes = await fetch(`${SUPABASE_URL}/rest/v1/faculty_profiles?email=eq.${encodeURIComponent(authEmail)}&select=email`, { headers }).catch(() => null);
+      const fac = facRes && facRes.ok ? await facRes.json() : [];
+      if (fac.length) {
+        saveAuthSession(true);
+        location.replace(new URL('../', location.href.split('#')[0]).href + location.hash);
+        return;
+      }
+      handleSignOut();
+      document.getElementById('wall-error').textContent = `No student record for ${authEmail}.`;
       return;
     }
-    handleSignOut();
-    document.getElementById('wall-error').textContent = `No student record for ${authEmail}.`;
-    return;
   }
-  STUDENT = { id: String(stData[0].id), name: stData[0].name_en || authEmail.split('@')[0], email: authEmail };
+  STUDENT = preview || { id: String(stData[0].id), name: stData[0].name_en || authEmail.split('@')[0], email: authEmail };
 
   const initials = STUDENT.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   document.getElementById('tb-avatar').textContent = initials || '–';
   document.getElementById('tb-name').textContent = STUDENT.name;
-  document.getElementById('tb-role').textContent = 'Student';
+  document.getElementById('tb-role').textContent = preview ? 'Student app preview' : 'Student';
   document.getElementById('tb-user-btn').style.display = 'flex';
   document.getElementById('login-wall').style.display = 'none';
 
-  if (stData[0].must_change_password === true) {
+  if (!preview && stData[0].must_change_password === true) {
     document.getElementById('pw-change-wall').style.display = 'flex';
     document.getElementById('pw-new').focus();
     return;
@@ -2128,7 +2160,8 @@ async function loadStudentData() {
     const ids = [...new Set([...hist.map(h => h.course_id), ...hist.map(h => baseCourseId(h.course_id)), ...plan.map(p => p.course_id)].filter(Boolean))];
     const inList = ids.map(i => `"${String(i).replace(/"/g, '')}"`).join(',');
     const [offRows, catRows] = ids.length ? await Promise.all([
-      sbGet(TBL_OFFERINGS, `or=${encodeURIComponent(`(course_id.in.(${inList}),course_base_id.in.(${inList}))`)}&select=${OFFERING_SELECT}`),
+      // status filter as well as RLS: a faculty account previewing this app can read drafts too
+      sbGet(TBL_OFFERINGS, `or=${encodeURIComponent(`(course_id.in.(${inList}),course_base_id.in.(${inList}))`)}&status=eq.published&select=${OFFERING_SELECT}`),
       sbGet('courses', `course_id=in.${encodeURIComponent(`(${inList})`)}&select=course_id,title,credits,classification`).catch(() => []),
     ]) : [[], []];
     const offerings = offRows.map(r => Object.assign(mapCourse(r), { offeringCourseId: r.course_id, sectionKey: sectionKey(r.section) }));
@@ -2192,6 +2225,7 @@ function renderHome() {
       <p class="ph-greeting">Welcome, ${esc(firstName)}</p>
       <p class="ph-subline">${esc(CURRENT_SEMESTER)} · Week 1 of 16 · ${dateStr}</p>
     </div>
+    ${STUDENT.preview ? previewBarHtml() : ''}
     <div class="kpi-grid" id="kpi-grid"></div>
     <div class="ph-section">
       <div class="sec-hd">
@@ -2390,8 +2424,8 @@ async function loadFinderData() {
     // Same columns as loadData(), but WITHOUT the professor_email filter so the
     // whole catalog (all professors) comes back. Requires an RLS policy granting
     // faculty read access to every course_offerings row (not just their own).
-    // For a student, RLS returns published offerings only.
-    const rows = await sbGet(TBL_OFFERINGS, `select=${OFFERING_SELECT}&order=course_base_id.asc`);
+    // Published offerings only (RLS does this for students; the filter also covers a faculty preview).
+    const rows = await sbGet(TBL_OFFERINGS, `status=eq.published&select=${OFFERING_SELECT}&order=course_base_id.asc`);
     catalogCourses = (rows || []).map(mapCourse);
     catalogLoaded = true;
   } catch (e) {
