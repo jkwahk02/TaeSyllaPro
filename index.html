@@ -700,6 +700,15 @@ const GCAL_CLIENT_ID = '290444850759-26d8ch9qjk7hvsudgavlqi8tdngsgism.apps.googl
 const GCAL_SCOPE = 'https://www.googleapis.com/auth/calendar';
 const GCAL_CALENDAR_NAME = 'TaeSylla Pro — Class Schedule';
 let gcalToken = null; // in-memory only — re-authorize after a reload or ~1hr
+// Paideia: a calendar token connected on the Paideia page or in another suite app (same tab) is
+// reused here instead of asking Google again, and a token taken here is shared the same way.
+const GCAL_SHARED_KEY = 'paideia_gcal';
+function sharedGcalToken() {
+  try { const g = JSON.parse(sessionStorage.getItem(GCAL_SHARED_KEY) || 'null'); return g && g.exp - Date.now() > 60000 ? g.token : null; } catch (e) { return null; }
+}
+function shareGcalToken(resp) {
+  try { sessionStorage.setItem(GCAL_SHARED_KEY, JSON.stringify({ token: resp.access_token, exp: Date.now() + (resp.expires_in || 3600) * 1000 })); } catch (e) {}
+}
 
 // ── SYLLABUS DOCUMENT GENERATION (mirrors Apps Script processSelectedSyllabus) ──
 // Default Google-Doc template that gets copied for each syllabus. This is the
@@ -2960,9 +2969,19 @@ function sbDelete(table, params) { return sbWrite('DELETE', table, params); }
 // ── SESSION (same as Telos) ──
 // sessionStorage, not localStorage: a refresh keeps you signed in, closing the tab does not.
 const SESSION_KEY = 'taesylla_session';
+// Paideia: the suite apps share this origin, so each also keeps the session under one shared key.
+// Signing in once (on the Paideia page or in any app) carries over to the others in the same tab,
+// and signing out of one signs out of all of them.
+const SUITE_KEY = 'paideia_session';
+const SUITE_KEYS = ['paideia_session', 'telos_faculty_session', 'telos_student_session', 'taesylla_session', 'ergon_session', 'paideia_gcal'];
 let freshSignIn = false;   // true only right after the password sign-in (then the app opens on Home)
-function saveAuthSession() { try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(supabaseUser)); } catch (e) {} }
-function clearSession() { try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {} }
+function saveAuthSession() { try { const v = JSON.stringify(supabaseUser); sessionStorage.setItem(SESSION_KEY, v); sessionStorage.setItem(SUITE_KEY, v); } catch (e) {} }
+function clearSession() { try { SUITE_KEYS.forEach(k => sessionStorage.removeItem(k)); } catch (e) {} }
+// The newer of this app's own session and the shared one: a token renewed in another app wins.
+function newestSession() {
+  return [SESSION_KEY, SUITE_KEY].map(k => { try { return JSON.parse(sessionStorage.getItem(k) || 'null'); } catch (e) { return null; } })
+    .filter(x => x && x.access_token).sort((a, b) => (b.expires_at || 0) - (a.expires_at || 0))[0] || null;
+}
 // Access tokens last about an hour: renew with the refresh token when one is nearly out.
 // Several requests at once share one renewal (Supabase rotates the refresh token).
 let sbRefreshing = null;
@@ -2984,10 +3003,9 @@ async function sbFresh() {
   return sbRefreshing;
 }
 async function restoreSession() {
-  let saved = null;
-  try { saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { return false; }
+  const saved = newestSession();
   if (!saved?.access_token) return false;
-  supabaseUser = saved;
+  supabaseUser = saved; saveAuthSession();
   if (!(await sbFresh())) { supabaseUser = null; clearSession(); return false; }
   return true;
 }
@@ -3255,6 +3273,13 @@ function renderGcalSettingsBlock() {
   `;
 }
 function connectGoogleCalendar(silent) {
+  const shared = sharedGcalToken();
+  if (shared) {
+    gcalToken = shared;
+    renderGcalSettingsBlock();
+    if (currentCourseId !== null) renderCoursePage();
+    return;
+  }
   if (typeof google === 'undefined' || !google.accounts?.oauth2) {
     if (silent) { setTimeout(() => connectGoogleCalendar(true), 1500); return; }   // script still loading after a refresh
     showToast('Google sign-in is still loading — try again in a second.');
@@ -3269,7 +3294,7 @@ function connectGoogleCalendar(silent) {
     hint: (silent && PROFESSOR.email) ? PROFESSOR.email : undefined,
     callback: async (resp) => {
       if (resp.error) { if (!silent) showToast('Google sign-in failed: ' + resp.error); return; }
-      gcalToken = resp.access_token;
+      gcalToken = resp.access_token; shareGcalToken(resp);
       if (!silent) showToast('✓ Signed in to Google Calendar');
       renderGcalSettingsBlock();
       if (currentCourseId !== null) renderCoursePage(); // refresh Schedule tab's export button state
@@ -3334,6 +3359,7 @@ function disconnectGoogleCalendar() {
   gcalToken = null;
   gcalCalendarId = null;
   localStorage.removeItem('taesylla_gcal_calendar_id');
+  try { sessionStorage.removeItem(GCAL_SHARED_KEY); } catch (e) {}
   renderGcalSettingsBlock();
   if (currentCourseId !== null) renderCoursePage();
   showToast('Google Calendar disconnected');
@@ -5293,7 +5319,7 @@ function renderHistory() {
 // A refresh with a stored session (sessionStorage) enters the app directly; otherwise the sign-in wall stays.
 (async () => {
   // a stored session: keep the wall out of sight while it is restored (no flash of the sign-in form)
-  try { if (sessionStorage.getItem(SESSION_KEY)) document.getElementById('login-wall').style.display = 'none'; } catch (e) {}
+  try { if (newestSession()) document.getElementById('login-wall').style.display = 'none'; } catch (e) {}
   if (await restoreSession()) {
     try { await enterApp(supabaseUser.user?.email || '', true); }
     catch (e) { console.warn('restore failed:', e); supabaseUser = null; clearSession(); document.getElementById('login-wall').style.display = 'flex'; }
