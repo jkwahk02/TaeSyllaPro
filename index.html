@@ -627,6 +627,8 @@ button,input{font-family:inherit;}
       </button>
       <div class="tb-dropdown" id="tb-dropdown">
         <div hidden><span id="dd-name">—</span><span id="dd-email">—</span></div>
+        <button class="tb-dropdown-item" onclick="showChangePwModal();closeUserMenu()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><rect x="2" y="9" width="12" height="5" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 9V6a3 3 0 0 1 6 0v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Change password</button>
+        <div class="tb-dropdown-div"></div>
         <button class="tb-dropdown-item danger" onclick="handleSignOut()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Sign out</button>
       </div>
     </div>
@@ -3222,10 +3224,6 @@ function renderSettingsPage() {
         <div class="settings-row">
           <div class="settings-row-label">Email</div>
           <div class="settings-row-val">${esc(PROFESSOR.email)}</div>
-        </div>
-        <div class="settings-row">
-          <div class="settings-row-label">Password</div>
-          <div class="settings-row-val"><button type="button" class="btn" onclick="showChangePwModal()">Change password</button></div>
         </div>
         <div class="settings-row">
           <div class="settings-row-label">School</div>
