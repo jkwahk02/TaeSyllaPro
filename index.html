@@ -583,6 +583,11 @@ button,input{font-family:inherit;}
   .tb-tabs::-webkit-scrollbar{display:none;}
   .tb-tabs .rail-btn{font-size:16px;padding:0 12px;flex:none;}
 }
+
+/* the Home greeting, the same in every app */
+.greet{margin:0 0 24px;}
+.greet-h{margin:0;font-size:clamp(28px,2.6vw,36px);font-weight:600;color:var(--text);letter-spacing:-0.01em;line-height:1.2;}
+.greet-s{margin:6px 0 0;font-size:18px;color:var(--text2);}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -4910,6 +4915,13 @@ async function loadData() {
 
 // Local device time, not UTC — new Date().getHours() already reflects the
 // viewer's own timezone, so no extra timezone handling is needed here.
+// Home greeting: "Welcome, <first name>" and today's date with the term
+function greetHTML(name){
+  const d = new Date(), first = String(name || '').trim().split(/\s+/)[0];
+  const date = d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+  const term = CURRENT_SEMESTER;
+  return `<div class="greet"><p class="greet-h">Welcome${first ? ', ' + esc(first) : ''}</p><p class="greet-s">${date} · ${term}</p></div>`;
+}
 function timeOfDayGreeting() {
   const h = new Date().getHours();
   if (h < 12) return 'Good morning';
@@ -4927,8 +4939,7 @@ function renderHome() {
 
   el.innerHTML = `
     <div class="ph-header">
-      <p class="ph-greeting">Welcome, ${esc(firstName)}</p>
-      <p class="ph-subline">${esc(CURRENT_SEMESTER)} · Week 1 of 16 · ${dateStr}</p>
+      ${greetHTML(firstName)}
     </div>
     <div class="kpi-grid" id="kpi-grid"></div>
     <div class="ph-section">
