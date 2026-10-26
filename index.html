@@ -574,6 +574,8 @@ button,input{font-family:inherit;}
 .main{max-width:none;padding-left:max(clamp(16px,4vw,80px),env(safe-area-inset-left,0px));padding-right:max(clamp(16px,4vw,80px),env(safe-area-inset-right,0px));}
 
 /* phones: the bar becomes two rows, logo + account on top and the tabs below, scrolling sideways if they do not fit */
+/* menus sit on the right, next to the account, as in Arete */
+@media (min-width:761px){ .tb-tabs{margin-left:auto;} .tb-right{margin-left:16px;} }
 @media (max-width:760px){
   .topbar{height:auto;flex-wrap:wrap;padding-top:8px;}
   .tb-logo{font-size:20px;margin-right:auto;height:44px;}
