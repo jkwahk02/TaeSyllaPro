@@ -608,6 +608,134 @@ button,input{font-family:inherit;}
 .tb-tabs .rail-btn{transition:transform .15s ease,color .15s ease;transform-origin:center bottom;}
 .tb-tabs .rail-btn:hover{transform:scale(1.08);color:var(--blue);}
 .tb-tabs .rail-btn.active{transform:scale(1.08);color:var(--blue);}
+/* ── LEARNING PATHWAYS (graduate roles → the courses that lead to them → My Learning Pathway) ──
+   Same data and same marking logic as the Program page's Pathways tab (curriculum.html): the roles
+   and the S/C/R marks a program chair sets there. Type sizes are this app's scale, not that page's. */
+.lp-progs{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:22px;}
+.lp-progs-k{font-size:15px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;}
+.lp-cols{display:grid;grid-template-columns:minmax(0,680px);gap:16px;align-items:start;
+  transition:grid-template-columns .3s cubic-bezier(.2,.7,.2,1);}
+.lp-cols.has-courses{grid-template-columns:400px minmax(0,1fr);}
+.lp-cols.has-detail{grid-template-columns:272px 340px minmax(0,1fr);}
+@media (max-width:1100px){.lp-cols,.lp-cols.has-courses,.lp-cols.has-detail{grid-template-columns:minmax(0,1fr);}}
+.lp-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;}
+.lp-side{position:sticky;top:20px;max-height:calc(100vh - 40px);display:flex;flex-direction:column;}
+.lp-hd{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:none;}
+.lp-hd-t{font-size:21px;font-weight:600;color:var(--text);}
+.lp-hd-s{font-size:17px;color:var(--text2);margin-left:auto;}
+.lp-scroll{overflow-y:auto;flex:1;min-height:0;}
+.lp-link{font-size:17px;font-weight:500;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;font-family:inherit;margin-left:auto;}
+.lp-link:hover{text-decoration:underline;}
+.lp-x{width:30px;height:30px;border:none;background:none;color:var(--text3);font-size:21px;line-height:1;cursor:pointer;border-radius:6px;padding:0;font-family:inherit;}
+.lp-x:hover{background:var(--surface2);color:var(--text);}
+
+/* left: the graduate roles, grouped as the Program page groups them */
+.rl-g{font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);padding:15px 20px 5px;}
+.rl{display:flex;gap:12px;padding:11px 20px;cursor:pointer;border-left:3px solid transparent;align-items:flex-start;}
+.rl:hover{background:var(--surface2);}
+.rl.on{background:var(--blue-l);border-left-color:var(--blue);}
+.rl-box{width:21px;height:21px;border-radius:5px;border:1.5px solid var(--border-em);background:var(--surface);flex:none;display:grid;place-items:center;margin-top:3px;}
+.rl.on .rl-box{background:var(--blue);border-color:var(--blue);}
+.rl.on .rl-box::after{content:"";width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg);}
+.rl-n{font-size:19px;font-weight:500;line-height:1.3;display:block;}
+.rl.on .rl-n{color:var(--blue);}
+.rl-s{font-size:16px;color:var(--text2);line-height:1.45;margin-top:3px;display:block;}
+/* with a course open the left column narrows to the roles that are checked; hovering it brings the rest back */
+.lp-cols.has-detail .rl-g,
+.lp-cols.has-detail .rl-s{display:none;}
+.lp-cols.has-detail .rl:not(.on){display:none;}
+.lp-cols.has-detail .lp-roles:hover .rl{display:flex;}
+.lp-cols.has-detail .lp-roles:hover .rl-g{display:block;}
+.lp-cols.has-detail .lp-roles{transition:box-shadow .15s;}
+.lp-cols.has-detail .lp-roles:hover{box-shadow:0 6px 20px rgba(0,0,0,.09);}
+
+/* the marks, as on the Program page: a signature course first, then core, then recommended */
+.mk{font-size:15px;font-weight:600;padding:3px 11px;border-radius:13px;white-space:nowrap;}
+.mk.S{background:var(--amber-l);color:var(--amber);}
+.mk.C{background:var(--blue-l);color:var(--blue);}
+.mk.R{background:var(--surface3);color:var(--gray-m);}
+.lp-legend{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;}
+
+/* middle: the courses, ordered by how well they serve the checked roles */
+.cr{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:14px;align-items:center;padding:13px 20px;
+  border-bottom:1px solid var(--border);cursor:pointer;width:100%;text-align:left;border-left:3px solid transparent;background:none;font-family:inherit;}
+.cr:last-child{border-bottom:none;}
+.cr:hover{background:var(--surface2);}
+.cr.sel{background:var(--blue-l);border-left-color:var(--blue);}
+.cr.sel .cr-t{color:var(--blue);}
+.cr.none{opacity:.46;}
+.cr.none:hover{opacity:.85;}
+.cr-code{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:var(--text3);}
+.cr.sel .cr-code{color:var(--blue);}
+.cr-t{font-size:20px;font-weight:500;color:var(--text);line-height:1.3;display:block;}
+.cr-m{font-size:16px;color:var(--text3);margin-top:3px;}
+.cr-right{display:flex;align-items:center;gap:10px;}
+.cr .chev{color:var(--text3);display:flex;}
+/* narrowed, while a course is open on the right */
+.cr.mini{grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:11px 14px;}
+.cr.mini .cr-top{display:flex;align-items:center;gap:8px;margin-bottom:3px;}
+.cr.mini .cr-code{font-size:16px;}
+.cr.mini .cr-t{font-size:17px;}
+.cr.mini .cr-m,.cr.mini .chev{display:none;}
+.cr.mini .mk{font-size:14px;padding:1px 7px;}
+
+/* a bookmark, never a star — the star is the Signature mark. Outline: not saved. */
+.cr-bm{width:34px;height:34px;border:none;background:none;padding:0;border-radius:7px;color:var(--text3);cursor:pointer;display:grid;place-items:center;flex:none;transition:background .12s,color .12s;}
+.cr-bm:hover{background:var(--teal-l);color:var(--teal);}
+.cr-bm.on{color:var(--teal);}
+.cr.sel .cr-bm:hover{background:#fff;}
+
+/* right: the course that is open */
+.lp-d-body{padding:18px 20px 22px;}
+.lp-d-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.lp-d-code{font-family:'DM Mono',monospace;font-size:17px;background:var(--blue-l);color:var(--blue);padding:3px 10px;border-radius:6px;}
+.lp-d-t{font-size:25px;font-weight:600;line-height:1.28;}
+.lp-d-s{font-size:17px;color:var(--text2);margin-top:5px;}
+.lp-f{display:flex;gap:12px;font-size:18px;padding:11px 0;border-bottom:1px solid var(--border);}
+.lp-f:first-of-type{border-top:1px solid var(--border);margin-top:16px;}
+.lp-f-k{flex:0 0 116px;color:var(--text3);font-size:14px;letter-spacing:.06em;text-transform:uppercase;padding-top:4px;}
+.lp-f-v{color:var(--text);min-width:0;line-height:1.5;}
+.lp-d-roles{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);font-size:17px;color:var(--text2);}
+.lp-note{margin-top:18px;font-size:17px;color:var(--text3);line-height:1.6;max-width:110ch;}
+.lp-note .bm{color:var(--teal);}
+.lp-note svg{vertical-align:-3px;}
+
+/* My Learning Pathway: one card under the columns, a course per year */
+.lp-plan{margin-top:16px;}
+.plan-n{font-size:17px;color:var(--text3);}
+.plan-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}
+.plan-col{min-width:0;display:flex;flex-direction:column;}
+.plan-col+.plan-col{border-left:1px solid var(--border);}
+.plan-y{font-size:16px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text2);padding:11px 14px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.plan-cell{flex:1;padding:12px;min-height:130px;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;align-content:start;}
+.pc{border:1px solid var(--border-em);border-radius:var(--r);padding:10px 12px;background:var(--surface);position:relative;min-width:0;cursor:grab;}
+.pc:active{cursor:grabbing;}
+.pc:hover{border-color:var(--blue-b);box-shadow:0 2px 10px rgba(0,0,0,.09);transform:translateY(-1px);}
+.pc.drag{opacity:.35;}
+.pc.tS{background:var(--amber-l);border-color:var(--amber-b);}
+.pc.tC{background:var(--blue-l);border-color:var(--blue-b);}
+.pc-hd{display:flex;align-items:center;gap:7px;padding-right:18px;}
+.pc-grip{color:var(--text3);flex:none;transition:color .12s;}
+.pc:hover .pc-grip{color:var(--blue);}
+.pc-code{font-family:'DM Mono',monospace;font-size:16px;font-weight:500;color:var(--text2);}
+.pc-t{font-size:17px;font-weight:500;color:var(--text);line-height:1.3;display:block;margin-top:3px;padding-right:14px;}
+.pc-x{position:absolute;top:5px;right:5px;width:22px;height:22px;border:none;background:none;color:var(--text3);font-size:17px;line-height:1;cursor:pointer;border-radius:5px;padding:0;font-family:inherit;}
+.pc-x:hover{background:var(--surface3);color:var(--text);}
+/* every year shows itself as a target while a card is in the air */
+.plan-drop{border:1px dashed var(--border-em);border-radius:var(--r);min-height:60px;display:grid;place-items:center;font-size:16px;color:var(--text3);}
+.plan-drop span{opacity:0;transition:opacity .12s;}
+.plan-grid.dragging .plan-drop span{opacity:1;}
+.plan-grid.dragging .plan-cell{background:var(--surface2);}
+.plan-grid.dragging .plan-drop{border-color:var(--blue-b);color:var(--blue);}
+.plan-cell.over{background:var(--blue-l) !important;box-shadow:inset 0 0 0 2px var(--blue-b);}
+.plan-cell.over .plan-drop{border-color:var(--blue);border-style:solid;color:var(--blue);}
+@media (max-width:860px){.plan-grid{grid-template-columns:1fr;}.plan-col+.plan-col{border-left:none;border-top:1px solid var(--border);}}
+
+/* a program whose chair has not set out any roles yet */
+.lp-blank{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:56px 32px;text-align:center;}
+.lp-blank-b{display:inline-block;font-size:14px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;background:var(--amber-l);color:var(--amber);padding:4px 12px;border-radius:20px;margin-bottom:14px;}
+.lp-blank-t{font-size:23px;font-weight:600;margin-bottom:10px;}
+.lp-blank-p{font-size:19px;color:var(--text2);line-height:1.6;max-width:58ch;margin:0 auto;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&display=swap">
@@ -673,6 +801,7 @@ button,input{font-family:inherit;}
     <button class="rail-btn active" id="rail-home" onclick="location.hash=''">Home</button>
     <button class="rail-btn" id="rail-finder" onclick="location.hash='finder'">Course Finder</button>
     <button class="rail-btn" id="rail-catalog" onclick="location.hash='catalog'">Course Catalog</button>
+    <button class="rail-btn" id="rail-pathways" onclick="location.hash='pathways'">Learning Pathways</button>
     <button class="rail-btn" id="rail-about" onclick="location.hash='about'">About</button>
   </div>
   <div class="tb-right">
@@ -704,6 +833,7 @@ button,input{font-family:inherit;}
     <div id="page-course" style="display:none;"></div>
     <div id="page-finder" style="display:none;"></div>
     <div id="page-catalog" style="display:none;"></div>
+    <div id="page-pathways" style="display:none;"></div>
     <div id="page-about" style="display:none;"></div>
   </div>
 </div>
@@ -794,7 +924,7 @@ function goToCourse(id) {
 }
 window.addEventListener('hashchange', handleRoute);
 function showPage(id) {
-  ['page-home', 'page-course', 'page-finder', 'page-catalog', 'page-about'].forEach(p => { document.getElementById(p).style.display = p === id ? 'block' : 'none'; });
+  ['page-home', 'page-course', 'page-finder', 'page-catalog', 'page-pathways', 'page-about'].forEach(p => { document.getElementById(p).style.display = p === id ? 'block' : 'none'; });
 }
 function handleRoute() {
   if (!dataLoaded) return; // loadStudentData() calls handleRoute() again once ready
@@ -808,6 +938,11 @@ function handleRoute() {
     // A course can be reached from Home or the Course Finder: keep that rail item active, and "Back" goes there.
     setRailActive(courseOrigin().rail);
     if (isNewCourse) window.scrollTo(0, 0);
+  } else if (location.hash === '#pathways') {
+    lastListRoute = 'pathways';
+    showPage('page-pathways');
+    renderPathways();
+    setRailActive('rail-pathways');
   } else if (location.hash === '#about') {
     showPage('page-about');
     renderAbout();
@@ -847,7 +982,7 @@ function renderAbout() {
       </div>
       <div class="settings-card">
         <div class="settings-card-hd"><div class="settings-card-title">Guide</div></div>
-        <div class="about-body"><dl class="about-dl"><dt>Home</dt><dd>Your courses this semester, the courses you planned in Telos, and the courses you have taken.</dd><dt>Course Finder</dt><dd>Every course with a published syllabus, so you can look ahead when you plan.</dd><dt>Course Catalog</dt><dd>The courses a program offers, each with its description, outcomes and the terms it runs in.</dd><dt>A course page</dt><dd>Main, Assessment, Rubrics, Communication, Schedule and Readings.</dd><dt>Syllabus PDF</dt><dd>Download syllabus (PDF) on a course page when you need the syllabus itself, for example for an application or a credit transfer.</dd></dl></div>
+        <div class="about-body"><dl class="about-dl"><dt>Home</dt><dd>Your courses this semester, the courses you planned in Telos, and the courses you have taken.</dd><dt>Course Finder</dt><dd>Every course with a published syllabus, so you can look ahead when you plan.</dd><dt>Course Catalog</dt><dd>The courses a program offers, each with its description, outcomes and the terms it runs in.</dd><dt>Learning Pathways</dt><dd>The roles graduates of a program go into and the courses that lead to each, and the courses you save as My Learning Pathway.</dd><dt>A course page</dt><dd>Main, Assessment, Rubrics, Communication, Schedule and Readings.</dd><dt>Syllabus PDF</dt><dd>Download syllabus (PDF) on a course page when you need the syllabus itself, for example for an application or a credit transfer.</dd></dl></div>
       </div>
     </div>`;
 }
@@ -1528,7 +1663,7 @@ function setPreviewStudent() {
 async function enterApp(email, restored) {
   const authEmail = String((supabaseUser.user && supabaseUser.user.email) || email).trim().toLowerCase();
   const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${supabaseUser.access_token}` };
-  const stRes = await fetch(`${SUPABASE_URL}/rest/v1/students?email=eq.${encodeURIComponent(authEmail)}&select=id,name_en,must_change_password`, { headers });
+  const stRes = await fetch(`${SUPABASE_URL}/rest/v1/students?email=eq.${encodeURIComponent(authEmail)}&select=id,name_en,must_change_password,program`, { headers });
   const stData = stRes.ok ? await stRes.json() : [];
   let preview = null;
   if (!Array.isArray(stData) || !stData.length) {
@@ -2508,6 +2643,7 @@ const COURSE_ORIGINS = {
   home:    { hash: '',        label: 'Home',           rail: 'rail-home' },
   finder:  { hash: 'finder',  label: 'Course Finder',  rail: 'rail-finder' },
   catalog: { hash: 'catalog', label: 'Course Catalog', rail: 'rail-catalog' },
+  pathways: { hash: 'pathways', label: 'Learning Pathways', rail: 'rail-pathways' },
 };
 let lastListRoute = 'home';
 var curScrollY = null;                  // (var: set by the Course Catalog frame) page scroll when a course was opened from it
@@ -2558,6 +2694,7 @@ async function loadFinderData() {
   catalogLoading = false;
   // Re-render whichever view is waiting on this data.
   if (location.hash === '#finder') renderFinder();
+  else if (location.hash === '#pathways') renderPathways();
   else if (location.hash.startsWith('#course/')) renderCoursePage();
 }
 
@@ -2674,6 +2811,433 @@ function applyFinder() {
   host.innerHTML = finderState.view === 'grid'
     ? `<div class="course-grid">${rows.map(courseCardHtml).join('')}</div>`
     : `<div class="list-card">${rows.map(courseListRowHtml).join('')}</div>`;
+}
+
+// ── LEARNING PATHWAYS ──
+// The graduate roles a program sets out, the courses marked for each, and the courses a student
+// saves as their own pathway. Roles and marks come from outcome_program_docs (doc_key "pathfinder"),
+// written by the Program page's Pathways tab — this page reads them, so the two never drift.
+// The marking and the ordering are that page's logic, unchanged: a course takes its best mark among
+// the checked roles (S 3, C 2, R 1) and the list is ordered by how well it serves them.
+const PW_W = { S: 3, C: 2, R: 1 };
+const PW_MARK = { S: '★ Signature', C: '● Core', R: '○ Recommended' };
+const PW_WORD = { S: 'signature', C: 'core', R: 'recommended' };
+const PW_SYM = { S: '★', C: '●', R: '○' };
+const PW_LIST = 'My Learning Pathway';   // what the saved courses are called, everywhere on this page
+const PW_YEARS = [2, 3, 4];
+
+// { [programCode]: { code, name, roles: [{id,name,group,short}], groups: [name], marks: {[courseId]: {[roleId]: 'S'|'C'|'R'}}, courses: [catalog row] } }
+let pwPrograms = {};
+let pwProgram = null;                    // the program on screen
+let pwLoaded = false, pwLoading = false, pwError = null;
+let pwChecked = new Set();               // role ids the student has checked
+let pwOpen = null;                       // course_id of the course open on the right
+let pwSaved = {};                        // { [programCode]: Map(course_id -> {year, rowId}) } — the saved rows as the DB has them
+let pwSaveOff = '';                      // set when student_pathway_courses can't be read: saving is then hidden, browsing still works
+
+function pwMy() { return (pwSaved[pwProgram] = pwSaved[pwProgram] || new Map()); }
+function pwProg() { return pwPrograms[pwProgram] || { roles: [], groups: [], marks: {}, courses: [] }; }
+function pwRoles() { return pwProg().roles; }
+function pwMarkOf(courseId, roleId) { return (pwProg().marks[courseId] || {})[roleId] || null; }
+// A course sits in the year its number gives it (DA2xx is Year 2) until the student drags it elsewhere.
+function pwYearOf(courseId) {
+  const d = String(courseId).replace(/[^0-9]/g, '');
+  const y = d ? +d[0] : 0;
+  return PW_YEARS.includes(y) ? y : PW_YEARS[PW_YEARS.length - 1];
+}
+// The newest published offering of a course, i.e. the course page to open. Comes from the Finder's data.
+function pwOffering(courseId) {
+  return catalogCourses
+    .filter(c => String(c.courseBaseId) === String(courseId))
+    .sort((a, b) => semesterSortKey(b.semester) - semesterSortKey(a.semester))[0] || null;
+}
+
+async function loadPathwaysData() {
+  if (pwLoaded || pwLoading) return;
+  pwLoading = true; pwError = null;
+  try {
+    // The offerings behind "Open course page" are the Finder's; loading them here keeps that link ready.
+    loadFinderData();
+    const [docs, programs] = await Promise.all([
+      sbGet('outcome_program_docs', 'doc_key=eq.pathfinder&select=program_code,content'),
+      sbGet('programs', 'select=code,name&order=code.asc'),
+    ]);
+    const progName = (c) => (programs.find(p => p.code === c) || {}).name || c;
+    const designed = docs.filter(d => (((d.content || {}).roles) || []).some(r => !r.hidden));
+    const cats = await Promise.all(designed.map(d => sbGet('outcome_catalog',
+      `program_code=eq.${encodeURIComponent(d.program_code)}&select=course_id,title,classification,credits,offered,description&order=sort_order.asc`)));
+    pwPrograms = {};
+    designed.forEach((d, i) => {
+      const content = d.content || {};
+      const roles = (content.roles || []).filter(r => !r.hidden);
+      // The groups the Program page keeps, in its order; any group only a role names comes after.
+      const named = (content.groups || []).map(g => (g && g.name) || g).filter(Boolean);
+      const groups = named.filter(g => roles.some(r => r.group === g))
+        .concat([...new Set(roles.map(r => r.group || '').filter(g => !named.includes(g)))]);
+      pwPrograms[d.program_code] = {
+        code: d.program_code, name: progName(d.program_code), roles, groups,
+        marks: content.marks || {}, courses: cats[i] || [],
+      };
+    });
+    // Open on the student's own program when it has a pathway, otherwise the first that does.
+    const codes = Object.keys(pwPrograms);
+    const mine = [].concat(STUDENT && STUDENT.program || [])
+      .map(n => codes.find(c => pwPrograms[c].name === n)).filter(Boolean)[0];
+    pwProgram = mine || codes[0] || null;
+    // The student's saved courses. Without this table the page still browses; it just can't save.
+    try {
+      const rows = await sbGet('student_pathway_courses',
+        `student_id=eq.${encodeURIComponent(STUDENT.id)}&select=id,program_code,course_id,planned_year`);
+      pwSaved = {};
+      (rows || []).forEach(r => (pwSaved[r.program_code] = pwSaved[r.program_code] || new Map())
+        .set(r.course_id, { year: r.planned_year || pwYearOf(r.course_id), rowId: r.id }));
+    } catch (e) {
+      pwSaveOff = e.message || String(e);
+      console.warn('[TaeSylla] student_pathway_courses unreadable, saving is off:', pwSaveOff);
+    }
+    pwLoaded = true;
+  } catch (e) {
+    pwError = e.message || String(e);
+  }
+  pwLoading = false;
+  if (location.hash === '#pathways') renderPathways();
+}
+
+// Writes go straight to the row the student owns (RLS: their own student_id only).
+async function pwWrite(method, path, body) {
+  await sbFresh();
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method, headers: sbHeaders(), body: body == null ? undefined : JSON.stringify(body),
+  });
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({}));
+    throw new Error(e.message || e.hint || `HTTP ${r.status}`);
+  }
+  return r.status === 204 ? null : r.json().catch(() => null);
+}
+async function pwToggle(courseId) {
+  if (pwSaveOff) return;
+  const m = pwMy(), cur = m.get(courseId);
+  try {
+    if (cur) {
+      await pwWrite('DELETE', `student_pathway_courses?id=eq.${encodeURIComponent(cur.rowId)}`);
+      m.delete(courseId);
+    } else {
+      const year = pwYearOf(courseId);
+      const rows = await pwWrite('POST', 'student_pathway_courses',
+        { student_id: STUDENT.id, program_code: pwProgram, course_id: courseId, planned_year: year });
+      m.set(courseId, { year, rowId: (rows && rows[0] || {}).id });
+    }
+  } catch (e) {
+    showToast(`Could not save to ${PW_LIST}: ${e.message}`);
+  }
+  renderPathways();
+}
+async function pwPlace(courseId, year) {
+  const cur = pwMy().get(courseId);
+  if (!cur || !PW_YEARS.includes(year) || cur.year === year) return;
+  const was = cur.year;
+  cur.year = year;
+  renderPathways();
+  try {
+    await pwWrite('PATCH', `student_pathway_courses?id=eq.${encodeURIComponent(cur.rowId)}`, { planned_year: year });
+  } catch (e) {
+    cur.year = was;
+    showToast(`Could not move the course: ${e.message}`);
+    renderPathways();
+  }
+}
+
+// a bookmark: outline when the course is not on the pathway, solid when it is
+function pwBookmarkSvg(on, size) {
+  const n = size || 20;
+  return `<svg width="${n}" height="${n}" viewBox="0 0 16 16" aria-hidden="true"><path
+    d="M4 2.4h8a1 1 0 0 1 1 1v10.3a.5.5 0 0 1-.78.41L8 11.3l-4.22 2.81A.5.5 0 0 1 3 13.7V3.4a1 1 0 0 1 1-1z"
+    fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
+}
+function pwGripSvg() {
+  return `<svg class="pc-grip" width="9" height="15" viewBox="0 0 8 14" aria-hidden="true"><g fill="currentColor">
+    <circle cx="1.5" cy="2" r="1.3"/><circle cx="6.5" cy="2" r="1.3"/><circle cx="1.5" cy="7" r="1.3"/>
+    <circle cx="6.5" cy="7" r="1.3"/><circle cx="1.5" cy="12" r="1.3"/><circle cx="6.5" cy="12" r="1.3"/></g></svg>`;
+}
+
+// Every course of the program, with its best mark among the checked roles and its score.
+function pwScored() {
+  const ids = pwRoles().map(r => r.id);
+  const chk = [...pwChecked].filter(id => ids.includes(id));
+  const idle = !chk.length;
+  const use = idle ? ids : chk;
+  const items = pwProg().courses.map((c, i) => {
+    let top = null, score = 0;
+    const fr = [];
+    if (idle) return { c, i, top, score, fr };
+    use.forEach(id => {
+      const m = pwMarkOf(c.course_id, id);
+      if (PW_W[m]) { score += PW_W[m]; if (!top || PW_W[m] > PW_W[top]) top = m; }
+    });
+    if (top) use.forEach(id => { if (pwMarkOf(c.course_id, id) === top) fr.push(id); });
+    return { c, i, top, score, fr };
+  });
+  // With a role or two, the strongest mark leads; with three or more, the sum says more than any one mark.
+  items.sort((a, b) => use.length >= 3
+    ? (b.score - a.score || (PW_W[b.top] || 0) - (PW_W[a.top] || 0) || a.i - b.i)
+    : ((PW_W[b.top] || 0) - (PW_W[a.top] || 0) || b.fr.length - a.fr.length || b.score - a.score || a.i - b.i));
+  return { items, chk, idle };
+}
+
+function pathwaysHeaderHtml() {
+  return `
+    <div class="ph-header">
+      <div class="ph-greeting">Learning Pathways</div>
+      <div class="ph-subline">The roles graduates of a program go into, and the courses that get you there.
+        Check the roles you are drawn to, then save the courses you want on your own pathway.</div>
+    </div>`;
+}
+
+function pwRolesPanelHtml() {
+  const total = pwRoles().length;
+  const all = pwChecked.size === total && total > 0;
+  return `<div class="lp-card lp-side lp-roles">
+      <div class="lp-hd"><span class="lp-hd-t">Graduate roles</span>
+        <button class="lp-link" id="lp-all">${all ? 'Clear all' : 'Select all'}</button></div>
+      <div class="lp-scroll" id="lp-roles"></div>
+    </div>`;
+}
+function pwFillRoles() {
+  const host = document.getElementById('lp-roles');
+  if (!host) return;
+  host.innerHTML = pwProg().groups.map(g => {
+    const rs = pwRoles().filter(r => (r.group || '') === g);
+    if (!rs.length) return '';
+    return `<div class="rl-g">${esc(g)}</div>` + rs.map(r => {
+      const on = pwChecked.has(r.id);
+      return `<div class="rl ${on ? 'on' : ''}" data-role="${esc(r.id)}" role="checkbox" tabindex="0" aria-checked="${on}">
+          <span class="rl-box"></span>
+          <span><span class="rl-n">${esc(r.name)}</span>${r.short ? `<span class="rl-s">${esc(r.short)}</span>` : ''}</span>
+        </div>`;
+    }).join('');
+  }).join('');
+  host.querySelectorAll('.rl').forEach(el => {
+    const toggle = () => {
+      const id = el.dataset.role;
+      pwChecked.has(id) ? pwChecked.delete(id) : pwChecked.add(id);
+      renderPathways();
+    };
+    el.onclick = toggle;
+    el.onkeydown = (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); } };
+  });
+}
+
+function pwCoursesPanelHtml() {
+  const { items, chk, idle } = pwScored();
+  const n = { S: 0, C: 0, R: 0 };
+  items.forEach(x => { if (x.top) n[x.top]++; });
+  const roleName = (id) => (pwRoles().find(r => r.id === id) || {}).name || '';
+  const title = pwOpen ? 'Courses'
+    : idle ? 'All courses'
+    : chk.length === 1 ? `Courses for ${esc(roleName(chk[0]))}` : `Courses for ${chk.length} roles`;
+  const legend = idle
+    ? `<span class="lp-hd-s">Check a role to see which courses matter most</span>`
+    : `<span class="lp-legend">${['S', 'C', 'R'].map(k =>
+        `<span class="mk ${k}">${PW_SYM[k]} ${n[k]}${pwOpen ? '' : ` ${PW_WORD[k]}`}</span>`).join('')}</span>`;
+  const mini = !!pwOpen;
+  const rows = items.map(x => {
+    const saved = pwMy().has(x.c.course_id);
+    const bm = pwSaveOff ? '' : `<span class="cr-bm ${saved ? 'on' : ''}" role="button" tabindex="0"
+      data-save="${esc(x.c.course_id)}" title="${saved ? `Saved to ${PW_LIST}` : `Save to ${PW_LIST}`}">${pwBookmarkSvg(saved)}</span>`;
+    const badge = x.top ? `<span class="mk ${x.top}">${mini ? PW_SYM[x.top] : PW_MARK[x.top]}</span>` : '';
+    const cls = `cr ${mini ? 'mini ' : ''}${pwOpen === x.c.course_id ? 'sel ' : ''}${x.top || idle ? '' : 'none'}`;
+    if (mini) {
+      return `<div class="${cls}" role="button" tabindex="0" data-code="${esc(x.c.course_id)}">
+          <span><span class="cr-top"><span class="cr-code">${esc(x.c.course_id)}</span>${badge}</span>
+          <span class="cr-t">${esc(x.c.title)}</span></span>
+          <span class="cr-right">${bm}</span></div>`;
+    }
+    return `<div class="${cls}" role="button" tabindex="0" data-code="${esc(x.c.course_id)}">
+        <span class="cr-code">${esc(x.c.course_id)}</span>
+        <span><span class="cr-t">${esc(x.c.title)}</span>
+        <div class="cr-m">${esc(x.c.classification || '')}${x.c.offered ? ` · ${esc(x.c.offered)}` : ''}</div></span>
+        <span class="cr-right">${badge}${bm}<span class="chev">${chevronSvg()}</span></span>
+      </div>`;
+  }).join('');
+  return `<div class="lp-card"><div class="lp-hd"><span class="lp-hd-t">${title}</span>${legend}</div>
+      <div id="lp-courses">${rows}</div></div>`;
+}
+
+function pwDetailPanelHtml() {
+  const c = pwProg().courses.find(x => x.course_id === pwOpen);
+  if (!c) return '';
+  const off = pwOffering(c.course_id);
+  const saved = pwMy().has(c.course_id);
+  const forRoles = pwRoles().filter(r => pwChecked.has(r.id) && PW_W[pwMarkOf(c.course_id, r.id)])
+    .sort((a, b) => PW_W[pwMarkOf(c.course_id, b.id)] - PW_W[pwMarkOf(c.course_id, a.id)]);
+  const f = (k, v) => `<div class="lp-f"><div class="lp-f-k">${k}</div><div class="lp-f-v">${esc(v || '—')}</div></div>`;
+  const bm = pwSaveOff ? '' : `<span class="cr-bm ${saved ? 'on' : ''}" id="lp-save" role="button" tabindex="0"
+    title="${saved ? `Saved to ${PW_LIST}` : `Save to ${PW_LIST}`}">${pwBookmarkSvg(saved)}</span>`;
+  return `<div class="lp-card lp-side">
+      <div class="lp-hd"><span class="lp-hd-t">Course</span>
+        ${off ? `<button class="lp-link" id="lp-open-course">Open course page →</button>` : ''}
+        ${bm}<button class="lp-x" id="lp-close" title="Close">×</button></div>
+      <div class="lp-scroll"><div class="lp-d-body">
+        <div class="lp-d-top"><span class="lp-d-code">${esc(c.course_id)}</span>
+          ${forRoles.length ? `<span class="mk ${pwMarkOf(c.course_id, forRoles[0].id)}">${PW_MARK[pwMarkOf(c.course_id, forRoles[0].id)]}</span>` : ''}</div>
+        <div class="lp-d-t">${esc(c.title)}</div>
+        <div class="lp-d-s">${esc(c.classification || '')}${c.credits ? ` · ${esc(c.credits)} credits` : ''}${c.offered ? ` · ${esc(c.offered)}` : ''}</div>
+        ${f('Description', c.description)}
+        ${f('Offered', c.offered)}
+        ${off ? f('Latest syllabus', `${off.semester} · ${off.professor}`)
+              : `<div class="lp-f"><div class="lp-f-k">Syllabus</div><div class="lp-f-v">No published syllabus yet, so this course has no page to open.</div></div>`}
+        ${forRoles.length ? `<div class="lp-d-roles">For the roles you checked: ${forRoles.map(r =>
+          `<span class="mk ${pwMarkOf(c.course_id, r.id)}">${PW_SYM[pwMarkOf(c.course_id, r.id)]} ${esc(r.name)}</span>`).join('')}</div>` : ''}
+      </div></div></div>`;
+}
+
+// My Learning Pathway: the saved courses, one column per year, dragged between years.
+function pwPlanPanelHtml() {
+  const m = pwMy();
+  if (!m.size) return '';
+  const chk = [...pwChecked];
+  const best = (courseId) => {
+    let t = null;
+    chk.forEach(id => { const k = pwMarkOf(courseId, id); if (PW_W[k] && (!t || PW_W[k] > PW_W[t])) t = k; });
+    return t;
+  };
+  const picked = [...m.keys()].map(id => pwProg().courses.find(c => c.course_id === id)).filter(Boolean);
+  const cell = (y) => {
+    const list = picked.filter(c => m.get(c.course_id).year === y);
+    const body = list.length
+      ? list.map(c => {
+          const k = best(c.course_id);
+          return `<div class="pc ${k ? 't' + k : ''}" draggable="true" data-code="${esc(c.course_id)}">
+              <button class="pc-x" draggable="false" data-drop="${esc(c.course_id)}" title="Remove from ${PW_LIST}">×</button>
+              <span class="pc-hd">${pwGripSvg()}<span class="pc-code">${esc(c.course_id)}</span></span>
+              <span class="pc-t">${esc(c.title)}</span>
+            </div>`;
+        }).join('')
+      : `<div class="plan-drop"><span>Drop here</span></div>`;
+    return `<div class="plan-col"><div class="plan-y">Year ${y}</div>
+        <div class="plan-cell" data-y="${y}">${body}</div></div>`;
+  };
+  return `<div class="lp-card lp-plan">
+      <div class="lp-hd"><span class="lp-hd-t">${PW_LIST}</span>
+        <span class="plan-n">${m.size} course${m.size === 1 ? '' : 's'}</span>
+        <span class="plan-n">· drag a card by its grip to another year</span></div>
+      <div class="plan-grid">${PW_YEARS.map(cell).join('')}</div>
+    </div>`;
+}
+
+function renderPathways() {
+  const el = document.getElementById('page-pathways');
+  if (!el) return;
+  if (pwError) {
+    el.innerHTML = pathwaysHeaderHtml() +
+      `<div class="list-card"><div class="empty-row">Unable to load the learning pathways: ${esc(pwError)}</div></div>`;
+    return;
+  }
+  if (!pwLoaded) {
+    el.innerHTML = pathwaysHeaderHtml() + `<div class="list-card"><div class="empty-row">Loading…</div></div>`;
+    loadPathwaysData();
+    return;
+  }
+  const codes = Object.keys(pwPrograms);
+  if (!codes.length) {
+    el.innerHTML = pathwaysHeaderHtml() + `<div class="lp-blank">
+        <div class="lp-blank-b">Coming soon</div>
+        <div class="lp-blank-t">No pathways yet</div>
+        <p class="lp-blank-p">Each program sets out the roles its graduates go into and marks the courses that
+          lead to each. None has done that yet — they will appear here as they do.</p></div>`;
+    return;
+  }
+  // The skeleton survives a re-render, so the columns slide instead of jumping.
+  if (!document.getElementById('lp-cols')) {
+    el.innerHTML = pathwaysHeaderHtml() +
+      `<div class="lp-progs" id="lp-progs"></div><div class="lp-cols" id="lp-cols"></div>
+       <div id="lp-planhost"></div><div class="lp-note" id="lp-note"></div>`;
+  }
+  // Program picker: the programs that have set out their roles, in the canonical order.
+  const progs = codes.map(c => pwPrograms[c]).sort((a, b) => {
+    const ia = PROGRAM_OPTIONS.indexOf(a.name), ib = PROGRAM_OPTIONS.indexOf(b.name);
+    return (ia === -1 ? 1e9 : ia) - (ib === -1 ? 1e9 : ib) || a.name.localeCompare(b.name);
+  });
+  document.getElementById('lp-progs').innerHTML = `<span class="lp-progs-k">Program</span>
+    <span class="cf-select-wrap"><select class="cf-select set" id="lp-prog" aria-label="Program">${progs.map(p =>
+      `<option value="${esc(p.code)}"${p.code === pwProgram ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select></span>`;
+  document.getElementById('lp-prog').onchange = (e) => {
+    pwProgram = e.target.value; pwChecked = new Set(); pwOpen = null; renderPathways();
+  };
+
+  const cols = document.getElementById('lp-cols');
+  const anyRole = pwChecked.size > 0;
+  cols.className = 'lp-cols' + (anyRole || pwOpen ? ' has-courses' : '') + (pwOpen ? ' has-detail' : '');
+  cols.innerHTML = pwRolesPanelHtml() + (anyRole || pwOpen ? pwCoursesPanelHtml() : '') + (pwOpen ? pwDetailPanelHtml() : '');
+  document.getElementById('lp-planhost').innerHTML = pwPlanPanelHtml();
+  pwFillRoles();
+
+  const total = pwRoles().length;
+  document.getElementById('lp-all').onclick = () => {
+    pwChecked = pwChecked.size === total ? new Set() : new Set(pwRoles().map(r => r.id));
+    renderPathways();
+  };
+  const host = document.getElementById('lp-courses');
+  if (host) {
+    host.querySelectorAll('.cr').forEach(b => {
+      const go = () => { pwOpen = pwOpen === b.dataset.code ? null : b.dataset.code; renderPathways(); };
+      b.onclick = go;
+      b.onkeydown = (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); go(); } };
+    });
+    // the bookmark saves a course straight from the list, without opening it
+    host.querySelectorAll('.cr-bm').forEach(x => {
+      const save = (e) => { e.stopPropagation(); e.preventDefault(); pwToggle(x.dataset.save); };
+      x.onclick = save;
+      x.onkeydown = (e) => { if (e.key === ' ' || e.key === 'Enter') save(e); };
+    });
+  }
+  const close = document.getElementById('lp-close');
+  if (close) close.onclick = () => { pwOpen = null; renderPathways(); };
+  const save = document.getElementById('lp-save');
+  if (save) {
+    save.onclick = () => pwToggle(pwOpen);
+    save.onkeydown = (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); pwToggle(pwOpen); } };
+  }
+  const openCourse = document.getElementById('lp-open-course');
+  if (openCourse) openCourse.onclick = () => { const o = pwOffering(pwOpen); if (o) goToCourse(o.id); };
+
+  const planHost = document.getElementById('lp-planhost');
+  planHost.querySelectorAll('.pc-x').forEach(b => {
+    b.onclick = (e) => { e.stopPropagation(); pwToggle(b.dataset.drop); };
+  });
+  const grid = planHost.querySelector('.plan-grid');
+  planHost.querySelectorAll('.pc').forEach(card => {
+    card.ondragstart = (e) => {
+      e.dataTransfer.setData('text/plain', card.dataset.code);
+      e.dataTransfer.effectAllowed = 'move';
+      card.classList.add('drag');
+      if (grid) grid.classList.add('dragging');
+    };
+    card.ondragend = () => {
+      card.classList.remove('drag');
+      if (grid) grid.classList.remove('dragging');
+      planHost.querySelectorAll('.plan-cell.over').forEach(x => x.classList.remove('over'));
+    };
+  });
+  planHost.querySelectorAll('.plan-cell').forEach(cellEl => {
+    cellEl.ondragover = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; cellEl.classList.add('over'); };
+    cellEl.ondragleave = () => cellEl.classList.remove('over');
+    cellEl.ondrop = (e) => {
+      e.preventDefault();
+      cellEl.classList.remove('over');
+      if (grid) grid.classList.remove('dragging');
+      pwPlace(e.dataTransfer.getData('text/plain'), +cellEl.dataset.y);
+    };
+  });
+
+  document.getElementById('lp-note').innerHTML = anyRole || pwOpen || pwMy().size
+    ? `★ signature · ● core · ○ recommended${pwSaveOff ? '' :
+        ` · <span class="bm">${pwBookmarkSvg(true, 16)}</span> saved to ${PW_LIST}`}.
+       Recommendations, not official tracks: the roles and the marks are the ones your program sets on its
+       Program page, so this page stays in step with it.${pwSaveOff
+        ? `<br>Saving to ${PW_LIST} is not available yet.` : ''}`
+    : '';
 }
 
 // ── RENDER: This semester ──
