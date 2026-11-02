@@ -695,6 +695,9 @@ button,input{font-family:inherit;}
 .lp-f:first-of-type{border-top:1px solid var(--border);margin-top:16px;}
 .lp-f-k{flex:0 0 116px;color:var(--text3);font-size:14px;letter-spacing:.06em;text-transform:uppercase;padding-top:4px;}
 .lp-f-v{color:var(--text);min-width:0;line-height:1.5;}
+.lp-hd .cr-bm{margin-left:auto;}
+.lp-cta{margin-top:22px;}
+.lp-cta .btn{width:100%;height:48px;justify-content:center;font-size:19px;}
 .lp-d-roles{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);font-size:17px;color:var(--text2);}
 .lp-note{margin-top:18px;font-size:17px;color:var(--text3);line-height:1.6;max-width:110ch;}
 .lp-note .bm{color:var(--teal);}
@@ -2833,7 +2836,7 @@ let pwLoaded = false, pwLoading = false, pwError = null;
 let pwChecked = new Set();               // role ids the student has checked
 let pwOpen = null;                       // course_id of the course open on the right
 let pwSaved = {};                        // { [programCode]: Map(course_id -> {year, rowId}) } — the saved rows as the DB has them
-let pwSaveOff = '';                      // set when student_pathway_courses can't be read: saving is then hidden, browsing still works
+let pwSaveOff = '';                      // '' while saving works; 'preview' or 'table' when it can't, and the bookmarks are then hidden
 
 function pwMy() { return (pwSaved[pwProgram] = pwSaved[pwProgram] || new Map()); }
 function pwProg() { return pwPrograms[pwProgram] || { roles: [], groups: [], marks: {}, courses: [] }; }
@@ -2884,16 +2887,22 @@ async function loadPathwaysData() {
     const mine = [].concat(STUDENT && STUDENT.program || [])
       .map(n => codes.find(c => pwPrograms[c].name === n)).filter(Boolean)[0];
     pwProgram = mine || codes[0] || null;
-    // The student's saved courses. Without this table the page still browses; it just can't save.
-    try {
-      const rows = await sbGet('student_pathway_courses',
-        `student_id=eq.${encodeURIComponent(STUDENT.id)}&select=id,program_code,course_id,planned_year`);
-      pwSaved = {};
-      (rows || []).forEach(r => (pwSaved[r.program_code] = pwSaved[r.program_code] || new Map())
-        .set(r.course_id, { year: r.planned_year || pwYearOf(r.course_id), rowId: r.id }));
-    } catch (e) {
-      pwSaveOff = e.message || String(e);
-      console.warn('[TaeSylla] student_pathway_courses unreadable, saving is off:', pwSaveOff);
+    // The student's saved courses. A pathway belongs to the student who is signed in, so a preview
+    // of someone else's app reads and writes none of it (RLS would refuse anyway). Without the table
+    // the page still browses; it just can't save.
+    pwSaved = {};
+    if (STUDENT.preview) {
+      pwSaveOff = 'preview';
+    } else {
+      try {
+        const rows = await sbGet('student_pathway_courses',
+          `student_id=eq.${encodeURIComponent(STUDENT.id)}&select=id,program_code,course_id,planned_year`);
+        (rows || []).forEach(r => (pwSaved[r.program_code] = pwSaved[r.program_code] || new Map())
+          .set(r.course_id, { year: r.planned_year || pwYearOf(r.course_id), rowId: r.id }));
+      } catch (e) {
+        pwSaveOff = 'table';
+        console.warn('[TaeSylla] student_pathway_courses unreadable, saving is off:', e.message || e);
+      }
     }
     pwLoaded = true;
   } catch (e) {
@@ -3076,7 +3085,6 @@ function pwDetailPanelHtml() {
     title="${saved ? `Saved to ${PW_LIST}` : `Save to ${PW_LIST}`}">${pwBookmarkSvg(saved)}</span>`;
   return `<div class="lp-card lp-side">
       <div class="lp-hd"><span class="lp-hd-t">Course</span>
-        ${off ? `<button class="lp-link" id="lp-open-course">Open course page →</button>` : ''}
         ${bm}<button class="lp-x" id="lp-close" title="Close">×</button></div>
       <div class="lp-scroll"><div class="lp-d-body">
         <div class="lp-d-top"><span class="lp-d-code">${esc(c.course_id)}</span>
@@ -3089,6 +3097,7 @@ function pwDetailPanelHtml() {
               : `<div class="lp-f"><div class="lp-f-k">Syllabus</div><div class="lp-f-v">No published syllabus yet, so this course has no page to open.</div></div>`}
         ${forRoles.length ? `<div class="lp-d-roles">For the roles you checked: ${forRoles.map(r =>
           `<span class="mk ${pwMarkOf(c.course_id, r.id)}">${PW_SYM[pwMarkOf(c.course_id, r.id)]} ${esc(r.name)}</span>`).join('')}</div>` : ''}
+        ${off ? `<div class="lp-cta"><button class="btn btn-primary" id="lp-open-course">Open course page →</button></div>` : ''}
       </div></div></div>`;
 }
 
@@ -3235,8 +3244,9 @@ function renderPathways() {
     ? `★ signature · ● core · ○ recommended${pwSaveOff ? '' :
         ` · <span class="bm">${pwBookmarkSvg(true, 16)}</span> saved to ${PW_LIST}`}.
        Recommendations, not official tracks: the roles and the marks are the ones your program sets on its
-       Program page, so this page stays in step with it.${pwSaveOff
-        ? `<br>Saving to ${PW_LIST} is not available yet.` : ''}`
+       Program page, so this page stays in step with it.${
+        pwSaveOff === 'preview' ? `<br>A preview of the student app: ${PW_LIST} belongs to the student who is signed in, so nothing is saved from here.`
+        : pwSaveOff ? `<br>Saving to ${PW_LIST} is not available yet.` : ''}`
     : '';
 }
 
