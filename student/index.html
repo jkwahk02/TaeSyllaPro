@@ -1669,7 +1669,14 @@ async function enterApp(email, restored) {
   const stRes = await fetch(`${SUPABASE_URL}/rest/v1/students?email=eq.${encodeURIComponent(authEmail)}&select=id,name_en,must_change_password,program`, { headers });
   const stData = stRes.ok ? await stRes.json() : [];
   let preview = null;
-  if (!Array.isArray(stData) || !stData.length) {
+  // ?student=<id> is the preview, and stays the preview even for someone who also has a student
+  // record of their own (a test student): without the parameter that record is simply theirs,
+  // so what they save on Learning Pathways is saved under their own name.
+  const wantsPreview = PREVIEW_EMAILS.includes(authEmail) &&
+    (new URLSearchParams(location.search).get('student') || '').trim() !== '';
+  if (wantsPreview) {
+    preview = await previewStudent(authEmail, headers);
+  } else if (!Array.isArray(stData) || !stData.length) {
     if (PREVIEW_EMAILS.includes(authEmail)) {
       preview = await previewStudent(authEmail, headers);
     } else {
