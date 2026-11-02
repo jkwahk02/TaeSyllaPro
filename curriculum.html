@@ -427,6 +427,8 @@ td.off-sem input{opacity:.45;}
 #flow.hl path.rb{opacity:.08;}
 #flow.hl path.rb.on{opacity:.85;}
 
+/* Course Catalog on its own (the student app embeds this page with ?view=catalog) */
+body.catalog-only .tabs,body.catalog-only #actions{display:none;}
 /* embedded in TaeSylla Pro: the parent page has the top bar, rail and page padding */
 html,body{background:transparent;}
 .shell{display:block;min-height:0;}
@@ -456,7 +458,7 @@ html,body{background:transparent;}
   <main class="main">
     <div class="ph">
       <div>
-        <div class="label">Curriculum</div>
+        <div class="label" id="ph-label">Curriculum</div>
         <h1><span id="prog-name">Data Science and Artificial Intelligence</span> <span class="chip blue role-chip" id="role-chip">Chair</span>
           <select class="sel prog-sel" id="prog-sel" aria-label="Program" onchange="setProg(this.value)" hidden></select></h1>
       </div>
@@ -600,7 +602,9 @@ const ME = {chair: window.__CUR.me, faculty: window.__CUR.me, multi: window.__CU
 const DSAI = window.__CUR.progName;   // the program being shown
 const PROGS = {chair: window.__CUR.progNames, faculty: window.__CUR.progNames, multi: window.__CUR.progNames};
 let prog = DSAI;
-function setProg(p){ if (editing) discard(); location.search = '?p=' + encodeURIComponent(window.__CUR.progCodes[p] || ''); }
+function setProg(p){ if (editing) discard();
+  const q = new URLSearchParams(location.search); q.set('p', window.__CUR.progCodes[p] || '');   // keep ?v= and ?view=
+  location.search = '?' + q; }
 
 const clone = o => JSON.parse(JSON.stringify(o));
 let saved = {}; for (const c of COURSES) { saved[c] = {}; for (const p of PLOS) saved[c][p.code] = (DATA.map[c][p.code] || {}).levels || ''; }
@@ -927,7 +931,7 @@ function renderCat(){
       <td class="c">${ed(c) ? field(i, 'credits', 56) : esc(c.credits)}</td>
       <td class="c">${ed(c) ? field(i, 'lecture', 56) : esc(c.lecture)}</td>
       <td>${ed(c) ? `<select onchange="DATA.catalog[${i}].offered=this.value">${['Fall', 'Spring', 'Fall · Spring', 'Fall (+Spring)', 'Spring (+Fall)'].map(o => `<option ${o === c.offered ? 'selected' : ''}>${o}</option>`).join('')}</select>` : esc(c.offered)}</td><td title="${esc(c.lead)}">${esc(leadOf(c))}</td></tr>${catOpen[c.code] ? catProfile(c, i, ed(c)) : ''}`).join('')}</tbody>`;
-  $('cat-note').innerHTML = `<span class="xl-mark">*</span>${DATA.catalog.filter(c => c.xl).map(c => c.code).join(', ')} may be recognized either as courses offered by the school that provides the course or as major courses within the Program of Data Science and Artificial Intelligence. Each course counts only once toward graduation credit; students choose which program it counts toward.`;
+  $('cat-note').innerHTML = `<span class="xl-mark">*</span>${DATA.catalog.filter(c => c.xl).map(c => c.code).join(', ')} may be recognized either as courses offered by the school that provides the course or as major courses within the Program of ${esc(prog)}. Each course counts only once toward graduation credit; students choose which program it counts toward.`;
 }
 // Course profile, expanded under its row: the course itself (not one semester's offering)
 // Curricular domains as a 4-axis spider: Primary 3, Strong 2.5, Reinforced 1.5, Introduced 0.75
@@ -1641,7 +1645,11 @@ function renderEmptyProg(t){
        ${chairOfIt ? `<p>Define graduate roles and recommend courses for each, so students can explore careers and plan their courses in Pathfinder.</p><button class="btn btn-primary">Set up roles</button>`
                    : `<p class="sub">The program chair has not set up graduate roles for ${esc(prog)}.</p>`}</div>`;
 }
-function render(){ renderProgHead(); document.body.classList.toggle('editing', editing); renderActions(); renderOv(); renderPlos(); renderMap(); renderProps(); renderCat(); renderOff(); renderSemMatrix(); renderIns(); renderFlow(); }
+function render(){
+  renderProgHead(); document.body.classList.toggle('editing', editing); renderActions();
+  // Catalog-only: that tab is the whole page, and a program may have a catalog but no overview or map yet
+  if (window.__CUR.catalogOnly) return renderCat();
+  renderOv(); renderPlos(); renderMap(); renderProps(); renderCat(); renderOff(); renderSemMatrix(); renderIns(); renderFlow(); }
 render();
 
 // One "Last updated" for the page, next to Edit / Save: the date of the tab being shown
@@ -1655,7 +1663,9 @@ function renderUpd(){
 $('role-chip').hidden = !window.__CUR.isChairOfProg;   // tells a chair this is their program, even while editing is not open yet
 pfSync();
 document.querySelectorAll('.xl-btn').forEach(b => b.insertAdjacentHTML('afterbegin', XL));   // Excel icon
-setTab('ov');   // pages with tabs open on the first tab
+// Embedded as the Course Catalog (the student app): that one tab, no tab bar, nothing to edit.
+if (window.__CUR.catalogOnly) { document.body.classList.add('catalog-only'); $('ph-label').textContent = 'Course Catalog'; setTab('cat'); }
+else setTab('ov');   // pages with tabs open on the first tab
 </script>
 <script>
 // Curriculum page loader: reads the signed-in session from the TaeSylla page around this frame, loads the
@@ -1663,11 +1673,14 @@ setTab('ov');   // pages with tabs open on the first tab
 (async function () {
   const P = window.parent;
   const pe = expr => { try { return P.eval(expr); } catch (e) { return undefined; } };
+  // ?view=catalog (the student app): the Course Catalog tab alone, read-only, with every program
+  // that has a catalog in the picker — a student belongs to no program on this page.
+  const CATALOG_ONLY = new URLSearchParams(location.search).get('view') === 'catalog';
   const user = pe('supabaseUser'), URL_ = pe('SUPABASE_URL'), KEY = pe('SUPABASE_KEY');
   const F = P.__curFetch || fetch.bind(window);   // __curFetch: local test harness only
   const box = document.getElementById('cur-boot');
   const fail = m => { box.innerHTML = `<div class="card"><p class="sub">${m}</p></div>`; fitFrame(); };
-  if (!user || !user.access_token) return fail('Please sign in to TaeSylla Pro first.');
+  if (!user || !user.access_token) return fail(`Please sign in to TaeSylla${CATALOG_ONLY ? '' : ' Pro'} first.`);
   const H = {apikey: KEY, Authorization: `Bearer ${user.access_token}`, 'Content-Type': 'application/json'};
   const get = async (t, q) => { const r = await F(`${URL_}/rest/v1/${t}?${q}`, {headers: H}); if (!r.ok) throw new Error(`${t}: HTTP ${r.status}`); return r.json(); };
   const rpc = async (fn, body) => { const r = await F(`${URL_}/rest/v1/rpc/${fn}`, {method: 'POST', headers: H, body: JSON.stringify(body || {})}); if (!r.ok) throw new Error(`${fn}: HTTP ${r.status}`); return r.json(); };
@@ -1686,11 +1699,17 @@ setTab('ov');   // pages with tabs open on the first tab
   const rpcW = (fn, body) => send('POST', `rpc/${fn}`, body || {});
   const inList = a => `(${a.map(x => `"${String(x).replace(/"/g, '')}"`).join(',')})`;
   const day = s => (s || '').slice(0, 10);
+  // Catalog-only: the programs that have a course catalog, so a student can read any of them.
+  const catalogPrograms = async () => {
+    const [rows, programs] = await Promise.all([get('outcome_catalog', 'select=program_code'), get('programs', 'select=code,name&order=code.asc')]);
+    const have = new Set(rows.map(r => r.program_code));
+    return programs.filter(p => have.has(p.code));
+  };
 
   try {
     // 1. Programs of the signed-in user; ?p=CODE picks one when there are several
-    const progs = await rpc('outcome_my_programs');
-    if (!progs.length) return fail('Your faculty profile is not linked to a program yet.');
+    const progs = CATALOG_ONLY ? await catalogPrograms() : await rpc('outcome_my_programs');
+    if (!progs.length) return fail(CATALOG_ONLY ? 'No course catalog has been set up yet.' : 'Your faculty profile is not linked to a program yet.');
     const want = new URLSearchParams(location.search).get('p');
     const me = progs.find(p => p.code === want) || progs[0];
     const code = me.code;
@@ -1714,10 +1733,10 @@ setTab('ov');   // pages with tabs open on the first tab
     const [iloMap, cmap, props, courses, offs, fac, programs] = await Promise.all([
       ploIds.length ? get('outcome_plo_ilo_map', `plo_id=in.(${ploIds.join(',')})&select=plo_id,ilo_code`) : [],
       ploIds.length ? get('outcome_curriculum_map', `plo_id=in.(${ploIds.join(',')})&select=course_base_id,plo_id,levels,tagged_clo_numbers,approved_at`) : [],
-      ploIds.length ? get('outcome_map_proposals', `plo_id=in.(${ploIds.join(',')})&order=proposed_at.desc&select=*`) : [],
+      ploIds.length && !CATALOG_ONLY ? get('outcome_map_proposals', `plo_id=in.(${ploIds.join(',')})&order=proposed_at.desc&select=*`) : [],
       codes.length ? get('courses', `course_id=in.${inList(codes)}&select=course_id,title,competency_critical_thinking,competency_creative_thinking,competency_self_directed_learning,competency_communication,competency_diversity_empathy,competency_global_harmony`) : [],
       codes.length ? get('course_offerings', `course_base_id=in.${inList(offCodes)}&select=offering_id,course_id,course_base_id,section,semester_year,professor,status,weekday_time,reference_timezone_student_location,title`) : [],
-      get('faculty_profiles', 'select=name_en,email,program'),
+      CATALOG_ONLY ? get('faculty_profiles', 'select=name_en,email,program').catch(() => []) : get('faculty_profiles', 'select=name_en,email,program'),
       get('programs', 'select=code,name'),
     ]);
     const progName = c => (programs.find(p => p.code === c) || {}).name || c;
@@ -1775,9 +1794,9 @@ setTab('ov');   // pages with tabs open on the first tab
     const prop = x => ({id: x.proposal_id, course: x.course_base_id, plo: plo(x.plo_id), from: x.current_levels || '', to: x.proposed_levels || '',
       by: nameOf(x.proposed_by), byEmail: x.proposed_by, term: '', when: day(x.proposed_at), why: x.reason || ''});
     window.__CUR = {
-      DATA, OV, PF, curTerm, code, progName: me.name,
+      DATA, OV, PF, curTerm, code, progName: me.name, catalogOnly: CATALOG_ONLY,
       progNames: progs.map(p => p.name), progCodes: Object.fromEntries(progs.map(p => [p.name, p.code])),
-      me: pe('PROFESSOR && PROFESSOR.name') || nameOf(user.user && user.user.email),
+      me: pe('PROFESSOR && PROFESSOR.name') || pe('STUDENT && STUDENT.name') || nameOf(user.user && user.user.email),
       role: me.is_chair ? 'chair' : 'faculty',           // Phase 3: the program's chair edits, everyone else reads
       // as stored (a separate copy: the page edits OV/PF in place), so a save sees what changed and keeps keys the page doesn't show
       ilos: ilos.map(x => ({code: x.ilo_code, title: x.title})),
@@ -1797,6 +1816,7 @@ setTab('ov');   // pages with tabs open on the first tab
       },
     };
     box.remove();
+    if (CATALOG_ONLY) document.getElementById('pf-frame').removeAttribute('src');   // the Pathways tab never shows: don't load its frame
     const s = document.createElement('script'); s.textContent = document.getElementById('cur-main').textContent;
     document.body.appendChild(s);
   } catch (e) {

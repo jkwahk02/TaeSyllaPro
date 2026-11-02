@@ -672,6 +672,7 @@ button,input{font-family:inherit;}
   <div class="tb-tabs">
     <button class="rail-btn active" id="rail-home" onclick="location.hash=''">Home</button>
     <button class="rail-btn" id="rail-finder" onclick="location.hash='finder'">Course Finder</button>
+    <button class="rail-btn" id="rail-catalog" onclick="location.hash='catalog'">Course Catalog</button>
     <button class="rail-btn" id="rail-about" onclick="location.hash='about'">About</button>
   </div>
   <div class="tb-right">
@@ -702,6 +703,7 @@ button,input{font-family:inherit;}
     </div>
     <div id="page-course" style="display:none;"></div>
     <div id="page-finder" style="display:none;"></div>
+    <div id="page-catalog" style="display:none;"></div>
     <div id="page-about" style="display:none;"></div>
   </div>
 </div>
@@ -792,7 +794,7 @@ function goToCourse(id) {
 }
 window.addEventListener('hashchange', handleRoute);
 function showPage(id) {
-  ['page-home', 'page-course', 'page-finder', 'page-about'].forEach(p => { document.getElementById(p).style.display = p === id ? 'block' : 'none'; });
+  ['page-home', 'page-course', 'page-finder', 'page-catalog', 'page-about'].forEach(p => { document.getElementById(p).style.display = p === id ? 'block' : 'none'; });
 }
 function handleRoute() {
   if (!dataLoaded) return; // loadStudentData() calls handleRoute() again once ready
@@ -816,6 +818,16 @@ function handleRoute() {
     showPage('page-finder');
     renderFinder();
     setRailActive('rail-finder');
+  } else if (location.hash === '#catalog') {
+    lastListRoute = 'catalog';
+    showPage('page-catalog');
+    const pc = document.getElementById('page-catalog');
+    // The Course Catalog is its own document (curriculum.html, the same page the faculty app shows);
+    // it reads this page's session. ?v= changes with every deploy so browsers don't keep an old copy.
+    if (!pc.firstChild) pc.innerHTML = '<iframe id="cur-frame" src="../curriculum.html?view=catalog&v=' + CUR_VER + '" title="Course Catalog" style="display:block;width:100%;height:900px;border:0;"></iframe>';
+    setRailActive('rail-catalog');
+    // back from a course opened here: same place on the page (the frame keeps its open course)
+    if (curScrollY != null) { const y = curScrollY; curScrollY = null; setTimeout(() => window.scrollTo(0, y), 0); }
   } else {
     lastListRoute = 'home';
     showPage('page-home');
@@ -835,10 +847,11 @@ function renderAbout() {
       </div>
       <div class="settings-card">
         <div class="settings-card-hd"><div class="settings-card-title">Guide</div></div>
-        <div class="about-body"><dl class="about-dl"><dt>Home</dt><dd>Your courses this semester, the courses you planned in Telos, and the courses you have taken.</dd><dt>Course Finder</dt><dd>Every course with a published syllabus, so you can look ahead when you plan.</dd><dt>A course page</dt><dd>Main, Assessment, Rubrics, Communication, Schedule and Readings.</dd><dt>Syllabus PDF</dt><dd>Download syllabus (PDF) on a course page when you need the syllabus itself, for example for an application or a credit transfer.</dd></dl></div>
+        <div class="about-body"><dl class="about-dl"><dt>Home</dt><dd>Your courses this semester, the courses you planned in Telos, and the courses you have taken.</dd><dt>Course Finder</dt><dd>Every course with a published syllabus, so you can look ahead when you plan.</dd><dt>Course Catalog</dt><dd>The courses a program offers, each with its description, outcomes and the terms it runs in.</dd><dt>A course page</dt><dd>Main, Assessment, Rubrics, Communication, Schedule and Readings.</dd><dt>Syllabus PDF</dt><dd>Download syllabus (PDF) on a course page when you need the syllabus itself, for example for an application or a credit transfer.</dd></dl></div>
       </div>
     </div>`;
 }
+const CUR_VER = '202611021140';
 function setRailActive(id) {
   document.querySelectorAll('.rail-btn').forEach((b) => b.classList.toggle('active', b.id === id));
 }
@@ -2492,10 +2505,12 @@ function courseListRowHtml(c) {
 // add ONE entry here and set `lastListRoute` in that route's branch — the back
 // label, back navigation, and active rail all follow automatically.
 const COURSE_ORIGINS = {
-  home:   { hash: '',       label: 'Home',          rail: 'rail-home' },
-  finder: { hash: 'finder', label: 'Course Finder', rail: 'rail-finder' },
+  home:    { hash: '',        label: 'Home',           rail: 'rail-home' },
+  finder:  { hash: 'finder',  label: 'Course Finder',  rail: 'rail-finder' },
+  catalog: { hash: 'catalog', label: 'Course Catalog', rail: 'rail-catalog' },
 };
 let lastListRoute = 'home';
+var curScrollY = null;                  // (var: set by the Course Catalog frame) page scroll when a course was opened from it
 function courseOrigin() { return COURSE_ORIGINS[lastListRoute] || COURSE_ORIGINS.home; }
 let catalogCourses = [];                // all offerings, mapped like `courses`
 let catalogLoaded = false, catalogLoading = false, catalogError = null;
