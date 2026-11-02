@@ -739,6 +739,51 @@ button,input{font-family:inherit;}
 .lp-blank-b{display:inline-block;font-size:14px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;background:var(--amber-l);color:var(--amber);padding:4px 12px;border-radius:20px;margin-bottom:14px;}
 .lp-blank-t{font-size:23px;font-weight:600;margin-bottom:10px;}
 .lp-blank-p{font-size:19px;color:var(--text2);line-height:1.6;max-width:58ch;margin:0 auto;}
+
+/* ── PATHFINDER ASSIST (above the role checkboxes) ──
+   A student who knows which role they want checks it and is done. For a student who does not, the
+   Program page's Pathfinder asks three or four either/or questions and lands on one role; here it is
+   a way into the checkboxes, so answering checks the role it points to. With a course open the roles
+   column narrows to what is checked, and the assist steps out of the way. */
+.pf-slot{position:relative;flex:none;background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;}
+.lp-cols.has-detail .pf-slot{display:none;}
+.pf-open{width:100%;border:1px dashed var(--border-em);background:var(--surface);color:var(--text2);
+  font-family:inherit;font-size:17px;border-radius:var(--r);padding:11px 12px;cursor:pointer;line-height:1.3;
+  display:flex;align-items:center;justify-content:center;gap:8px;transition:border-color .12s,color .12s,background .12s;}
+.pf-open:hover{border-color:var(--blue-b);color:var(--blue);background:var(--blue-l);}
+.pf-open b{font-weight:600;color:var(--text);}
+.pf-open:hover b{color:var(--blue);}
+.lp-roles.pf-on{overflow:visible;}
+.pf-pop{position:absolute;left:12px;top:calc(100% - 4px);width:420px;max-width:calc(100vw - 48px);
+  background:var(--surface);border:1px solid var(--border-em);border-radius:var(--r-lg);
+  box-shadow:0 18px 44px rgba(0,0,0,.17);padding:18px 20px 14px;z-index:30;
+  animation:pf-in .18s cubic-bezier(.2,.7,.2,1);}
+@keyframes pf-in{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+.pf-hd{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.pf-step{font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);}
+.pf-x{margin-left:auto;width:28px;height:28px;border:none;background:none;color:var(--text3);font-size:20px;
+  line-height:1;cursor:pointer;border-radius:6px;padding:0;font-family:inherit;}
+.pf-x:hover{background:var(--surface2);color:var(--text);}
+.pf-q{font-size:20px;font-weight:600;line-height:1.35;}
+.pf-hint{font-size:16px;color:var(--text2);line-height:1.5;margin-top:8px;}
+.pf-opts{display:grid;gap:10px;margin-top:14px;}
+.pf-opt{text-align:left;border:1px solid var(--border-em);background:var(--surface);border-radius:var(--r);
+  padding:13px 15px;cursor:pointer;font-family:inherit;transition:border-color .12s,background .12s;}
+.pf-opt:hover{border-color:var(--blue);background:var(--blue-l);}
+.pf-opt b{display:block;font-size:19px;font-weight:600;color:var(--text);}
+.pf-opt:hover b{color:var(--blue);}
+.pf-ft{display:flex;gap:16px;align-items:center;margin-top:14px;}
+.pf-link{border:none;background:none;color:var(--text3);font-family:inherit;font-size:16px;cursor:pointer;padding:0;}
+.pf-link:hover{color:var(--blue);text-decoration:underline;}
+/* what the answers point to */
+.pf-res + .pf-res{margin-top:14px;}
+.pf-res-n{font-size:23px;font-weight:600;line-height:1.3;color:var(--blue);margin-top:6px;}
+.pf-res-s{font-size:17px;color:var(--text2);line-height:1.5;margin-top:8px;}
+.pf-res-b{display:flex;gap:12px;align-items:center;margin-top:16px;}
+.pf-res-b .btn{flex:1;justify-content:center;}
+@media (max-width:1100px){
+  .pf-pop{position:static;width:auto;max-width:none;box-shadow:none;margin-top:12px;}
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&display=swap">
@@ -3258,6 +3303,114 @@ function renderPathways() {
         pwSaveOff === 'preview' ? `<br>A preview of the student app: ${PW_LIST} belongs to the student who is signed in, so nothing is saved from here.`
         : pwSaveOff ? `<br>Saving to ${PW_LIST} is not available yet.` : ''}`
     : '';
+  pfMount();
+}
+
+// ── PATHFINDER ASSIST ──
+// A student who knows which role they want checks it and is done. A student who does not is the
+// one this is for: the Program page's Pathfinder question tree, moved next to the checkboxes, so
+// that answering three or four either/or questions checks the role it lands on.
+// The tree is the DS&AI one, unchanged (curriculum.html → Pathways → pathfinder-embed.html), so the
+// assist only appears for a program whose roles it actually names.
+const PF_Q = {
+  q1:{t:"Which sounds more like you: doing the hands-on technical work with data and AI, or shaping how data and AI are used by people and society?", h:"Hands-on: build models, write code, run analyses, or design data systems. Shaping: design services, set strategy and rules, or bring data to a field you care about.", yl:"Hands-on technical work", nl:"Shaping how it's used", y:"q2t", n:"q2a"},
+  q2t:{t:"What draws you more: discovering new knowledge, or building systems that run?", h:"Research means finding out what works. Engineering means making it work reliably for everyone else.", yl:"Discover new knowledge", nl:"Build systems that run", y:"q3r", n:"q3e"},
+  q2a:{t:"Which would you rather shape: products and experiences for people, or how AI works in society and in the fields it serves?", h:"Products: understand users and decide what a service should be and do. Society & fields: set the rules for AI, or bring data to a field such as business, health, science, or policy.", yl:"Products & experiences", nl:"Society & fields", y:"q3d", n:"q2g"},
+  q2g:{t:"Which would you rather do: shape the rules and impact of AI for society, or apply data to a field you care about?", h:"Rules: fairness and safety standards, AI policy, impact assessment. Field: answering questions in business, health, science, or policy with data.", yl:"Shape AI rules for society", nl:"Apply data to a field", y:"@AI Ethics & Governance", n:"q3s"},
+  q3r:{t:"Which would you rather do: invent a new kind of AI model, or use data to explain and forecast the real world?", h:"New AI: design models, agents, or multimodal systems and test them on benchmarks. Data: forecast demand, find causes, and test ideas with real-world data.", yl:"Invent new AI models", nl:"Explain the world with data", y:"@AI Researcher", n:"@Data Scientist / Researcher"},
+  q3e:{t:"Which would you rather build: the data platform everyone depends on, or AI that works inside apps, robots, and devices?", h:"Data platform: databases, SQL, pipelines, and data governance. AI in products: vision AI, emotion-aware agents, and robot behavior.", yl:"Build the data platform", nl:"Put AI into products", y:"@Data Engineer", n:"@ML / AI Engineer"},
+  q3d:{t:"Which would you rather own: how an AI service looks, feels, and works, or what gets built, why, and when?", h:"Experience: research users, map journeys, and prototype interfaces. Strategy: set the product vision, study use cases and markets, and own the roadmap.", yl:"Design the experience", nl:"Set the strategy", y:"@UX / Service Designer for AI", n:"@AI Product Manager"},
+  q3s:{t:"Which describes you better right now: you have a field where you'd like data to answer real questions, or you're still exploring?", h:"Field in mind: business, health, science, policy, sports, media… Still exploring: compare a couple of roles and their courses.", yl:"I have a field in mind", nl:"Still exploring", y:"@Domain Data Specialist (Analyst · Researcher)", n:"@explore"},
+};
+// "still exploring" ends on the two roles that are the widest doors into the program
+const PF_EXPLORE = ['AI Ethics & Governance', 'Domain Data Specialist (Analyst · Researcher)'];
+
+let pfOpen = false, pfAt = 'q1', pfTrail = [], pfRoles = null;
+
+const pfRoleByName = (name) => pwRoles().find(r => r.name === name) || null;
+// every role the tree can land on has to exist in this program, or the assist stays away
+function pfFits() {
+  const names = new Set(PF_EXPLORE);
+  Object.values(PF_Q).forEach(q => [q.y, q.n].forEach(n => { if (n[0] === '@' && n !== '@explore') names.add(n.slice(1)); }));
+  return [...names].every(n => pfRoleByName(n));
+}
+function pfReset() { pfAt = 'q1'; pfTrail = []; pfRoles = null; }
+function pfAnswer(a) {
+  const next = PF_Q[pfAt][a];
+  pfTrail.push(pfAt);
+  if (next[0] !== '@') { pfAt = next; renderPathways(); return; }
+  const names = next === '@explore' ? PF_EXPLORE : [next.slice(1)];
+  pfRoles = names.map(pfRoleByName).filter(Boolean);
+  renderPathways();
+}
+function pfBack() { if (pfRoles) { pfRoles = null; pfAt = pfTrail.pop() || 'q1'; } else if (pfTrail.length) pfAt = pfTrail.pop(); renderPathways(); }
+// the role the answers point to replaces whatever was checked: this is a place to start from
+function pfTake() {
+  pwChecked = new Set(pfRoles.map(r => r.id));
+  pwOpen = null;
+  pfOpen = false;
+  pfReset();
+  renderPathways();
+}
+
+function pfSlotHtml() {
+  if (!pfFits()) return '';
+  return `<div class="pf-slot">
+      <button class="pf-open" id="pf-open">${pfOpen ? 'Hide the questions' : '<b>Need help?</b> Answer three questions'}</button>
+      ${pfOpen ? pfPopHtml() : ''}
+    </div>`;
+}
+function pfPopHtml() {
+  if (pfRoles) {
+    const one = pfRoles.length === 1;
+    return `<div class="pf-pop" role="dialog" aria-label="Need help choosing a role">
+        <div class="pf-hd"><span class="pf-step">${one ? 'Your answers point to' : 'Two places to start'}</span>
+          <button class="pf-x" id="pf-close" title="Close">×</button></div>
+        ${pfRoles.map(r => `<div class="pf-res">
+          <div class="pf-res-n">${esc(r.name)}</div>
+          ${r.short ? `<div class="pf-res-s">${esc(r.short)}</div>` : ''}</div>`).join('')}
+        <div class="pf-res-b">
+          <button class="btn btn-primary" id="pf-take">${one ? 'Check this role' : 'Check both roles'}</button>
+          <button class="pf-link" id="pf-restart">Start over</button></div>
+      </div>`;
+  }
+  const q = PF_Q[pfAt];
+  return `<div class="pf-pop" role="dialog" aria-label="Need help choosing a role">
+      <div class="pf-hd"><span class="pf-step">Question ${pfTrail.length + 1}</span>
+        <button class="pf-x" id="pf-close" title="Close">×</button></div>
+      <div class="pf-q">${esc(q.t)}</div>
+      <div class="pf-hint">${esc(q.h)}</div>
+      <div class="pf-opts">
+        <button class="pf-opt" data-a="y"><b>${esc(q.yl)}</b></button>
+        <button class="pf-opt" data-a="n"><b>${esc(q.nl)}</b></button>
+      </div>
+      <div class="pf-ft">
+        ${pfTrail.length ? '<button class="pf-link" id="pf-back">Back</button>' : ''}
+        <button class="pf-link" id="pf-restart">Start over</button>
+      </div>
+    </div>`;
+}
+// called at the end of renderPathways: puts the slot at the head of the roles card and wires it
+function pfMount() {
+  const card = document.querySelector('.lp-roles');
+  if (!card) return;
+  const html = pfSlotHtml();
+  if (!html) return;
+  const slot = document.createElement('div');
+  slot.innerHTML = html;
+  const el = slot.firstElementChild;
+  card.querySelector('.lp-hd').after(el);
+  card.classList.toggle('pf-on', pfOpen);
+  el.querySelector('#pf-open').onclick = () => { pfOpen = !pfOpen; if (pfOpen) pfReset(); renderPathways(); };
+  const close = el.querySelector('#pf-close');
+  if (close) close.onclick = () => { pfOpen = false; renderPathways(); };
+  const restart = el.querySelector('#pf-restart');
+  if (restart) restart.onclick = () => { pfReset(); renderPathways(); };
+  const back = el.querySelector('#pf-back');
+  if (back) back.onclick = pfBack;
+  const take = el.querySelector('#pf-take');
+  if (take) take.onclick = pfTake;
+  el.querySelectorAll('.pf-opt').forEach(b => { b.onclick = () => pfAnswer(b.dataset.a); });
 }
 
 // ── RENDER: This semester ──
