@@ -624,9 +624,16 @@ button,input{font-family:inherit;}
 .lp-hd-t{font-size:21px;font-weight:600;color:var(--text);}
 .lp-hd-s{font-size:17px;color:var(--text2);margin-left:auto;}
 .lp-scroll{overflow-y:auto;flex:1;min-height:0;}
-.rl-bar{flex:none;display:flex;align-items:center;gap:16px;padding:10px 20px;border-bottom:1px solid var(--border);}
-.rl-bar-n{font-size:15px;color:var(--text3);margin-right:auto;}
-.rl-bar .lp-link{margin-left:0;font-size:16px;}
+.rl-bar{flex:none;display:flex;align-items:center;gap:16px;padding:9px 20px;border-bottom:1px solid var(--border);border-left:3px solid transparent;}
+.rl-bar-n{font-size:15px;color:var(--text3);margin-left:auto;}
+.rl-all{display:flex;align-items:center;gap:12px;cursor:pointer;font-size:16px;color:var(--text2);border-radius:6px;}
+.rl-all:hover{color:var(--blue);}
+.rl-all:focus-visible{outline:2px solid var(--blue-b);outline-offset:3px;}
+.rl-all .rl-box{margin-top:0;}
+.rl-all:hover .rl-box{border-color:var(--blue);}
+.rl-all.on .rl-box,.rl-all.some .rl-box{background:var(--blue);border-color:var(--blue);}
+.rl-all.on .rl-box::after{content:"";width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg);}
+.rl-all.some .rl-box::after{content:"";width:10px;height:2px;background:#fff;border-radius:1px;}
 .lp-link{font-size:17px;font-weight:500;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;font-family:inherit;margin-left:auto;}
 .lp-link:hover{text-decoration:underline;}
 .lp-x{width:30px;height:30px;border:none;background:none;color:var(--text3);font-size:21px;line-height:1;cursor:pointer;border-radius:6px;padding:0;font-family:inherit;}
@@ -3279,12 +3286,14 @@ function pwRolesPanelHtml() {
   const total = pwRoles().length;
   const all = pwChecked.size === total && total > 0;
   const n = pwChecked.size;
-  // Select all and Clear sit right over the boxes they act on, under Need help
+  // One box over the list, lined up with the role boxes: empty, a dash when some are checked, a tick when all are
+  const st = all ? 'on' : n ? 'some' : '';
   return `<div class="lp-card lp-side lp-roles">
       <div class="lp-hd"><span class="lp-hd-t">Graduate roles</span></div>
-      <div class="rl-bar"><span class="rl-bar-n">${n ? `${n} of ${total} checked` : `${total} roles`}</span>
-        ${all ? '' : '<button class="lp-link" id="lp-all">Select all</button>'}
-        ${n ? '<button class="lp-link" id="lp-clear">Clear</button>' : ''}</div>
+      <div class="rl-bar">
+        <span class="rl-all ${st}" id="lp-all" role="checkbox" tabindex="0" aria-checked="${all ? 'true' : n ? 'mixed' : 'false'}"
+          title="${all ? 'Uncheck every role' : 'Check every role'}"><span class="rl-box"></span>Select all</span>
+        <span class="rl-bar-n">${n ? `${n} of ${total} checked` : `${total} roles`}</span></div>
       <div class="lp-scroll" id="lp-roles"></div>
     </div>`;
 }
@@ -3461,10 +3470,15 @@ function renderPathways() {
   document.getElementById('lp-planhost').innerHTML = pwPlanPanelHtml() + pwSaveBarHtml();
   pwFillRoles();
 
+  // all checked: clears; none or some: checks every role
   const selAll = document.getElementById('lp-all');
-  if (selAll) selAll.onclick = () => { pwChecked = new Set(pwRoles().map(r => r.id)); renderPathways(); };
-  const clear = document.getElementById('lp-clear');
-  if (clear) clear.onclick = () => { pwChecked = new Set(); renderPathways(); };
+  const toggleAll = () => {
+    const ids = pwRoles().map(r => r.id);
+    pwChecked = ids.every(id => pwChecked.has(id)) ? new Set() : new Set(ids);
+    renderPathways();
+  };
+  selAll.onclick = toggleAll;
+  selAll.onkeydown = (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleAll(); } };
   const host = document.getElementById('lp-courses');
   if (host) {
     host.querySelectorAll('.cr').forEach(b => {
