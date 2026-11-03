@@ -705,6 +705,16 @@ button,input{font-family:inherit;}
 
 /* My Learning Pathway: one card under the columns, a course per year */
 .lp-plan{margin-top:16px;}
+/* Save my pathway, and what comes after it */
+.lp-save{margin-top:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 20px;}
+.lp-save.dirty{background:var(--amber-l);border-color:var(--amber-b);}
+.lp-save-dot{width:10px;height:10px;border-radius:50%;background:var(--amber);flex:none;}
+.lp-save-t{font-size:18px;color:var(--text2);line-height:1.45;flex:1 1 320px;}
+.lp-save-t b{color:var(--text);font-weight:600;}
+.lp-save .lp-link{margin-left:0;}
+.lp-save-acts{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto;}
+.lp-save-k{font-size:15px;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);}
 .plan-n{font-size:17px;color:var(--text3);}
 .plan-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}
 .plan-col{min-width:0;display:flex;flex-direction:column;}
@@ -927,7 +937,7 @@ button,input{font-family:inherit;}
         <div class="dd-info"><div id="dd-name">—</div><div id="dd-role"></div><div id="dd-email">—</div></div>
         <button class="tb-dropdown-item" onclick="showChangePwModal();closeUserMenu()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><rect x="2" y="9" width="12" height="5" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 9V6a3 3 0 0 1 6 0v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Change password</button>
         <div class="tb-dropdown-div"></div>
-        <button class="tb-dropdown-item danger" onclick="handleSignOut()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Sign out</button>
+        <button class="tb-dropdown-item danger" onclick="confirmSignOut()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Sign out</button>
       </div>
     </div>
   </div>
@@ -1094,7 +1104,7 @@ function renderAbout() {
       </div>
     </div>`;
 }
-const CUR_VER = '202611031332';
+const CUR_VER = '202611031458';
 function setRailActive(id) {
   document.querySelectorAll('.rail-btn').forEach((b) => b.classList.toggle('active', b.id === id));
 }
@@ -1920,11 +1930,17 @@ document.addEventListener('click', (e) => {
   if (dd.classList.contains('open') && !btn.contains(e.target) && !dd.contains(e.target)) dd.classList.remove('open');
 });
 
+function confirmSignOut() {
+  if (pwAnyDirty() && !confirm('You have unsaved changes to your learning pathway. Sign out without saving them?')) return;
+  handleSignOut();
+}
 function handleSignOut() {
   supabaseUser = null; STUDENT = null; studentCourses = []; dataLoaded = false; clearSession();
-  // The next person to sign in this tab must not see this one's courses.
+  // The next person to sign in this tab must not see this one's courses or pathway.
   catalogCourses = []; catalogLoaded = false; catalogError = null;
   courseDetailCache = {}; periodsCache = {}; rubricCache = {};
+  pwLoaded = false; pwPrograms = {}; pwProgram = null; pwChecked = new Set(); pwOpen = null;
+  pwStored = {}; pwDrafts = {}; pwRolesStored = {}; pwRoleDrafts = {}; pwState = {}; pwSaveOff = '';
   document.getElementById('tb-user-btn').style.display = 'none';
   document.getElementById('login-wall').style.display = 'flex';
   document.getElementById('wall-password').value = '';
@@ -2949,10 +2965,39 @@ let pwProgram = null;                    // the program on screen
 let pwLoaded = false, pwLoading = false, pwError = null;
 let pwChecked = new Set();               // role ids the student has checked
 let pwOpen = null;                       // course_id of the course open on the right
-let pwSaved = {};                        // { [programCode]: Map(course_id -> {year, rowId}) } — the saved rows as the DB has them
+// Nothing on this page is kept until the student presses Save my pathway. What is on screen is a draft
+// per program, held in memory, so moving between menus or programs loses nothing; only a reload,
+// closing the tab or signing out would, and those ask first.
+let pwStored = {};                       // { [programCode]: Map(course_id -> {year, rowId}) } — the rows as the DB has them
+let pwDrafts = {};                       // { [programCode]: Map(course_id -> {year}) } — My Learning Pathway as on screen
+let pwRolesStored = {};                  // { [programCode]: Set(role id) } — the roles as last saved (student_pathways)
+let pwRoleDrafts = {};                   // { [programCode]: Set(role id) } — another program's checks while it is not on screen
+let pwState = {};                        // { [programCode]: {saved_at, sent_at} }
+let pwRolesOff = false;                  // student_pathways missing: courses still save, roles are not remembered
+let pwSaving = false;
 let pwSaveOff = '';                      // '' while saving works; 'preview' or 'table' when it can't, and the bookmarks are then hidden
 
-function pwMy() { return (pwSaved[pwProgram] = pwSaved[pwProgram] || new Map()); }
+function pwStoredMap(prog) { return (pwStored[prog] = pwStored[prog] || new Map()); }
+// the courses on screen: the draft, which starts as what was saved
+function pwMy() {
+  if (!pwDrafts[pwProgram]) pwDrafts[pwProgram] = new Map([...pwStoredMap(pwProgram)].map(([id, x]) => [id, { year: x.year }]));
+  return pwDrafts[pwProgram];
+}
+function pwDirty(prog = pwProgram) {
+  if (pwSaveOff || !prog) return false;
+  if (!pwRolesOff) {
+    const roles = prog === pwProgram ? pwChecked : (pwRoleDrafts[prog] || pwRolesStored[prog] || new Set());
+    const was = pwRolesStored[prog] || new Set();
+    if (roles.size !== was.size || [...roles].some(id => !was.has(id))) return true;
+  }
+  const d = pwDrafts[prog];
+  if (!d) return false;
+  const st = pwStoredMap(prog);
+  if (d.size !== st.size) return true;
+  for (const [id, x] of d) { const y = st.get(id); if (!y || y.year !== x.year) return true; }
+  return false;
+}
+function pwAnyDirty() { return Object.keys(pwPrograms).some(c => pwDirty(c)); }
 function pwProg() { return pwPrograms[pwProgram] || { roles: [], groups: [], marks: {}, courses: [] }; }
 function pwRoles() { return pwProg().roles; }
 function pwMarkOf(courseId, roleId) { return (pwProg().marks[courseId] || {})[roleId] || null; }
@@ -3002,23 +3047,43 @@ async function loadPathwaysData() {
     const majors = ((STUDENT && STUDENT.majors) || []).map(m => m.toLowerCase());
     const mine = codes.find(c => majors.includes(pwPrograms[c].name.toLowerCase()) || majors.includes(c.toLowerCase()));
     pwProgram = mine || codes[0] || null;
+    pwStored = {}; pwDrafts = {}; pwRolesStored = {}; pwRoleDrafts = {}; pwState = {}; pwRolesOff = false;
     // The student's saved courses. A pathway belongs to the student who is signed in, so a preview
     // of someone else's app reads and writes none of it (RLS would refuse anyway). Without the table
     // the page still browses; it just can't save.
-    pwSaved = {};
     if (STUDENT.preview) {
       pwSaveOff = 'preview';
     } else {
       try {
         const rows = await sbGet('student_pathway_courses',
           `student_id=eq.${encodeURIComponent(STUDENT.id)}&select=id,program_code,course_id,planned_year`);
-        (rows || []).forEach(r => (pwSaved[r.program_code] = pwSaved[r.program_code] || new Map())
+        (rows || []).forEach(r => pwStoredMap(r.program_code)
           .set(r.course_id, { year: r.planned_year || pwYearOf(r.course_id), rowId: r.id }));
       } catch (e) {
         pwSaveOff = 'table';
         console.warn('[TaeSylla] student_pathway_courses unreadable, saving is off:', e.message || e);
       }
+      // The roles checked when each program was last saved. The page reopens on the program saved
+      // most recently; a role the program has since removed is dropped.
+      try {
+        const st = await sbGet('student_pathways',
+          `student_id=eq.${encodeURIComponent(STUDENT.id)}&select=program_code,role_ids,saved_at,sent_at`);
+        (st || []).forEach(r => {
+          const prog = pwPrograms[r.program_code];
+          if (!prog) return;
+          const ids = new Set(prog.roles.map(x => x.id));
+          pwRolesStored[r.program_code] = new Set((r.role_ids || []).filter(id => ids.has(id)));
+          pwState[r.program_code] = { saved_at: r.saved_at, sent_at: r.sent_at };
+        });
+        const last = (st || []).filter(r => pwPrograms[r.program_code] && r.saved_at)
+          .sort((a, b) => String(b.saved_at).localeCompare(String(a.saved_at)))[0];
+        if (last) pwProgram = last.program_code;
+      } catch (e) {
+        pwRolesOff = true;
+        console.warn('[TaeSylla] student_pathways unreadable, roles are not remembered:', e.message || e);
+      }
     }
+    pwChecked = new Set(pwRolesStored[pwProgram] || []);
     pwLoaded = true;
   } catch (e) {
     pwError = e.message || String(e);
@@ -3028,10 +3093,10 @@ async function loadPathwaysData() {
 }
 
 // Writes go straight to the row the student owns (RLS: their own student_id only).
-async function pwWrite(method, path, body) {
+async function pwWrite(method, path, body, extra) {
   await sbFresh();
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    method, headers: sbHeaders(), body: body == null ? undefined : JSON.stringify(body),
+    method, headers: sbHeaders(extra), body: body == null ? undefined : JSON.stringify(body),
   });
   if (!r.ok) {
     const e = await r.json().catch(() => ({}));
@@ -3039,38 +3104,119 @@ async function pwWrite(method, path, body) {
   }
   return r.status === 204 ? null : r.json().catch(() => null);
 }
-async function pwToggle(courseId) {
+// Bookmarking, removing and moving a course change the draft only; Save my pathway writes them.
+function pwToggle(courseId) {
   if (pwSaveOff) return;
-  const m = pwMy(), cur = m.get(courseId);
-  try {
-    if (cur) {
-      await pwWrite('DELETE', `student_pathway_courses?id=eq.${encodeURIComponent(cur.rowId)}`);
-      m.delete(courseId);
-    } else {
-      const year = pwYearOf(courseId);
-      const rows = await pwWrite('POST', 'student_pathway_courses',
-        { student_id: STUDENT.id, program_code: pwProgram, course_id: courseId, planned_year: year });
-      m.set(courseId, { year, rowId: (rows && rows[0] || {}).id });
-    }
-  } catch (e) {
-    showToast(`Could not save to ${PW_LIST}: ${e.message}`);
-  }
+  const m = pwMy();
+  if (m.has(courseId)) m.delete(courseId); else m.set(courseId, { year: pwYearOf(courseId) });
   renderPathways();
 }
-async function pwPlace(courseId, year) {
+function pwPlace(courseId, year) {
   const cur = pwMy().get(courseId);
   if (!cur || !PW_YEARS.includes(year) || cur.year === year) return;
-  const was = cur.year;
   cur.year = year;
   renderPathways();
-  try {
-    await pwWrite('PATCH', `student_pathway_courses?id=eq.${encodeURIComponent(cur.rowId)}`, { planned_year: year });
-  } catch (e) {
-    cur.year = was;
-    showToast(`Could not move the course: ${e.message}`);
-    renderPathways();
-  }
 }
+async function pwSave() {
+  if (pwSaveOff || pwSaving) return;
+  const prog = pwProgram, draft = pwMy(), stored = pwStoredMap(prog), sid = encodeURIComponent(STUDENT.id);
+  pwSaving = true;
+  renderPathways();
+  let failed = null;
+  try {
+    for (const [id, x] of [...stored]) {
+      if (draft.has(id)) continue;
+      await pwWrite('DELETE', `student_pathway_courses?id=eq.${encodeURIComponent(x.rowId)}`);
+      stored.delete(id);
+    }
+    for (const [id, d] of draft) {
+      const x = stored.get(id);
+      if (!x) {
+        const rows = await pwWrite('POST', 'student_pathway_courses',
+          { student_id: STUDENT.id, program_code: prog, course_id: id, planned_year: d.year });
+        stored.set(id, { year: d.year, rowId: (rows && rows[0] || {}).id });
+      } else if (x.year !== d.year) {
+        await pwWrite('PATCH', `student_pathway_courses?id=eq.${encodeURIComponent(x.rowId)}`, { planned_year: d.year });
+        x.year = d.year;
+      }
+    }
+  } catch (e) { failed = e; }
+  const now = new Date().toISOString();
+  if (!failed && !pwRolesOff) {
+    try {
+      await pwWrite('POST', 'student_pathways?on_conflict=student_id,program_code',
+        { student_id: STUDENT.id, program_code: prog, role_ids: [...pwChecked], saved_at: now },
+        { Prefer: 'resolution=merge-duplicates,return=representation' });
+      pwRolesStored[prog] = new Set(pwChecked);
+    } catch (e) { failed = e; }
+  }
+  if (!failed) pwState[prog] = Object.assign({}, pwState[prog], { saved_at: now });
+  // what is now in the DB is the new starting point; anything not written stays in the draft
+  if (!failed) delete pwDrafts[prog];
+  pwSaving = false;
+  showToast(failed ? `Could not save your pathway: ${failed.message}` : 'Your pathway is saved');
+  renderPathways();
+}
+function pwDiscard() {
+  delete pwDrafts[pwProgram];
+  pwChecked = new Set(pwRolesStored[pwProgram] || []);
+  renderPathways();
+}
+
+// Telos takes it from here: the student adds the courses to their plan there, or brings it to their advisor.
+const TELOS_STUDENT = 'https://jkwahk02.github.io/Telos/student/';
+async function pwSend(discuss) {
+  if (pwDirty()) { showToast('Save your pathway first'); return; }
+  const prog = pwProg(), stored = pwStoredMap(pwProgram);
+  const sent = {
+    program_code: prog.code, program_name: prog.name,
+    saved_at: (pwState[pwProgram] || {}).saved_at || null,
+    roles: pwRoles().filter(r => pwChecked.has(r.id)).map(r => ({ id: r.id, name: r.name })),
+    courses: [...stored].map(([id, x]) => {
+      const c = prog.courses.find(k => k.course_id === id) || {};
+      return { course_id: id, title: c.title || id, year: x.year, offered: c.offered || '', credits: c.credits ?? null };
+    }).sort((a, b) => a.year - b.year || a.course_id.localeCompare(b.course_id)),
+  };
+  const now = new Date().toISOString();
+  try {
+    await pwWrite('POST', 'student_pathways?on_conflict=student_id,program_code',
+      { student_id: STUDENT.id, program_code: prog.code, role_ids: [...pwChecked], sent_at: now, sent },
+      { Prefer: 'resolution=merge-duplicates,return=representation' });
+  } catch (e) {
+    showToast(`Could not send it to Telos: ${e.message}`);
+    return;
+  }
+  pwState[pwProgram] = Object.assign({}, pwState[pwProgram], { sent_at: now });
+  renderPathways();
+  // a tab opened from here starts with a copy of this one's sign-in, so Telos opens signed in
+  const w = window.open(`${TELOS_STUDENT}?pathway=${discuss ? 'discuss' : 'review'}`, '_blank');
+  if (!w) showToast('Sent. Open Telos and go to Requirements to add the courses to your plan.');
+}
+
+const pwWhen = (t) => new Date(t).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+function pwSaveBarHtml() {
+  if (pwSaveOff) return '';
+  const st = pwState[pwProgram] || {}, n = pwStoredMap(pwProgram).size;
+  if (pwDirty()) {
+    return `<div class="lp-save dirty">
+        <span class="lp-save-dot"></span>
+        <span class="lp-save-t"><b>Unsaved changes.</b> Save your pathway to keep it for next time${pwRolesOff ? '' : ', with the roles you checked'}.</span>
+        <button class="lp-link" id="lp-discard">Discard changes</button>
+        <button class="btn btn-primary" id="lp-save-btn"${pwSaving ? ' disabled' : ''}>${pwSaving ? 'Saving…' : 'Save my pathway'}</button>
+      </div>`;
+  }
+  if (!st.saved_at && !n) return '';
+  const sent = st.sent_at && (!st.saved_at || st.sent_at >= st.saved_at)
+    ? ` Sent to your Telos plan ${pwWhen(st.sent_at)}.`
+    : st.sent_at ? ' You have saved changes since you sent it to Telos; send it again to update your plan.' : '';
+  return `<div class="lp-save">
+      <span class="lp-save-t"><b>Saved</b>${st.saved_at ? ` ${pwWhen(st.saved_at)}` : ''}.${sent}</span>
+      ${n && !pwRolesOff ? `<span class="lp-save-acts"><span class="lp-save-k">Next, plan it in Telos</span>
+        <button class="btn" id="lp-discuss">Discuss with my advisor</button>
+        <button class="btn btn-primary" id="lp-send">Send to my Telos plan</button></span>` : ''}
+    </div>`;
+}
+window.addEventListener('beforeunload', (e) => { if (pwAnyDirty()) { e.preventDefault(); e.returnValue = ''; } });
 
 // a bookmark: outline when the course is not on the pathway, solid when it is
 function pwBookmarkSvg(on, size) {
@@ -3287,14 +3433,17 @@ function renderPathways() {
     <span class="cf-select-wrap"><select class="cf-select set" id="lp-prog" aria-label="Program">${progs.map(p =>
       `<option value="${esc(p.code)}"${p.code === pwProgram ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select></span>`;
   document.getElementById('lp-prog').onchange = (e) => {
-    pwProgram = e.target.value; pwChecked = new Set(); pwOpen = null; renderPathways();
+    pwRoleDrafts[pwProgram] = pwChecked;
+    pwProgram = e.target.value;
+    pwChecked = pwRoleDrafts[pwProgram] || new Set(pwRolesStored[pwProgram] || []);
+    pwOpen = null; renderPathways();
   };
 
   const cols = document.getElementById('lp-cols');
   const anyRole = pwChecked.size > 0;
   cols.className = 'lp-cols' + (anyRole || pwOpen ? ' has-courses' : '') + (pwOpen ? ' has-detail' : '');
   cols.innerHTML = pwRolesPanelHtml() + (anyRole || pwOpen ? pwCoursesPanelHtml() : '') + (pwOpen ? pwDetailPanelHtml() : '');
-  document.getElementById('lp-planhost').innerHTML = pwPlanPanelHtml();
+  document.getElementById('lp-planhost').innerHTML = pwPlanPanelHtml() + pwSaveBarHtml();
   pwFillRoles();
 
   const total = pwRoles().length;
@@ -3327,6 +3476,11 @@ function renderPathways() {
   if (openCourse) openCourse.onclick = () => { const o = pwOffering(pwOpen); if (o) goToCourse(o.id); };
 
   const planHost = document.getElementById('lp-planhost');
+  const bind = (id, fn) => { const b = document.getElementById(id); if (b) b.onclick = fn; };
+  bind('lp-save-btn', pwSave);
+  bind('lp-discard', pwDiscard);
+  bind('lp-send', () => pwSend(false));
+  bind('lp-discuss', () => pwSend(true));
   planHost.querySelectorAll('.pc-x').forEach(b => {
     b.onclick = (e) => { e.stopPropagation(); pwToggle(b.dataset.drop); };
   });
@@ -3357,7 +3511,7 @@ function renderPathways() {
 
   document.getElementById('lp-note').innerHTML = anyRole || pwOpen || pwMy().size
     ? `★ signature · ● core · ○ recommended${pwSaveOff ? '' :
-        ` · <span class="bm">${pwBookmarkSvg(true, 16)}</span> saved to ${PW_LIST}`}.
+        ` · <span class="bm">${pwBookmarkSvg(true, 16)}</span> on ${PW_LIST}`}.
        Recommendations, not official tracks: the roles and the marks are the ones your program sets on its
        Program page, so this page stays in step with it.${
         pwSaveOff === 'preview' ? `<br>A preview of the student app: ${PW_LIST} belongs to the student who is signed in, so nothing is saved from here.`

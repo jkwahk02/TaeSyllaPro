@@ -244,6 +244,7 @@ tr.cprof textarea{width:100%;border:1px solid var(--border-em);border-radius:6px
 .cp-rleg span{display:inline-flex;align-items:flex-end;gap:4px;}
 .cp-rleg i{display:inline-block;width:8px;background:var(--text2);border-radius:1px;}
 .cp-lnk{padding:0;border:none;background:none;font:inherit;font-size:16px;color:var(--blue);cursor:pointer;text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--blue) 35%,transparent);text-underline-offset:3px;}
+.cp-lnk.off{color:var(--text3);cursor:default;text-decoration:none;}
 .cp-lnk:hover{text-decoration-color:var(--blue);}
 .cp-rleg i.cp-rleg i.cp-rleg i.cp-rleg span{align-items:center;}
 .bb-s{font-size:13px;fill:#fff;}
@@ -996,7 +997,16 @@ function catProfile(c, i, ed){
       ${fact('Offerings', (() => {
         // offered so far (up to the current term) first; upcoming ones behind “More”
         const ti = t => { const [p, y] = String(t).split(' '); return +y - (p === 'Spring' ? 0.5 : 0); }, now = ti(CUR_TERM);   // Fall Y < Spring Y+1
-        const line = o => `<div class="cp-ln"><span class="cp-k t">${short(o.term)}</span><button class="cp-lnk" onclick="openOffering(${o.id})" title="Open ${esc(o.code)} · ${esc(o.term)}">${esc(o.code)} ${esc(surname(o.prof === 'TBD' ? '' : (o.prof || '').split(',')[0].trim()))}</button>${o.former ? ` <span class="cp-former" title="Earlier code of ${esc(code)}">earlier code</span>` : ''}</div>`;
+        // A section whose syllabus is not published has nothing for a student to open: it is
+        // listed, so the terms a course runs in stay complete, but it is text rather than a link.
+        const line = o => {
+          const name = `${esc(o.code)} ${esc(surname(o.prof === 'TBD' ? '' : (o.prof || '').split(',')[0].trim()))}`;
+          const shut = window.__CUR.catalogOnly && o.status !== 'published';
+          return `<div class="cp-ln"><span class="cp-k t">${short(o.term)}</span>${shut
+            ? `<span class="cp-lnk off" title="The syllabus for this section is not published yet">${name}</span>`
+            : `<button class="cp-lnk" onclick="openOffering(${o.id})" title="Open ${esc(o.code)} · ${esc(o.term)}">${name}</button>`
+          }${o.former ? ` <span class="cp-former" title="Earlier code of ${esc(code)}">earlier code</span>` : ''}</div>`;
+        };
         const past = offs.filter(o => ti(o.term) <= now), next = offs.filter(o => ti(o.term) > now);
         return (past.map(line).join('') || '<span class="sub">Not offered yet</span>')
           + (next.length ? (catMore[code] ? `<div class="cp-next">${next.map(line).join('')}</div>` : '')
@@ -1735,9 +1745,15 @@ else setTab('ov');   // pages with tabs open on the first tab
       ploIds.length ? get('outcome_curriculum_map', `plo_id=in.(${ploIds.join(',')})&select=course_base_id,plo_id,levels,tagged_clo_numbers,approved_at`) : [],
       ploIds.length && !CATALOG_ONLY ? get('outcome_map_proposals', `plo_id=in.(${ploIds.join(',')})&order=proposed_at.desc&select=*`) : [],
       codes.length ? get('courses', `course_id=in.${inList(codes)}&select=course_id,title,competency_critical_thinking,competency_creative_thinking,competency_self_directed_learning,competency_communication,competency_diversity_empathy,competency_global_harmony`) : [],
-      // Catalog-only: published sections only. A draft offering is not announced yet, and any
-      // signed-in user can read course_offerings, so the filter has to be here rather than in RLS.
-      codes.length ? get('course_offerings', `course_base_id=in.${inList(offCodes)}${CATALOG_ONLY ? '&status=eq.published' : ''}&select=offering_id,course_id,course_base_id,section,semester_year,professor,status,weekday_time,reference_timezone_student_location,title`) : [],
+      // Catalog-only: every section a student may know of — term, section and who teaches it —
+      // from v_catalog_offerings, which carries none of the syllabus the offering row holds.
+      // A section without a published syllabus is listed but does not open (see catProfile).
+      codes.length ? (CATALOG_ONLY
+        // Without that view (it is granted separately), fall back to the published sections the
+        // student can read from the table itself, so the catalog still lists what it can.
+        ? get('v_catalog_offerings', `course_base_id=in.${inList(offCodes)}&select=offering_id,course_id,course_base_id,section,semester_year,professor,status`)
+            .catch(() => get('course_offerings', `course_base_id=in.${inList(offCodes)}&status=eq.published&select=offering_id,course_id,course_base_id,section,semester_year,professor,status`))
+        : get('course_offerings', `course_base_id=in.${inList(offCodes)}&select=offering_id,course_id,course_base_id,section,semester_year,professor,status,weekday_time,reference_timezone_student_location,title`)) : [],
       CATALOG_ONLY ? get('faculty_profiles', 'select=name_en,email,program').catch(() => []) : get('faculty_profiles', 'select=name_en,email,program'),
       get('programs', 'select=code,name'),
     ]);
