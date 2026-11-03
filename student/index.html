@@ -740,11 +740,11 @@ button,input{font-family:inherit;}
 .lp-blank-t{font-size:23px;font-weight:600;margin-bottom:10px;}
 .lp-blank-p{font-size:19px;color:var(--text2);line-height:1.6;max-width:58ch;margin:0 auto;}
 
-/* ── PATHFINDER ASSIST (above the role checkboxes) ──
-   A student who knows which role they want checks it and is done. For a student who does not, the
-   Program page's Pathfinder asks three or four either/or questions and lands on one role; here it is
-   a way into the checkboxes, so answering checks the role it points to. With a course open the roles
-   column narrows to what is checked, and the assist steps out of the way. */
+/* ── PATHFINDER ASSIST (Need help? above the role checkboxes) ──
+   A student who knows which role they want checks it and is done. For a student who does not, a large
+   window walks the Program page's Pathfinder questions: each answer narrows the role cards below it, and
+   the roles the answers land on are checked. Closing the window keeps whatever is checked in it, on top
+   of what was checked before. With a course open the roles column narrows, and the button steps away. */
 .pf-slot{position:relative;flex:none;background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;}
 .lp-cols.has-detail .pf-slot{display:none;}
 .pf-open{width:100%;border:1px dashed var(--border-em);background:var(--surface);color:var(--text2);
@@ -753,37 +753,97 @@ button,input{font-family:inherit;}
 .pf-open:hover{border-color:var(--blue-b);color:var(--blue);background:var(--blue-l);}
 .pf-open b{font-weight:600;color:var(--text);}
 .pf-open:hover b{color:var(--blue);}
-.lp-roles.pf-on{overflow:visible;}
-.pf-pop{position:absolute;left:12px;top:calc(100% - 4px);width:420px;max-width:calc(100vw - 48px);
-  background:var(--surface);border:1px solid var(--border-em);border-radius:var(--r-lg);
-  box-shadow:0 18px 44px rgba(0,0,0,.17);padding:18px 20px 14px;z-index:30;
-  animation:pf-in .18s cubic-bezier(.2,.7,.2,1);}
-@keyframes pf-in{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
-.pf-hd{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
-.pf-step{font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);}
-.pf-x{margin-left:auto;width:28px;height:28px;border:none;background:none;color:var(--text3);font-size:20px;
-  line-height:1;cursor:pointer;border-radius:6px;padding:0;font-family:inherit;}
-.pf-x:hover{background:var(--surface2);color:var(--text);}
-.pf-q{font-size:20px;font-weight:600;line-height:1.35;}
-.pf-hint{font-size:16px;color:var(--text2);line-height:1.5;margin-top:8px;}
-.pf-opts{display:grid;gap:10px;margin-top:14px;}
-.pf-opt{text-align:left;border:1px solid var(--border-em);background:var(--surface);border-radius:var(--r);
-  padding:13px 15px;cursor:pointer;font-family:inherit;transition:border-color .12s,background .12s;}
-.pf-opt:hover{border-color:var(--blue);background:var(--blue-l);}
-.pf-opt b{display:block;font-size:19px;font-weight:600;color:var(--text);}
-.pf-opt:hover b{color:var(--blue);}
-.pf-ft{display:flex;gap:16px;align-items:center;margin-top:14px;}
-.pf-link{border:none;background:none;color:var(--text3);font-family:inherit;font-size:16px;cursor:pointer;padding:0;}
-.pf-link:hover{color:var(--blue);text-decoration:underline;}
-/* what the answers point to */
-.pf-res + .pf-res{margin-top:14px;}
-.pf-res-n{font-size:23px;font-weight:600;line-height:1.3;color:var(--blue);margin-top:6px;}
-.pf-res-s{font-size:17px;color:var(--text2);line-height:1.5;margin-top:8px;}
-.pf-res-b{display:flex;gap:12px;align-items:center;margin-top:16px;}
-.pf-res-b .btn{flex:1;justify-content:center;}
-@media (max-width:1100px){
-  .pf-pop{position:static;width:auto;max-width:none;box-shadow:none;margin-top:12px;}
+
+.pfm-back{position:fixed;inset:0;z-index:400;background:rgba(20,22,26,.45);display:flex;align-items:center;justify-content:center;
+  padding:24px;animation:pfm-fade .16s ease-out;}
+@keyframes pfm-fade{from{opacity:0;}to{opacity:1;}}
+.pfm{background:var(--bg);border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.28);width:min(1120px,100%);max-height:min(900px,100%);
+  display:flex;flex-direction:column;overflow:hidden;animation:pfm-in .22s cubic-bezier(.2,.7,.2,1);}
+@keyframes pfm-in{from{opacity:0;transform:translateY(14px) scale(.985);}to{opacity:1;transform:none;}}
+.pfm-hd{display:flex;align-items:center;gap:16px;padding:20px 28px 16px;background:var(--surface);border-bottom:1px solid var(--border);}
+.pfm-eyebrow{font-size:14px;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);}
+.pfm-hd h2{font-size:25px;font-weight:600;margin:4px 0 0;letter-spacing:-.01em;}
+.pfm-funnel{margin-left:auto;font-size:16px;color:var(--text3);white-space:nowrap;}
+.pfm-funnel b{color:var(--text);font-weight:600;}
+.pfm-funnel em{font-style:normal;margin:0 6px;color:var(--border-em);}
+.pfm-x{width:38px;height:38px;border:none;background:none;color:var(--text3);font-size:26px;line-height:1;cursor:pointer;
+  border-radius:8px;padding:0;font-family:inherit;flex:none;}
+.pfm-x:hover{background:var(--surface2);color:var(--text);}
+.pfm-body{flex:1 1 auto;min-height:0;overflow:auto;padding:22px 28px 26px;display:flex;flex-direction:column;gap:22px;}
+.pfm-body > *{flex:none;}
+
+/* questions: the answered ones narrow to a strip you can click back to, the current one takes the room */
+.pfm-qs{display:flex;gap:0;align-items:stretch;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;}
+.pfm-qd{flex:0 1 200px;min-width:0;text-align:left;border:none;border-right:1px solid var(--border);background:var(--surface2);
+  padding:14px 16px;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:6px;transition:background .12s;}
+.pfm-qd:hover{background:var(--blue-l);}
+.pfm-qd-k{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);}
+.pfm-qd-a{font-size:16px;font-weight:600;color:var(--text);line-height:1.35;}
+.pfm-qd-a::before{content:"✓ ";color:var(--blue);}
+.pfm-qd-r{font-size:13px;color:var(--text3);}
+.pfm-qd:hover .pfm-qd-r{color:var(--blue);}
+.pfm-qc{flex:1 1 0;min-width:0;padding:20px 24px 22px;position:relative;}
+.pfm-qc::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:var(--blue);}
+.pfm-qc-k{font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);display:flex;align-items:center;gap:10px;}
+.pfm-dots{display:inline-flex;gap:5px;}
+.pfm-dots i{width:8px;height:8px;border-radius:50%;background:var(--border-em);}
+.pfm-dots i.on{background:var(--blue);}
+.pfm-q{font-size:22px;font-weight:600;line-height:1.35;margin-top:10px;}
+.pfm-h{font-size:17px;color:var(--text2);line-height:1.55;margin-top:8px;}
+.pfm-opts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+.pfm-opt{text-align:left;border:1px solid var(--border-em);background:var(--surface);border-radius:var(--r);padding:16px 18px;cursor:pointer;
+  font-family:inherit;font-size:19px;font-weight:600;color:var(--text);transition:border-color .12s,background .12s,color .12s;}
+.pfm-opt:hover,.pfm-opt:focus-visible{border-color:var(--blue);background:var(--blue-l);color:var(--blue);outline:none;}
+.pfm-res-n{font-size:26px;font-weight:600;color:var(--blue);line-height:1.3;margin-top:10px;}
+.pfm-res-n + .pfm-res-n{margin-top:4px;}
+
+/* role cards: they rank and fade with each answer, and a click checks or unchecks one */
+.pfm-cards-hd{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;}
+.pfm-cards-hd b{font-size:19px;font-weight:600;}
+.pfm-cards-hd span{font-size:16px;color:var(--text3);}
+.pfm-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+.pfm-card{position:relative;text-align:left;border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:14px 16px 16px;
+  cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:6px;transition:opacity .25s,filter .25s,border-color .15s,box-shadow .15s,background .15s;}
+.pfm-card:hover{border-color:var(--blue-b);box-shadow:0 8px 22px rgba(0,0,0,.08);}
+.pfm-card[data-state="likely"]{border-color:var(--blue-b);}
+.pfm-card[data-state="strong"]{border:2px solid var(--blue);padding:13px 15px 15px;box-shadow:0 10px 26px rgba(24,95,165,.16);}
+.pfm-card[data-state="out"]{opacity:.42;filter:grayscale(1);}
+.pfm-card[data-state="out"]:hover{opacity:.75;}
+.pfm-card.on{background:var(--blue-l);}
+.pfm-card-top{display:flex;align-items:center;gap:8px;min-height:24px;}
+.pfm-g{font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pfm-badge{font-size:13px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--blue-l);color:var(--blue);white-space:nowrap;}
+.pfm-card[data-state="strong"] .pfm-badge{background:var(--blue);color:#fff;}
+.pfm-box{margin-left:auto;flex:none;width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border-em);background:var(--surface);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;line-height:1;}
+.pfm-card.on .pfm-box{background:var(--blue);border-color:var(--blue);}
+.pfm-card.on .pfm-box::after{content:"✓";}
+.pfm-card-n{font-size:19px;font-weight:600;color:var(--text);line-height:1.3;}
+.pfm-card-s{font-size:16px;color:var(--text2);line-height:1.5;}
+
+.pfm-ft{display:flex;align-items:center;gap:18px;padding:14px 28px;background:var(--surface);border-top:1px solid var(--border);}
+.pfm-ft-t{font-size:17px;color:var(--text2);min-width:0;line-height:1.4;}
+.pfm-ft-t b{color:var(--text);font-weight:600;}
+.pfm-link{border:none;background:none;color:var(--text3);font-family:inherit;font-size:16px;cursor:pointer;padding:0;white-space:nowrap;}
+.pfm-link:hover{color:var(--blue);text-decoration:underline;}
+.pfm-ft .pfm-link:first-of-type{margin-left:auto;}
+.pfm-ft .btn{min-width:120px;justify-content:center;}
+
+@media (max-width:980px){
+  .pfm-cards{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .pfm-qs{flex-direction:column;}
+  .pfm-qd{flex:none;border-right:none;border-bottom:1px solid var(--border);flex-direction:row;align-items:baseline;flex-wrap:wrap;}
 }
+@media (max-width:640px){
+  .pfm-back{padding:0;}
+  .pfm{border-radius:0;max-height:100%;height:100%;}
+  .pfm-hd,.pfm-body,.pfm-ft{padding-left:16px;padding-right:16px;}
+  .pfm-funnel{display:none;}
+  .pfm-opts,.pfm-cards{grid-template-columns:minmax(0,1fr);}
+  .pfm-ft{flex-wrap:wrap;}
+  .pfm-ft-t{flex:1 1 100%;}
+}
+@media (prefers-reduced-motion:reduce){ .pfm-back,.pfm{animation:none;} .pfm-card{transition:none;} }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&display=swap">
@@ -3308,8 +3368,9 @@ function renderPathways() {
 
 // ── PATHFINDER ASSIST ──
 // A student who knows which role they want checks it and is done. A student who does not is the
-// one this is for: the Program page's Pathfinder question tree, moved next to the checkboxes, so
-// that answering three or four either/or questions checks the role it lands on.
+// one this is for: Need help? opens a large window with the Program page's Pathfinder question tree.
+// Each either/or answer narrows the role cards under it, the role it lands on is checked, and closing
+// the window keeps what is checked there, added to what was checked before.
 // The tree is the DS&AI one, unchanged (curriculum.html → Pathways → pathfinder-embed.html), so the
 // assist only appears for a program whose roles it actually names.
 const PF_Q = {
@@ -3325,72 +3386,218 @@ const PF_Q = {
 // "still exploring" ends on the two roles that are the widest doors into the program
 const PF_EXPLORE = ['AI Ethics & Governance', 'Domain Data Specialist (Analyst · Researcher)'];
 
-let pfOpen = false, pfAt = 'q1', pfTrail = [], pfRoles = null;
+// each role's yes/no route through the tree: [[questionId, yes], ...]
+const PF_ROUTE = {};
+(function walk(id, path) {
+  const q = PF_Q[id];
+  [[true, q.y], [false, q.n]].forEach(([yes, nx]) => {
+    const p = path.concat([[id, yes]]);
+    if (nx[0] === '@') { if (nx !== '@explore') PF_ROUTE[nx.slice(1)] = p; } else walk(nx, p);
+  });
+})('q1', []);
+const pfDepth = (id) => { const q = PF_Q[id]; const sub = nx => nx[0] === '@' ? 0 : pfDepth(nx); return 1 + Math.min(sub(q.y), sub(q.n)); };
+
+// pfAt: the question on screen (null once the answers land); pfPath: [{id, yes}] answered so far;
+// pfFinal: the role name the answers land on, or 'explore'; pfSel: the role ids checked in the window,
+// which start as what is checked on the page; pfAdded: the ones the landing checked, taken back on Back.
+let pfAt = 'q1', pfPath = [], pfFinal = null, pfSel = new Set(), pfAdded = new Set();
 
 const pfRoleByName = (name) => pwRoles().find(r => r.name === name) || null;
 // every role the tree can land on has to exist in this program, or the assist stays away
 function pfFits() {
-  const names = new Set(PF_EXPLORE);
-  Object.values(PF_Q).forEach(q => [q.y, q.n].forEach(n => { if (n[0] === '@' && n !== '@explore') names.add(n.slice(1)); }));
-  return [...names].every(n => pfRoleByName(n));
+  return Object.keys(PF_ROUTE).concat(PF_EXPLORE).every(n => pfRoleByName(n));
 }
-function pfReset() { pfAt = 'q1'; pfTrail = []; pfRoles = null; }
-function pfAnswer(a) {
-  const next = PF_Q[pfAt][a];
-  pfTrail.push(pfAt);
-  if (next[0] !== '@') { pfAt = next; renderPathways(); return; }
-  const names = next === '@explore' ? PF_EXPLORE : [next.slice(1)];
-  pfRoles = names.map(pfRoleByName).filter(Boolean);
+// how many answers a role still matches, or -1 once an answer rules it out
+function pfFit(name) {
+  const route = PF_ROUTE[name] || [];
+  let m = 0;
+  for (const p of pfPath) {
+    const step = route.find(s => s[0] === p.id);
+    if (!step || step[1] !== p.yes) return -1;
+    m++;
+  }
+  return m;
+}
+function pfState(name) {
+  if (pfFinal === 'explore') return PF_EXPLORE.includes(name) ? 'likely' : 'neutral';
+  if (pfFinal) return name === pfFinal ? 'strong' : 'out';
+  if (!pfPath.length) return 'neutral';
+  if (pfFit(name) < 0) return 'out';
+  return pwRoles().filter(r => pfFit(r.name) >= 0).length <= 2 ? 'strong' : 'likely';
+}
+function pfLanded() {
+  return (pfFinal === 'explore' ? PF_EXPLORE : pfFinal ? [pfFinal] : []).map(pfRoleByName).filter(Boolean);
+}
+
+function pfOpenModal() {
+  pfAt = 'q1'; pfPath = []; pfFinal = null; pfAdded = new Set();
+  pfSel = new Set(pwChecked);
+  const back = document.createElement('div');
+  back.className = 'pfm-back';
+  back.id = 'pfm';
+  back.onclick = (e) => { if (e.target === back) pfCloseModal(); };
+  // the window itself is made once (it fades in once); pfRender only replaces what is inside it
+  back.innerHTML = '<div class="pfm" role="dialog" aria-modal="true" aria-labelledby="pfm-t"></div>';
+  document.body.appendChild(back);
+  document.body.style.overflow = 'hidden';
+  document.addEventListener('keydown', pfKey);
+  pfRender(false);
+}
+function pfKey(e) { if (e.key === 'Escape') pfCloseModal(); }
+// Closing keeps what is checked in the window: the roles checked before, plus or minus what changed here.
+function pfCloseModal() {
+  const back = document.getElementById('pfm');
+  if (back) back.remove();
+  document.body.style.overflow = '';
+  document.removeEventListener('keydown', pfKey);
+  const changed = pfSel.size !== pwChecked.size || [...pfSel].some(id => !pwChecked.has(id));
+  pwChecked = new Set(pfSel);
+  if (changed) pwOpen = null;
   renderPathways();
 }
-function pfBack() { if (pfRoles) { pfRoles = null; pfAt = pfTrail.pop() || 'q1'; } else if (pfTrail.length) pfAt = pfTrail.pop(); renderPathways(); }
-// the role the answers point to replaces whatever was checked: this is a place to start from
-function pfTake() {
-  pwChecked = new Set(pfRoles.map(r => r.id));
-  pwOpen = null;
-  pfOpen = false;
-  pfReset();
-  renderPathways();
+// Back to before the landing: take back the checks it made.
+function pfUnland() {
+  pfAdded.forEach(id => pfSel.delete(id));
+  pfAdded = new Set();
+  pfFinal = null;
+}
+function pfAnswer(yes) {
+  const q = PF_Q[pfAt];
+  pfPath.push({ id: pfAt, yes });
+  const nx = yes ? q.y : q.n;
+  if (nx[0] !== '@') { pfAt = nx; pfRender(true); return; }
+  pfAt = null;
+  pfFinal = nx === '@explore' ? 'explore' : nx.slice(1);
+  pfLanded().forEach(r => { if (!pfSel.has(r.id)) { pfSel.add(r.id); pfAdded.add(r.id); } });
+  pfRender(true);
+}
+// return to answered question i
+function pfGoTo(i) {
+  pfUnland();
+  pfAt = pfPath[i].id;
+  pfPath = pfPath.slice(0, i);
+  pfRender(true);
+}
+function pfRestart() {
+  pfUnland();
+  pfAt = 'q1'; pfPath = [];
+  pfRender(true);
+}
+
+function pfQuestionsHtml() {
+  const done = pfPath.map((p, i) => {
+    const q = PF_Q[p.id];
+    return `<button class="pfm-qd" data-i="${i}" title="Change this answer">
+        <span class="pfm-qd-k">Question ${i + 1}</span>
+        <span class="pfm-qd-a">${esc(p.yes ? q.yl : q.nl)}</span>
+        <span class="pfm-qd-r">Change</span></button>`;
+  }).join('');
+  let cur;
+  if (pfAt) {
+    const q = PF_Q[pfAt];
+    const total = pfPath.length + pfDepth(pfAt);
+    const dots = Array.from({ length: total }, (_, k) => `<i class="${k <= pfPath.length ? 'on' : ''}"></i>`).join('');
+    cur = `<div class="pfm-qc">
+        <div class="pfm-qc-k">Question ${pfPath.length + 1} of ${total}<span class="pfm-dots" aria-hidden="true">${dots}</span></div>
+        <div class="pfm-q">${esc(q.t)}</div>
+        <div class="pfm-h">${esc(q.h)}</div>
+        <div class="pfm-opts">
+          <button class="pfm-opt" data-a="y">${esc(q.yl)}</button>
+          <button class="pfm-opt" data-a="n">${esc(q.nl)}</button>
+        </div></div>`;
+  } else {
+    const landed = pfLanded();
+    const explore = pfFinal === 'explore';
+    cur = `<div class="pfm-qc">
+        <div class="pfm-qc-k">${explore ? 'Two places to start' : 'Your answers point to'}</div>
+        ${landed.map(r => `<div class="pfm-res-n">${esc(r.name)}</div>`).join('')}
+        <div class="pfm-h">${explore
+          ? 'Still exploring is a good place to start. Both roles are checked below; compare their courses once you close this window.'
+          : 'It is checked below. Check any other role you would like to compare, then close this window to see the courses.'}</div>
+      </div>`;
+  }
+  return done + cur;
+}
+function pfCardsHtml() {
+  const rank = { strong: 0, likely: 1, neutral: 2, out: 3 };
+  const items = pwRoles().map((r, i) => ({ r, i, st: pfState(r.name) }))
+    .sort((a, b) => rank[a.st] - rank[b.st] || pfFit(b.r.name) - pfFit(a.r.name) || a.i - b.i);
+  const badge = (st, name) => st === 'strong' ? (pfFinal === name ? 'Best match' : 'Strong fit')
+    : st === 'likely' ? (pfFinal === 'explore' ? 'Worth a look' : 'Possible') : '';
+  return items.map(({ r, st }) => {
+    const on = pfSel.has(r.id), b = badge(st, r.name);
+    return `<button class="pfm-card${on ? ' on' : ''}" data-role="${esc(r.id)}" data-state="${st}" aria-pressed="${on}">
+        <span class="pfm-card-top"><span class="pfm-g">${esc(r.group || '')}</span>${b ? `<span class="pfm-badge">${b}</span>` : ''}<span class="pfm-box"></span></span>
+        <span class="pfm-card-n">${esc(r.name)}</span>
+        ${r.short ? `<span class="pfm-card-s">${esc(r.short)}</span>` : ''}</button>`;
+  }).join('');
+}
+// 8 → 4 → 2 roles: how many are left after each answer
+function pfFunnelHtml() {
+  const counts = [pwRoles().length], saved = pfPath;
+  for (let k = 1; k <= saved.length; k++) { pfPath = saved.slice(0, k); counts.push(pwRoles().filter(r => pfFit(r.name) >= 0).length); }
+  pfPath = saved;
+  return counts.map((n, i) => `${i ? '<em>→</em>' : ''}<b>${n}</b>`).join('') + ' roles';
+}
+function pfFooterHtml() {
+  const names = pwRoles().filter(r => pfSel.has(r.id)).map(r => r.name);
+  const t = !names.length ? 'No role checked yet.'
+    : names.length <= 3 ? `Checked: <b>${names.map(esc).join('</b>, <b>')}</b>`
+    : `<b>${names.length} roles</b> checked`;
+  return `<span class="pfm-ft-t">${t}</span>
+    ${pfPath.length ? '<button class="pfm-link" id="pfm-restart">Start over</button>' : ''}
+    ${names.length ? '<button class="pfm-link" id="pfm-clear">Uncheck all</button>' : ''}
+    <button class="btn btn-primary" id="pfm-done">Done</button>`;
+}
+
+function pfRender(animate) {
+  const back = document.getElementById('pfm');
+  if (!back) return;
+  const before = new Map([...back.querySelectorAll('.pfm-card')].map(el => [el.dataset.role, el.getBoundingClientRect()]));
+  back.firstElementChild.innerHTML = `
+      <div class="pfm-hd">
+        <div><div class="pfm-eyebrow">Need help choosing a role?</div><h2 id="pfm-t">Answer a few questions</h2></div>
+        <span class="pfm-funnel">${pfFunnelHtml()}</span>
+        <button class="pfm-x" id="pfm-x" title="Close (keeps what is checked)" aria-label="Close">×</button>
+      </div>
+      <div class="pfm-body">
+        <div class="pfm-qs">${pfQuestionsHtml()}</div>
+        <div>
+          <div class="pfm-cards-hd"><b>Roles that fit your answers</b><span>Click a card to check or uncheck it. What you check here stays checked when you close this window.</span></div>
+          <div class="pfm-cards" style="margin-top:12px;">${pfCardsHtml()}</div>
+        </div>
+      </div>
+      <div class="pfm-ft">${pfFooterHtml()}</div>`;
+  back.querySelectorAll('.pfm-opt').forEach(b => { b.onclick = () => pfAnswer(b.dataset.a === 'y'); });
+  back.querySelectorAll('.pfm-qd').forEach(b => { b.onclick = () => pfGoTo(+b.dataset.i); });
+  back.querySelectorAll('.pfm-card').forEach(b => {
+    b.onclick = () => { const id = b.dataset.role; pfSel.has(id) ? pfSel.delete(id) : pfSel.add(id); pfAdded.delete(id); pfRender(false); };
+  });
+  back.querySelector('#pfm-x').onclick = pfCloseModal;
+  back.querySelector('#pfm-done').onclick = pfCloseModal;
+  const restart = back.querySelector('#pfm-restart');
+  if (restart) restart.onclick = pfRestart;
+  const clear = back.querySelector('#pfm-clear');
+  if (clear) clear.onclick = () => { pfSel = new Set(); pfAdded = new Set(); pfRender(false); };
+  const first = back.querySelector('.pfm-opt') || back.querySelector('#pfm-done');
+  if (animate || !before.size) first.focus({ preventScroll: true });
+  // the cards slide to their new places
+  if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    back.querySelectorAll('.pfm-card').forEach(el => {
+      const b = before.get(el.dataset.role); if (!b) return;
+      const a = el.getBoundingClientRect(), dx = b.left - a.left, dy = b.top - a.top;
+      if (dx || dy) el.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 320, easing: 'cubic-bezier(.2,.7,.2,1)' });
+    });
+  }
 }
 
 function pfSlotHtml() {
   if (!pfFits()) return '';
   return `<div class="pf-slot">
-      <button class="pf-open" id="pf-open">${pfOpen ? 'Hide the questions' : '<b>Need help?</b> Answer three questions'}</button>
-      ${pfOpen ? pfPopHtml() : ''}
+      <button class="pf-open" id="pf-open"><b>Need help?</b> Answer a few questions</button>
     </div>`;
 }
-function pfPopHtml() {
-  if (pfRoles) {
-    const one = pfRoles.length === 1;
-    return `<div class="pf-pop" role="dialog" aria-label="Need help choosing a role">
-        <div class="pf-hd"><span class="pf-step">${one ? 'Your answers point to' : 'Two places to start'}</span>
-          <button class="pf-x" id="pf-close" title="Close">×</button></div>
-        ${pfRoles.map(r => `<div class="pf-res">
-          <div class="pf-res-n">${esc(r.name)}</div>
-          ${r.short ? `<div class="pf-res-s">${esc(r.short)}</div>` : ''}</div>`).join('')}
-        <div class="pf-res-b">
-          <button class="btn btn-primary" id="pf-take">${one ? 'Check this role' : 'Check both roles'}</button>
-          <button class="pf-link" id="pf-restart">Start over</button></div>
-      </div>`;
-  }
-  const q = PF_Q[pfAt];
-  return `<div class="pf-pop" role="dialog" aria-label="Need help choosing a role">
-      <div class="pf-hd"><span class="pf-step">Question ${pfTrail.length + 1}</span>
-        <button class="pf-x" id="pf-close" title="Close">×</button></div>
-      <div class="pf-q">${esc(q.t)}</div>
-      <div class="pf-hint">${esc(q.h)}</div>
-      <div class="pf-opts">
-        <button class="pf-opt" data-a="y"><b>${esc(q.yl)}</b></button>
-        <button class="pf-opt" data-a="n"><b>${esc(q.nl)}</b></button>
-      </div>
-      <div class="pf-ft">
-        ${pfTrail.length ? '<button class="pf-link" id="pf-back">Back</button>' : ''}
-        <button class="pf-link" id="pf-restart">Start over</button>
-      </div>
-    </div>`;
-}
-// called at the end of renderPathways: puts the slot at the head of the roles card and wires it
+// called at the end of renderPathways: puts the button at the head of the roles card and wires it
 function pfMount() {
   const card = document.querySelector('.lp-roles');
   if (!card) return;
@@ -3400,17 +3607,7 @@ function pfMount() {
   slot.innerHTML = html;
   const el = slot.firstElementChild;
   card.querySelector('.lp-hd').after(el);
-  card.classList.toggle('pf-on', pfOpen);
-  el.querySelector('#pf-open').onclick = () => { pfOpen = !pfOpen; if (pfOpen) pfReset(); renderPathways(); };
-  const close = el.querySelector('#pf-close');
-  if (close) close.onclick = () => { pfOpen = false; renderPathways(); };
-  const restart = el.querySelector('#pf-restart');
-  if (restart) restart.onclick = () => { pfReset(); renderPathways(); };
-  const back = el.querySelector('#pf-back');
-  if (back) back.onclick = pfBack;
-  const take = el.querySelector('#pf-take');
-  if (take) take.onclick = pfTake;
-  el.querySelectorAll('.pf-opt').forEach(b => { b.onclick = () => pfAnswer(b.dataset.a); });
+  el.querySelector('#pf-open').onclick = pfOpenModal;
 }
 
 // ── RENDER: This semester ──
