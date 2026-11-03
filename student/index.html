@@ -3231,7 +3231,7 @@ function pwSaveBarHtml() {
   return `<div class="lp-save">
       <span class="lp-save-t"><b>Saved</b>${st.saved_at ? ` ${pwWhen(st.saved_at)}` : ''}.${sent}</span>
       ${n && !pwRolesOff ? `<span class="lp-save-acts"><span class="lp-save-k">Next, plan it in Telos</span>
-        <button class="btn" id="lp-discuss">Discuss with my advisor</button>
+        <button class="btn" id="lp-discuss" title="Sends your pathway to Telos and opens a meeting request to your advisor">Send and request a meeting</button>
         <button class="btn btn-primary" id="lp-send">Send to my Telos plan</button></span>` : ''}
     </div>`;
 }
