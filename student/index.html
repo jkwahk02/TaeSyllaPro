@@ -760,7 +760,7 @@ button,input{font-family:inherit;}
 .lp-blank-t{font-size:23px;font-weight:600;margin-bottom:10px;}
 .lp-blank-p{font-size:19px;color:var(--text2);line-height:1.6;max-width:58ch;margin:0 auto;}
 
-/* ── PATHFINDER ASSIST (Need help? above the role checkboxes) ──
+/* ── PATHFINDER ASSIST ("Not sure which role?" above the role checkboxes) ──
    A student who knows which role they want checks it and is done. For a student who does not, a large
    window walks the Program page's Pathfinder questions: each answer narrows the role cards below it, and
    the roles the answers land on are checked. Closing the window keeps whatever is checked in it, on top
@@ -3550,7 +3550,7 @@ function renderPathways() {
 
 // ── PATHFINDER ASSIST ──
 // A student who knows which role they want checks it and is done. A student who does not is the
-// one this is for: Need help? opens a large window with the Program page's Pathfinder question tree.
+// one this is for: "Not sure which role?" opens a large window with the Program page's Pathfinder question tree.
 // Each either/or answer narrows the role cards under it, the role it lands on is checked, and closing
 // the window keeps what is checked there, added to what was checked before.
 // The tree is the DS&AI one, unchanged (curriculum.html → Pathways → pathfinder-embed.html), so the
@@ -3738,7 +3738,7 @@ function pfRender(animate) {
   const before = new Map([...back.querySelectorAll('.pfm-card')].map(el => [el.dataset.role, el.getBoundingClientRect()]));
   back.firstElementChild.innerHTML = `
       <div class="pfm-hd">
-        <div><div class="pfm-eyebrow">Need help choosing a role?</div><h2 id="pfm-t">Answer a few questions</h2></div>
+        <div><div class="pfm-eyebrow">Not sure which role?</div><h2 id="pfm-t">Answer a few questions to find one</h2></div>
         <span class="pfm-funnel">${pfFunnelHtml()}</span>
         <button class="pfm-x" id="pfm-x" title="Close (keeps what is checked)" aria-label="Close">×</button>
       </div>
