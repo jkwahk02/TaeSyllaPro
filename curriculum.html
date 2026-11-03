@@ -1735,7 +1735,9 @@ else setTab('ov');   // pages with tabs open on the first tab
       ploIds.length ? get('outcome_curriculum_map', `plo_id=in.(${ploIds.join(',')})&select=course_base_id,plo_id,levels,tagged_clo_numbers,approved_at`) : [],
       ploIds.length && !CATALOG_ONLY ? get('outcome_map_proposals', `plo_id=in.(${ploIds.join(',')})&order=proposed_at.desc&select=*`) : [],
       codes.length ? get('courses', `course_id=in.${inList(codes)}&select=course_id,title,competency_critical_thinking,competency_creative_thinking,competency_self_directed_learning,competency_communication,competency_diversity_empathy,competency_global_harmony`) : [],
-      codes.length ? get('course_offerings', `course_base_id=in.${inList(offCodes)}&select=offering_id,course_id,course_base_id,section,semester_year,professor,status,weekday_time,reference_timezone_student_location,title`) : [],
+      // Catalog-only: published sections only. A draft offering is not announced yet, and any
+      // signed-in user can read course_offerings, so the filter has to be here rather than in RLS.
+      codes.length ? get('course_offerings', `course_base_id=in.${inList(offCodes)}${CATALOG_ONLY ? '&status=eq.published' : ''}&select=offering_id,course_id,course_base_id,section,semester_year,professor,status,weekday_time,reference_timezone_student_location,title`) : [],
       CATALOG_ONLY ? get('faculty_profiles', 'select=name_en,email,program').catch(() => []) : get('faculty_profiles', 'select=name_en,email,program'),
       get('programs', 'select=code,name'),
     ]);
