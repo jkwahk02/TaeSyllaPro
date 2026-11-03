@@ -625,7 +625,8 @@ button,input{font-family:inherit;}
 .lp-hd-s{font-size:17px;color:var(--text2);margin-left:auto;}
 .lp-scroll{overflow-y:auto;flex:1;min-height:0;}
 .rl-bar{flex:none;display:flex;align-items:center;gap:16px;padding:9px 20px;border-bottom:1px solid var(--border);border-left:3px solid transparent;}
-.rl-bar-n{font-size:15px;color:var(--text3);margin-left:auto;}
+.rl-bar-n{font-size:15px;color:var(--text3);}
+.rl-all:hover .rl-bar-n{color:var(--blue);}
 .rl-all{display:flex;align-items:center;gap:12px;cursor:pointer;font-size:16px;color:var(--text2);border-radius:6px;}
 .rl-all:hover{color:var(--blue);}
 .rl-all:focus-visible{outline:2px solid var(--blue-b);outline-offset:3px;}
@@ -3286,14 +3287,15 @@ function pwRolesPanelHtml() {
   const total = pwRoles().length;
   const all = pwChecked.size === total && total > 0;
   const n = pwChecked.size;
-  // One box over the list, lined up with the role boxes: empty, a dash when some are checked, a tick when all are
+  // One box over the list, lined up with the role boxes and labelled by the count: empty, a dash when
+  // some are checked, a tick when all are
   const st = all ? 'on' : n ? 'some' : '';
   return `<div class="lp-card lp-side lp-roles">
       <div class="lp-hd"><span class="lp-hd-t">Graduate roles</span></div>
       <div class="rl-bar">
         <span class="rl-all ${st}" id="lp-all" role="checkbox" tabindex="0" aria-checked="${all ? 'true' : n ? 'mixed' : 'false'}"
-          title="${all ? 'Uncheck every role' : 'Check every role'}"><span class="rl-box"></span>Select all</span>
-        <span class="rl-bar-n">${n ? `${n} of ${total} checked` : `${total} roles`}</span></div>
+          aria-label="Select all roles" title="${all ? 'Uncheck every role' : 'Check every role'}"><span class="rl-box"></span>
+          <span class="rl-bar-n">${n ? `${n} of ${total} checked` : `${total} roles`}</span></span></div>
       <div class="lp-scroll" id="lp-roles"></div>
     </div>`;
 }
