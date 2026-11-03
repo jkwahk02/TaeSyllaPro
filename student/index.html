@@ -624,6 +624,9 @@ button,input{font-family:inherit;}
 .lp-hd-t{font-size:21px;font-weight:600;color:var(--text);}
 .lp-hd-s{font-size:17px;color:var(--text2);margin-left:auto;}
 .lp-scroll{overflow-y:auto;flex:1;min-height:0;}
+.rl-bar{flex:none;display:flex;align-items:center;gap:16px;padding:10px 20px;border-bottom:1px solid var(--border);}
+.rl-bar-n{font-size:15px;color:var(--text3);margin-right:auto;}
+.rl-bar .lp-link{margin-left:0;font-size:16px;}
 .lp-link{font-size:17px;font-weight:500;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;font-family:inherit;margin-left:auto;}
 .lp-link:hover{text-decoration:underline;}
 .lp-x{width:30px;height:30px;border:none;background:none;color:var(--text3);font-size:21px;line-height:1;cursor:pointer;border-radius:6px;padding:0;font-family:inherit;}
@@ -757,12 +760,20 @@ button,input{font-family:inherit;}
    of what was checked before. With a course open the roles column narrows, and the button steps away. */
 .pf-slot{position:relative;flex:none;background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;}
 .lp-cols.has-detail .pf-slot{display:none;}
-.pf-open{width:100%;border:1px dashed var(--border-em);background:var(--surface);color:var(--text2);
-  font-family:inherit;font-size:17px;border-radius:var(--r);padding:11px 12px;cursor:pointer;line-height:1.3;
-  display:flex;align-items:center;justify-content:center;gap:8px;transition:border-color .12s,color .12s,background .12s;}
-.pf-open:hover{border-color:var(--blue-b);color:var(--blue);background:var(--blue-l);}
-.pf-open b{font-weight:600;color:var(--text);}
-.pf-open:hover b{color:var(--blue);}
+/* a quiet tinted row with a compass: it stands apart from the checkboxes without shouting */
+.pf-open{width:100%;border:1px solid var(--blue-b);background:var(--blue-l);color:var(--text2);text-align:left;
+  font-family:inherit;border-radius:var(--r);padding:10px 14px;cursor:pointer;line-height:1.3;
+  display:flex;align-items:center;gap:12px;transition:border-color .12s,background .12s,box-shadow .12s;}
+.pf-open:hover,.pf-open:focus-visible{border-color:var(--blue);box-shadow:0 3px 10px rgba(0,0,0,.07);outline:none;}
+.pf-ic{flex:none;width:36px;height:36px;border-radius:50%;background:var(--surface);color:var(--blue);
+  display:flex;align-items:center;justify-content:center;transition:transform .3s cubic-bezier(.2,.7,.2,1);}
+.pf-open:hover .pf-ic{transform:rotate(-18deg);}
+.pf-tx{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;}
+.pf-tx b{font-size:17px;font-weight:600;color:var(--text);}
+.pf-tx span{font-size:15px;color:var(--text2);}
+.pf-go{flex:none;color:var(--blue);transition:transform .15s;}
+.pf-open:hover .pf-go{transform:translateX(3px);}
+@media (prefers-reduced-motion:reduce){ .pf-ic,.pf-go{transition:none;} }
 
 .pfm-back{position:fixed;inset:0;z-index:400;background:rgba(20,22,26,.45);display:flex;align-items:center;justify-content:center;
   padding:24px;animation:pfm-fade .16s ease-out;}
@@ -3267,9 +3278,13 @@ function pathwaysHeaderHtml() {
 function pwRolesPanelHtml() {
   const total = pwRoles().length;
   const all = pwChecked.size === total && total > 0;
+  const n = pwChecked.size;
+  // Select all and Clear sit right over the boxes they act on, under Need help
   return `<div class="lp-card lp-side lp-roles">
-      <div class="lp-hd"><span class="lp-hd-t">Graduate roles</span>
-        <button class="lp-link" id="lp-all">${all ? 'Clear all' : 'Select all'}</button></div>
+      <div class="lp-hd"><span class="lp-hd-t">Graduate roles</span></div>
+      <div class="rl-bar"><span class="rl-bar-n">${n ? `${n} of ${total} checked` : `${total} roles`}</span>
+        ${all ? '' : '<button class="lp-link" id="lp-all">Select all</button>'}
+        ${n ? '<button class="lp-link" id="lp-clear">Clear</button>' : ''}</div>
       <div class="lp-scroll" id="lp-roles"></div>
     </div>`;
 }
@@ -3446,11 +3461,10 @@ function renderPathways() {
   document.getElementById('lp-planhost').innerHTML = pwPlanPanelHtml() + pwSaveBarHtml();
   pwFillRoles();
 
-  const total = pwRoles().length;
-  document.getElementById('lp-all').onclick = () => {
-    pwChecked = pwChecked.size === total ? new Set() : new Set(pwRoles().map(r => r.id));
-    renderPathways();
-  };
+  const selAll = document.getElementById('lp-all');
+  if (selAll) selAll.onclick = () => { pwChecked = new Set(pwRoles().map(r => r.id)); renderPathways(); };
+  const clear = document.getElementById('lp-clear');
+  if (clear) clear.onclick = () => { pwChecked = new Set(); renderPathways(); };
   const host = document.getElementById('lp-courses');
   if (host) {
     host.querySelectorAll('.cr').forEach(b => {
@@ -3748,7 +3762,11 @@ function pfRender(animate) {
 function pfSlotHtml() {
   if (!pfFits()) return '';
   return `<div class="pf-slot">
-      <button class="pf-open" id="pf-open"><b>Need help?</b> Answer a few questions</button>
+      <button class="pf-open" id="pf-open">
+        <span class="pf-ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.6 8.4 13.3 13.3 8.4 15.6 10.7 10.7Z" fill="currentColor" fill-opacity=".18"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg></span>
+        <span class="pf-tx"><b>Not sure which role?</b><span>Answer a few questions to find one</span></span>
+        <svg class="pf-go" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </div>`;
 }
 // called at the end of renderPathways: puts the button at the head of the roles card and wires it
