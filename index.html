@@ -616,6 +616,7 @@ button,input{font-family:inherit;}
 .otb-week span{font-size:18px;font-weight:500;padding:0 8px;min-width:150px;text-align:center;white-space:nowrap;}
 .otb-btn{height:44px;padding:0 16px;border:1px solid var(--border-em);border-radius:var(--r);background:var(--surface);font-size:17px;font-weight:500;color:var(--text2);cursor:pointer;}
 .otb-btn:hover{background:var(--surface2);}
+.otb-btn:disabled{opacity:.45;cursor:default;background:var(--surface);}
 .otb-view{margin-left:auto;}
 .otb-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px;}
 .otb-chip{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 15px;border-radius:20px;border:1px solid var(--border-em);background:var(--surface);font-size:17px;font-weight:500;color:var(--text2);cursor:pointer;}
@@ -5360,6 +5361,14 @@ function otbTermRange(sem) {
   if (!terms.length) return null;
   return { from: terms.map(t => t.start_date).sort()[0], to: terms.map(t => t.end_date).sort().pop() };
 }
+// Is today inside the selected semester? ("This week" only makes sense then.)
+// Without a published calendar, fall back to the app's current semester.
+function otbTodayInSemester() {
+  const r = otbTermRange(otbState.semester);
+  if (!r) return otbState.semester === CURRENT_SEMESTER;
+  const today = otbTodayIso(otbState.tz);
+  return today >= r.from && today <= r.to;
+}
 // This week while the semester is on; otherwise the semester's first week.
 function otbDefaultWeek() {
   const today = otbTodayIso(otbState.tz);
@@ -5499,7 +5508,7 @@ function otbDraw(semesters) {
         <div class="cf-select-wrap"><select class="cf-select" id="otb-tz">${tzOpts.map(t => `<option value="${esc(t.iana)}" ${t.iana === s.tz ? 'selected' : ''}>${esc(t.label)}</option>`).join('')}</select></div></div>
       <div class="otb-ctl"><span class="otb-ctl-label">Week</span>
         <div class="otb-week"><button id="otb-prev" title="Previous week">&lsaquo;</button><span>${weekLabel}</span><button id="otb-next" title="Next week">&rsaquo;</button></div></div>
-      <button class="otb-btn" id="otb-today">This week</button>
+      <button class="otb-btn" id="otb-today" ${otbTodayInSemester() ? '' : `disabled title="Today is not in ${esc(s.semester)}"`}>This week</button>
       <div class="view-toggle otb-view">
         <button class="view-btn ${s.view === 'grid' ? 'active' : ''}" id="otb-v-grid" title="Week view">${finderGridIcon()}</button>
         <button class="view-btn ${s.view === 'list' ? 'active' : ''}" id="otb-v-list" title="List view">${finderListIcon()}</button>
