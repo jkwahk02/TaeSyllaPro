@@ -4038,16 +4038,20 @@ async function makeSyllabusDocument(offeringId) {
 
 // ══ Class Roster tab ══════════════════════════════════════════════════════
 // Who took (or is taking) this offering, from student_course_history via the
-// taesylla_offering_roster() RPC (security definer; the offering's own
-// instructor only). Shown for the current term and past terms, not future ones.
-let rosterCache = {}; // { [offeringId]: 'loading' | rows[] | {error} }
+// taesylla_offering_roster() RPC (security definer). Open to the offering's own
+// instructor and to the chairs of the programs that recognize the course for
+// major credit; the RPC decides (taesylla_roster_access) and refuses anyone
+// else with 42501. Shown for the current term and past terms, not future ones.
+const ROSTER_WHO = 'Available to the course instructor and to the chairs of the programs that recognize this course for major credit.';
+let rosterCache = {}; // { [offeringId]: 'loading' | rows[] | {error} | {denied} }
 async function loadRoster(id) {
   rosterCache[id] = 'loading';
   try {
     const rows = await sbWrite('POST', 'rpc/taesylla_offering_roster', '', { p_offering_id: Number(id) });
     rosterCache[id] = (rows || []).slice().sort((a, b) => String(a.name_en || '').localeCompare(String(b.name_en || '')) || String(a.student_id).localeCompare(String(b.student_id)));
   } catch (e) {
-    rosterCache[id] = { error: e.message || String(e) };
+    const msg = e.message || String(e);
+    rosterCache[id] = /not allowed to view this roster/i.test(msg) ? { denied: true } : { error: msg };
   }
   if (String(currentCourseId) === String(id) && courseTab === 'roster') renderCoursePage();
 }
@@ -4057,10 +4061,12 @@ function renderRosterTab(c) {
   const isCurrent = semesterSortKey(c.semester) === CURRENT_KEY;
   const intro = `<div style="font-size:14px;color:var(--text3);line-height:1.55;margin-top:-12px;margin-bottom:18px;">${isCurrent ? 'Students enrolled' : 'Students who took this course'} in ${esc(c.semester)}${c.section ? `, section ${esc(String(c.section))}` : ''}.</div>`;
   const shell = (inner, count) => `<div class="cp-card"><div class="cp-card-title">Class Roster${count != null ? ` <span style="font-weight:500;color:var(--text3);">· ${count} student${count === 1 ? '' : 's'}</span>` : ''}</div>${intro}${inner}</div>`;
-  if (!owned) return shell(`<div class="cp-empty">Available to the course instructor.</div>`);
+  // Not the instructor and not a chair: no request at all. A chair asks, and the RPC says whether this course is theirs.
+  if (!owned && !PROFESSOR.isChair) return shell(`<div class="cp-empty">${ROSTER_WHO}</div>`);
   const data = rosterCache[c.id];
   if (!data) { loadRoster(c.id); return shell(`<div class="cp-empty">Loading…</div>`); }
   if (data === 'loading') return shell(`<div class="cp-empty">Loading…</div>`);
+  if (data.denied) return shell(`<div class="cp-empty">${ROSTER_WHO}</div>`);
   if (data.error) return shell(`<div class="cp-empty">Couldn't load the roster: ${esc(data.error)}<div class="cp-empty-hint"><button class="btn" onclick="rosterReload(${Number(c.id)})">Retry</button></div></div>`);
   if (!data.length) return shell(`<div class="cp-empty">No students are recorded for this offering.</div>`, 0);
   const majors = r => [r.major1, r.major2].filter(Boolean).map(esc).join('<br>') || '<span class="muted">—</span>';
