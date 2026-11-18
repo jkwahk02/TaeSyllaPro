@@ -1523,7 +1523,8 @@ function ovTerm(i, t, on){ const p = OV.pathway[i]; p.terms = OV.terms.filter(x 
 // Figure 1: curricular domains -> Learning Pathway courses (primary domain wide, others narrow)
 function renderDomainFlow(ed){
   const courses = OV.pathway.filter(p => OV.domainMap[p.code]);
-  const order = ['Fundamentals', 'Advanced', 'Interdisciplinary'];
+  // Stages in the program's own order (BI: four stages); programs without levels keep the catalog order
+  const order = OV.levels.length ? OV.levels.map(l => l.name) : ['Fundamentals', 'Advanced', 'Interdisciplinary'];
   courses.sort((a, b) => order.indexOf(a.level) - order.indexOf(b.level) || OV.terms.indexOf(a.terms[0]) - OV.terms.indexOf(b.terms[0]));
   const P = 6, ST = 5, S = 2, IN = 1, CU = 2.4, W = 1320, X0 = 290, X1 = 540, CW = 380, X2 = 1140, NW = 14, TOP = 36, GAP = 8, MINH = 24;
   const val = c => { const m = OV.domainMap[c.code]; return P + ST * (m.strong || []).length + S * m.also.length + IN * (m.intro || []).length; };
