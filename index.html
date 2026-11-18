@@ -604,6 +604,92 @@ button,input{font-family:inherit;}
 .tb-tabs .rail-btn{transition:transform .15s ease,color .15s ease;transform-origin:center bottom;}
 .tb-tabs .rail-btn:hover{transform:scale(1.08);color:var(--blue);}
 .tb-tabs .rail-btn.active{transform:scale(1.08);color:var(--blue);}
+
+/* ── TIMETABLE (#timetable) — reuses cf-select, view-toggle, list-row, chip-code ── */
+.otb-controls{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:16px;}
+.otb-ctl{display:flex;flex-direction:column;gap:7px;}
+.otb-ctl-label{font-size:15px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;color:var(--text3);}
+.otb-yours{font-size:14px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--blue);background:var(--blue-l);border-radius:10px;padding:1px 8px;margin-left:4px;}
+.otb-week{display:flex;align-items:center;height:44px;border:1px solid var(--border-em);border-radius:var(--r);background:var(--surface);overflow:hidden;}
+.otb-week button{border:none;background:none;width:42px;height:100%;cursor:pointer;color:var(--text2);font-size:24px;line-height:1;}
+.otb-week button:hover{background:var(--surface2);}
+.otb-week span{font-size:18px;font-weight:500;padding:0 8px;min-width:150px;text-align:center;white-space:nowrap;}
+.otb-btn{height:44px;padding:0 16px;border:1px solid var(--border-em);border-radius:var(--r);background:var(--surface);font-size:17px;font-weight:500;color:var(--text2);cursor:pointer;}
+.otb-btn:hover{background:var(--surface2);}
+.otb-view{margin-left:auto;}
+.otb-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px;}
+.otb-chip{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 15px;border-radius:20px;border:1px solid var(--border-em);background:var(--surface);font-size:17px;font-weight:500;color:var(--text2);cursor:pointer;}
+.otb-chip:hover{background:var(--surface2);}
+.otb-dot{width:10px;height:10px;border-radius:50%;}
+.otb-n{font-family:'DM Mono',monospace;font-size:14px;color:var(--text3);}
+.otb-chip.off{opacity:.45;}
+.otb-chip.off .otb-dot{background:var(--text3)!important;}
+.otb-mine{display:inline-flex;align-items:center;gap:8px;font-size:17px;color:var(--text2);margin-left:8px;cursor:pointer;}
+.otb-mine input{width:18px;height:18px;accent-color:var(--blue);}
+.otb-notice{background:var(--amber-l);color:var(--amber);border-radius:var(--r);padding:12px 16px;font-size:17px;line-height:1.45;margin-bottom:16px;}
+.otb-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow-x:auto;}
+.otb-grid{display:grid;grid-template-columns:80px repeat(7,minmax(160px,1fr));min-width:1200px;}
+.otb-corner{border-bottom:1px solid var(--border-em);border-right:1px solid var(--border);font-size:14px;color:var(--text3);display:flex;align-items:flex-end;justify-content:center;padding:0 4px 12px;position:sticky;left:0;background:var(--surface);z-index:4;}
+.otb-head{border-bottom:1px solid var(--border-em);padding:14px 8px 12px;text-align:center;}
+.otb-dn{font-size:15px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;color:var(--text3);}
+.otb-dd{font-size:22px;font-weight:600;margin-top:2px;}
+.otb-cnt{font-size:14px;color:var(--text3);margin-top:3px;}
+.otb-head.today .otb-dn{color:var(--blue);}
+.otb-head.today .otb-dd{display:inline-block;color:#fff;background:var(--blue);border-radius:15px;padding:0 11px;}
+.otb-hours{position:sticky;left:0;z-index:4;background:var(--surface);border-right:1px solid var(--border);}
+.otb-hour{position:absolute;right:10px;font-family:'DM Mono',monospace;font-size:14px;line-height:18px;color:var(--text3);}
+.otb-col{position:relative;border-right:1px solid var(--border);}
+.otb-col:last-child{border-right:none;}
+.otb-col.today{background:rgba(46,125,91,.035);}
+.otb-line{position:absolute;left:0;right:0;border-top:1px solid var(--border);}
+.otb-line.half{border-top-style:dashed;opacity:.6;}
+.otb-now{position:absolute;left:0;right:0;border-top:2px solid var(--red);z-index:3;}
+.otb-now::before{content:"";position:absolute;left:-5px;top:-6px;width:10px;height:10px;border-radius:50%;background:var(--red);}
+.otb-blk{position:absolute;z-index:2;overflow:hidden;cursor:pointer;border-radius:7px;border-left:4px solid;padding:5px 6px 5px 7px;line-height:1.3;transition:box-shadow .12s;}
+.otb-blk:hover{box-shadow:0 4px 14px rgba(0,0,0,.12);z-index:3;}
+.otb-blk.mine{box-shadow:inset 0 0 0 2px currentColor;}
+.otb-blk.sel{outline:3px solid var(--text);outline-offset:1px;}
+.otb-blk.cont-top{border-top-left-radius:0;border-top-right-radius:0;}
+.otb-blk.cont-bot{border-bottom-left-radius:0;border-bottom-right-radius:0;}
+.otb-blk.narrow{padding:4px 4px 4px 6px;}
+.otb-blk.narrow .otb-code{font-size:13.5px;letter-spacing:-.04em;}
+.otb-blk.narrow .otb-tm{font-size:13px;}
+.otb-code{font-family:'DM Mono',monospace;font-weight:600;font-size:15px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.otb-tm{font-family:'DM Mono',monospace;font-size:14px;color:var(--text2);margin:1px 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.otb-ttl{font-size:15px;color:var(--text);opacity:.85;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.otb-blk.otb-more{background:var(--surface2);border:1px dashed var(--border-em);color:var(--text2);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:10px;gap:2px;text-align:center;}
+.otb-blk.otb-more:hover{background:var(--surface3);}
+.otb-more-n{font-size:20px;font-weight:600;color:var(--text);}
+.otb-more-l{font-size:14px;}
+.otb-more-dots{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;}
+.otb-more-dots span{width:8px;height:8px;border-radius:50%;}
+.otb-lday{margin-bottom:22px;}
+.otb-lday .otb-ctl-label{margin-bottom:8px;}
+.otb-lr-time{font-family:'DM Mono',monospace;font-size:18px;color:var(--text2);width:140px;flex-shrink:0;}
+.otb-lr-prof{font-size:19px;color:var(--text3);width:230px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+@media (max-width:900px){ .otb-lr-prof{display:none;} }
+.otb-foot{margin-top:16px;font-size:17px;color:var(--text3);line-height:1.55;}
+.otb-foot a{color:var(--blue);}
+.otb-drawer{position:fixed;top:0;right:0;height:100vh;width:min(480px,100vw);background:var(--surface);border-left:1px solid var(--border-em);box-shadow:-8px 0 28px rgba(0,0,0,.08);z-index:300;transform:translateX(105%);transition:transform .2s ease;padding:30px 28px 34px;overflow-y:auto;}
+.otb-drawer.open{transform:none;}
+.otb-close{position:absolute;top:16px;right:18px;border:none;background:none;font-size:32px;line-height:1;color:var(--text3);cursor:pointer;}
+.otb-dr-title{font-size:24px;font-weight:600;line-height:1.35;margin:14px 0 6px;}
+.otb-dr-prof{font-size:19px;color:var(--text2);}
+.otb-dr-sec{margin-top:26px;}
+.otb-dr-sec .otb-ctl-label{margin-bottom:8px;}
+.otb-dr-row{display:flex;justify-content:space-between;gap:14px;font-size:18px;padding:10px 0;border-bottom:1px solid var(--border);}
+.otb-dr-row > span:last-child{font-family:'DM Mono',monospace;font-size:16px;text-align:right;white-space:nowrap;}
+.otb-dr-row.here{color:var(--blue);font-weight:600;}
+.otb-dr-tag{font-weight:400;color:var(--text3);font-size:16px;}
+.otb-dr-note{font-size:17px;color:var(--text2);line-height:1.5;margin-top:10px;}
+.otb-dr-open{margin-top:28px;}
+.otb-more-row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--border);cursor:pointer;}
+.otb-more-row:hover{background:var(--surface2);}
+.otb-more-row .chip-code{flex:none;min-width:96px;text-align:center;font-size:16px;}
+.otb-mr-main{flex:1;min-width:0;display:flex;flex-direction:column;}
+.otb-mr-t{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.otb-mr-p{font-size:16px;color:var(--text3);}
+.otb-mr-time{font-family:'DM Mono',monospace;font-size:16px;color:var(--text2);flex:none;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -676,7 +762,7 @@ button,input{font-family:inherit;}
     <button class="rail-btn active" id="rail-home" onclick="location.hash=''">Home</button>
     <button class="rail-btn" id="rail-finder" onclick="location.hash='finder'">Course Finder</button>
     <button class="rail-btn" id="rail-curriculum" onclick="location.hash='curriculum'">Curriculum</button>
-    <button class="rail-btn" id="rail-dashboard" onclick="showToast('Dashboard — coming soon')">Dashboard</button>
+    <button class="rail-btn" id="rail-timetable" onclick="location.hash='timetable'">Timetable</button>
     <button class="rail-btn" id="rail-about" onclick="location.hash='about'">About</button>
     <button class="rail-btn" id="rail-settings" onclick="location.hash='settings'">Settings</button>
   </div>
@@ -711,6 +797,7 @@ button,input{font-family:inherit;}
     <div id="page-about" style="display:none;"></div>
     <div id="page-finder" style="display:none;"></div>
     <div id="page-curriculum" style="display:none;"></div>
+    <div id="page-timetable" style="display:none;"></div>
   </div>
 </div>
 
@@ -942,6 +1029,8 @@ function handleRoute() {
     confirmDiscardIfDirty(() => { location.hash = targetHash.replace(/^#/, ''); });
     return;
   }
+  // Timetable: shown only by its own branch below; every other route hides it
+  document.getElementById('page-timetable').style.display = 'none';
   // About: its own page; every other route hides it
   const aboutEl = document.getElementById('page-about');
   if (location.hash === '#about') {
@@ -995,6 +1084,12 @@ function handleRoute() {
     lastListRoute = 'curriculum';
     // back from a course opened here: same place on the page (the frame keeps its tab)
     if (curScrollY != null) { const y = curScrollY; curScrollY = null; setTimeout(() => window.scrollTo(0, y), 0); }
+  } else if (location.hash === '#timetable') {
+    lastListRoute = 'timetable';
+    ['page-course', 'page-home', 'page-settings', 'page-finder', 'page-curriculum'].forEach(id => { document.getElementById(id).style.display = 'none'; });
+    document.getElementById('page-timetable').style.display = 'block';
+    renderOfferingsTimetable();
+    setRailActive('rail-timetable');
   } else if (location.hash === '#settings') {
     document.getElementById('page-course').style.display = 'none';
     document.getElementById('page-home').style.display = 'none';
@@ -1424,6 +1519,23 @@ async function loadPeriodsIfNeeded(offeringId) {
     // meeting pattern applies instead of two identical-looking blank cards.
     await loadAcademicCalendar();
     const rows = await sbGet('course_schedule_periods', `offering_id=eq.${offeringId}&select=*&order=id.asc`);
+    periodsCache[offeringId] = periodsFromRows(offeringId, rows);
+  } catch (e) {
+    periodsCache[offeringId] = [];
+    showToast('Could not load schedule periods: ' + e.message);
+  }
+  fillDerivedPeriodRanges(offeringId);
+  if (String(currentCourseId) === String(offeringId)) {
+    if (editMode && courseTab === 'main') { editPeriods = periodsCache[offeringId].map(p => JSON.parse(JSON.stringify(p))); captureEditSnapshot(); }
+    if (courseTab === 'main' || courseTab === 'schedule') renderCoursePage();
+  }
+  return periodsCache[offeringId];
+}
+
+// Saved course_schedule_periods rows -> the period objects periodsCache holds,
+// seeding from weekday_time when nothing usable was saved. Shared by the
+// course page (one offering) and the Timetable (every offering in a term).
+function periodsFromRows(offeringId, rows) {
     const c = findCourseById(offeringId);   // also a course the viewer does not teach (Course Finder)
     const loaded = rows.map(r => {
       // A period stored with the app's own hardcoded fallback timezone
@@ -1491,20 +1603,9 @@ async function loadPeriodsIfNeeded(offeringId) {
         }
         seeds.push(seed2);
       }
-      periodsCache[offeringId] = seeds;
-    } else {
-      periodsCache[offeringId] = loaded;
+      return seeds;
     }
-  } catch (e) {
-    periodsCache[offeringId] = [];
-    showToast('Could not load schedule periods: ' + e.message);
-  }
-  fillDerivedPeriodRanges(offeringId);
-  if (String(currentCourseId) === String(offeringId)) {
-    if (editMode && courseTab === 'main') { editPeriods = periodsCache[offeringId].map(p => JSON.parse(JSON.stringify(p))); captureEditSnapshot(); }
-    if (courseTab === 'main' || courseTab === 'schedule') renderCoursePage();
-  }
-  return periodsCache[offeringId];
+    return loaded;
 }
 
 // Writes the academic calendar's dates into any period that left its valid
@@ -5154,6 +5255,7 @@ const COURSE_ORIGINS = {
   home:   { hash: '',       label: 'Home',          rail: 'rail-home' },
   finder: { hash: 'finder', label: 'Course Finder', rail: 'rail-finder' },
   curriculum: { hash: 'curriculum', label: 'Curriculum', rail: 'rail-curriculum' },
+  timetable: { hash: 'timetable', label: 'Timetable', rail: 'rail-timetable' },
 };
 let lastListRoute = 'home';
 var curScrollY = null;                  // (var: set by the Curriculum frame) page scroll when a course was opened from Curriculum             // key into COURSE_ORIGINS
@@ -5207,8 +5309,377 @@ async function loadFinderData() {
   catalogLoading = false;
   // Re-render whichever view is waiting on this data.
   if (location.hash === '#finder') renderFinder();
+  else if (location.hash === '#timetable') renderOfferingsTimetable();
   else if (location.hash.startsWith('#course/')) renderCoursePage();
 }
+
+// ── TIMETABLE ──
+// Every offering in a semester on one Sun–Sat week, in the viewer's time zone
+// (PROFESSOR.timezone unless changed here; the change is for this view only).
+// Meetings come from computeClassDatesForOffering, so the week shows what
+// really meets: the right period on each side of a time-zone switch, minus
+// holidays and breaks, plus make-up days. Each meeting is converted on its
+// actual date, so a daylight-saving change on either side moves it correctly.
+const OTB_PROGRAM_COLORS = {
+  DA: { fg: 'var(--map-blue)', bg: '#E8F1FB' },
+  XD: { fg: 'var(--violet)',   bg: 'var(--violet-l)' },
+  NS: { fg: 'var(--teal)',     bg: 'var(--teal-l)' },
+  HS: { fg: 'var(--amber)',    bg: 'var(--amber-l)' },
+  BI: { fg: 'var(--pink)',     bg: 'var(--pink-l)' },
+  IF: { fg: 'var(--green)',    bg: 'var(--green-l)' },
+};
+const OTB_OTHER = { fg: 'var(--gray-m)', bg: 'var(--gray-l)' };
+const OTB_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const otbState = { semester: '', tz: '', weekStart: '', view: 'grid', mineOnly: false, off: {}, selected: null };
+const otbLoaded = {};          // semester -> true once its periods are cached
+let otbMore = {};              // "+N more" block id -> the meetings it folds
+let otbWeekMeetings = [];
+
+const otbPrefix = (c) => (String(c.code || '').match(/^[A-Z]+/) || [''])[0];
+const otbColor = (c) => OTB_PROGRAM_COLORS[otbPrefix(c)] || OTB_OTHER;
+const otbIsMine = (c) => courses.some(x => String(x.id) === String(c.id));
+const otbPad = (n) => String(n).padStart(2, '0');
+const otbIso = (p) => `${p.y}-${otbPad(p.mo)}-${otbPad(p.d)}`;
+const otbFmtMin = (m) => `${otbPad(Math.floor(m / 60) % 24)}:${otbPad(m % 60)}`;
+function otbDow(iso) { const [y, m, d] = iso.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)).getUTCDay(); }
+function otbFmtDate(iso, opt) { return new Date(iso + 'T12:00:00Z').toLocaleDateString('en-US', { timeZone: 'UTC', ...opt }); }
+function otbTodayIso(tz) { return otbIso(utcMsInZone(Date.now(), tz)); }
+function otbSundayOf(iso) { return addDaysIso(iso, -otbDow(iso)); }
+function otbMyTz() { return PROFESSOR.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone; }
+function otbZoneName(iana) { const o = TIMEZONE_OPTIONS.find(t => t.iana === iana); return o ? o.label : iana; }
+function otbZoneAbbr(tz, iso) {
+  const p = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'short' }).formatToParts(new Date(iso + 'T12:00:00Z'));
+  return (p.find(x => x.type === 'timeZoneName') || {}).value || '';
+}
+function otbCoursesFor(sem) { return catalogCourses.filter(c => c.semester === sem); }
+
+// The semester's own dates, across its cohort calendars (Year 1 may end earlier).
+function otbTermRange(sem) {
+  const { year, semester } = parseSemesterLabel(sem);
+  const terms = ((academicCalendar && academicCalendar.terms) || []).filter(t => t.year === year && t.semester === semester);
+  if (!terms.length) return null;
+  return { from: terms.map(t => t.start_date).sort()[0], to: terms.map(t => t.end_date).sort().pop() };
+}
+// This week while the semester is on; otherwise the semester's first week.
+function otbDefaultWeek() {
+  const today = otbTodayIso(otbState.tz);
+  const r = otbTermRange(otbState.semester);
+  if (r && (today < r.from || today > r.to)) return otbSundayOf(r.from);
+  return otbSundayOf(today);
+}
+
+// One request for every period in the semester (not one per course).
+async function otbLoadSemester(sem) {
+  if (otbLoaded[sem]) return;
+  await loadAcademicCalendar();
+  const ids = otbCoursesFor(sem).map(c => c.id).filter(id => !periodsCache[id]);
+  if (ids.length) {
+    const rows = await sbGet('course_schedule_periods', `offering_id=in.(${ids.join(',')})&select=*&order=id.asc`);
+    ids.forEach(id => {
+      periodsCache[id] = periodsFromRows(id, rows.filter(r => String(r.offering_id) === String(id)));
+      fillDerivedPeriodRanges(id);
+    });
+  }
+  otbLoaded[sem] = true;
+}
+
+// Meetings of the displayed week in the chosen zone. A meeting that crosses
+// midnight there is split into two pieces (contBot / contTop).
+function otbMeetingsForWeek() {
+  const tz = otbState.tz, ws = otbState.weekStart, we = addDaysIso(ws, 6);
+  const lo = addDaysIso(ws, -1), hi = addDaysIso(we, 1);   // a day of slack: dates can shift
+  const out = [];
+  otbCoursesFor(otbState.semester).forEach(c => {
+    if (otbState.off[otbPrefix(c) || '—']) return;
+    if (otbState.mineOnly && !otbIsMine(c)) return;
+    computeClassDatesForOffering(c.id).forEach((d, di) => {
+      if (d.isoDate < lo || d.isoDate > hi || !d.startTime || !d.timezone) return;
+      const [y, mo, da] = d.isoDate.split('-').map(Number);
+      const [sh, sm] = d.startTime.split(':').map(Number);
+      const [eh, em] = d.endTime.split(':').map(Number);
+      const dur = ((eh * 60 + em) - (sh * 60 + sm) + 1440) % 1440 || DEFAULT_DURATION_MIN;
+      const startMs = zonedWallTimeToUtcMs(y, mo, da, sh, sm, d.timezone);
+      const endMs = startMs + dur * 60000;
+      const s = utcMsInZone(startMs, tz), e = utcMsInZone(endMs, tz);
+      const sIso = otbIso(s), eIso = otbIso(e), sMin = s.h * 60 + s.mi, eMin = e.h * 60 + e.mi;
+      const base = { c, d, key: `${c.id}|${di}`, startMs, endMs };
+      if (sIso === eIso || eMin === 0) {
+        if (sIso >= ws && sIso <= we) out.push({ ...base, iso: sIso, from: sMin, to: eMin === 0 ? 1440 : eMin });
+      } else {
+        if (sIso >= ws && sIso <= we) out.push({ ...base, iso: sIso, from: sMin, to: 1440, contBot: true });
+        if (eIso >= ws && eIso <= we) out.push({ ...base, iso: eIso, from: 0, to: eMin, contTop: true });
+      }
+    });
+  });
+  return out;
+}
+
+// Overlapping classes sit side by side. Past maxLanes the extra ones fold into
+// one "+N more" block in the last lane, which opens them as a list.
+function otbLayoutDay(items, maxLanes) {
+  items.sort((a, b) => a.from - b.from || b.to - a.to);
+  const overflow = [];
+  let cluster = [], end = -1;
+  const flush = () => {
+    const lanes = [];
+    cluster.forEach(it => {
+      let l = lanes.findIndex(x => x <= it.from);
+      if (l < 0) { l = lanes.length; lanes.push(0); }
+      lanes[l] = it.to; it.lane = l;
+    });
+    if (lanes.length > maxLanes) {
+      const hidden = cluster.filter(it => it.lane >= maxLanes - 1);
+      hidden.forEach(it => { it.hidden = true; });
+      overflow.push({ items: hidden, from: Math.min(...hidden.map(i => i.from)), to: Math.max(...hidden.map(i => i.to)), lane: maxLanes - 1, lanes: maxLanes });
+      cluster.forEach(it => { it.lanes = maxLanes; });
+    } else cluster.forEach(it => { it.lanes = lanes.length; });
+    cluster = [];
+  };
+  items.forEach(it => {
+    if (cluster.length && it.from >= end) flush();
+    end = cluster.length ? Math.max(end, it.to) : it.to;
+    cluster.push(it);
+  });
+  if (cluster.length) flush();
+  return overflow;
+}
+
+function otbHeaderHtml(sub) {
+  return `<div class="ph-header"><div class="ph-greeting">Timetable</div><div class="ph-subline">${sub}</div></div>`;
+}
+function otbMessage(text) {
+  document.getElementById('page-timetable').innerHTML =
+    otbHeaderHtml('Every course offered in a semester, in your time zone.') + `<div class="list-card"><div class="empty-row">${text}</div></div>`;
+}
+
+async function renderOfferingsTimetable() {
+  if (!otbState.tz) otbState.tz = otbMyTz();
+  if (catalogError) { otbMessage(`Unable to load the course offerings: ${esc(catalogError)}`); return; }
+  if (!catalogLoaded) { otbMessage('Loading courses…'); loadFinderData(); return; }
+  const semesters = [...new Set(catalogCourses.map(c => c.semester).filter(Boolean))].sort((a, b) => semesterSortKey(b) - semesterSortKey(a));
+  if (!otbState.semester) otbState.semester = semesters.includes(CURRENT_SEMESTER) ? CURRENT_SEMESTER : (semesters[0] || CURRENT_SEMESTER);
+  const sem = otbState.semester;
+  if (!otbLoaded[sem]) {
+    otbMessage('Loading class times…');
+    try { await otbLoadSemester(sem); }
+    catch (e) { otbMessage(`Could not load class times: ${esc(e.message)}`); return; }
+    if (location.hash !== '#timetable' || sem !== otbState.semester) return;
+  }
+  if (!otbState.weekStart) otbState.weekStart = otbDefaultWeek();
+  otbDraw(semesters);
+}
+
+function otbDraw(semesters) {
+  const el = document.getElementById('page-timetable');
+  const s = otbState, ws = s.weekStart, we = addDaysIso(ws, 6);
+  const meetings = otbMeetingsForWeek();
+  otbWeekMeetings = meetings;
+  const abbr = otbZoneAbbr(s.tz, ws);
+  const nCourses = new Set(meetings.map(m => m.c.id)).size;
+  const tzOpts = TIMEZONE_OPTIONS.some(t => t.iana === s.tz) ? TIMEZONE_OPTIONS : [{ iana: s.tz, label: s.tz }, ...TIMEZONE_OPTIONS];
+  const all = otbCoursesFor(s.semester);
+  const counts = {};
+  all.forEach(c => { const p = otbPrefix(c) || '—'; counts[p] = (counts[p] || 0) + 1; });
+  const order = Object.keys(OTB_PROGRAM_COLORS);
+  const prefixes = Object.keys(counts).sort((a, b) => {
+    const ia = order.indexOf(a), ib = order.indexOf(b);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
+  });
+  const sameMonth = ws.slice(5, 7) === we.slice(5, 7);
+  const weekLabel = `${otbFmtDate(ws, { month: 'short', day: 'numeric' })} – ${otbFmtDate(we, sameMonth ? { day: 'numeric' } : { month: 'short', day: 'numeric' })}`;
+  const range = otbTermRange(s.semester);
+  const outside = range && (we < range.from || ws > range.to);
+  const noTimes = all.filter(c => !(periodsCache[c.id] || []).some(p => p.startTime && Object.values(p.days).some(Boolean)));
+
+  el.innerHTML = otbHeaderHtml(`Every course offered in ${esc(s.semester)} — ${nCourses} course${nCourses === 1 ? '' : 's'} meet${nCourses === 1 ? 's' : ''} this week, shown in ${esc(otbZoneName(s.tz))} (${esc(abbr)}).`) + `
+    <div class="otb-controls">
+      <div class="otb-ctl"><span class="otb-ctl-label">Semester</span>
+        <div class="cf-select-wrap"><select class="cf-select" id="otb-sem">${semesters.map(x => `<option ${x === s.semester ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></div></div>
+      <div class="otb-ctl"><span class="otb-ctl-label">Time zone${s.tz === otbMyTz() ? ' <span class="otb-yours">yours</span>' : ''}</span>
+        <div class="cf-select-wrap"><select class="cf-select" id="otb-tz">${tzOpts.map(t => `<option value="${esc(t.iana)}" ${t.iana === s.tz ? 'selected' : ''}>${esc(t.label)}</option>`).join('')}</select></div></div>
+      <div class="otb-ctl"><span class="otb-ctl-label">Week</span>
+        <div class="otb-week"><button id="otb-prev" title="Previous week">&lsaquo;</button><span>${weekLabel}</span><button id="otb-next" title="Next week">&rsaquo;</button></div></div>
+      <button class="otb-btn" id="otb-today">This week</button>
+      <div class="view-toggle otb-view">
+        <button class="view-btn ${s.view === 'grid' ? 'active' : ''}" id="otb-v-grid" title="Week view">${finderGridIcon()}</button>
+        <button class="view-btn ${s.view === 'list' ? 'active' : ''}" id="otb-v-list" title="List view">${finderListIcon()}</button>
+      </div>
+    </div>
+    <div class="otb-filters">
+      ${prefixes.map(p => { const col = OTB_PROGRAM_COLORS[p] || OTB_OTHER; return `<button class="otb-chip ${s.off[p] ? 'off' : ''}" data-p="${esc(p)}"><span class="otb-dot" style="background:${col.fg}"></span>${esc(p)}<span class="otb-n">${counts[p]}</span></button>`; }).join('')}
+      <label class="otb-mine"><input type="checkbox" id="otb-mine" ${s.mineOnly ? 'checked' : ''}> My courses only</label>
+    </div>
+    ${otbClockNotice()}
+    <div id="otb-body"></div>
+    <div class="otb-foot">${outside
+      ? `This week is outside ${esc(s.semester)} (${otbFmtDate(range.from, { month: 'short', day: 'numeric' })} – ${otbFmtDate(range.to, { month: 'short', day: 'numeric', year: 'numeric' })}).`
+      : 'Holidays and breaks are left out and make-up days added, from the academic calendar. A class can fall on a different day here than in its own time zone; open it to see both.'}
+      ${noTimes.length ? `<br>No meeting time yet: ${noTimes.map(c => `<a href="#course/${esc(c.id)}">${esc(c.code)}</a>`).join(', ')}.` : ''}</div>
+    <aside class="otb-drawer" id="otb-drawer"><button class="otb-close" id="otb-close" title="Close">&times;</button><div id="otb-dr-body"></div></aside>`;
+
+  const redraw = () => otbDraw(semesters);
+  document.getElementById('otb-sem').onchange = (e) => { otbState.semester = e.target.value; otbState.weekStart = ''; otbState.selected = null; renderOfferingsTimetable(); };
+  document.getElementById('otb-tz').onchange = (e) => { otbState.tz = e.target.value; redraw(); };
+  document.getElementById('otb-prev').onclick = () => { otbState.weekStart = addDaysIso(otbState.weekStart, -7); redraw(); };
+  document.getElementById('otb-next').onclick = () => { otbState.weekStart = addDaysIso(otbState.weekStart, 7); redraw(); };
+  document.getElementById('otb-today').onclick = () => { otbState.weekStart = otbDefaultWeek(); redraw(); };
+  document.getElementById('otb-v-grid').onclick = () => { otbState.view = 'grid'; redraw(); };
+  document.getElementById('otb-v-list').onclick = () => { otbState.view = 'list'; redraw(); };
+  document.getElementById('otb-mine').onchange = (e) => { otbState.mineOnly = e.target.checked; redraw(); };
+  el.querySelectorAll('.otb-chip').forEach(b => { b.onclick = () => { otbState.off[b.dataset.p] = !otbState.off[b.dataset.p]; redraw(); }; });
+  document.getElementById('otb-close').onclick = otbCloseDrawer;
+
+  if (s.view === 'grid') otbDrawGrid(meetings, abbr); else otbDrawList(meetings);
+}
+function otbCloseDrawer() {
+  otbState.selected = null;
+  const d = document.getElementById('otb-drawer');
+  if (d) d.classList.remove('open');
+  document.querySelectorAll('.otb-blk.sel').forEach(b => b.classList.remove('sel'));
+}
+
+// A week in which the gap between a class's zone and the viewer's changes (DST).
+function otbClockNotice() {
+  const tz = otbState.tz, ws = otbState.weekStart;
+  const zones = [...new Set(otbCoursesFor(otbState.semester).flatMap(c => (periodsCache[c.id] || []).map(p => p.timezone)))].filter(z => z && z !== tz);
+  const off = (z, iso) => {
+    const t = Date.parse(iso + 'T12:00:00Z'), a = utcMsInZone(t, z), b = utcMsInZone(t, tz);
+    return (Date.UTC(b.y, b.mo - 1, b.d, b.h, b.mi) - Date.UTC(a.y, a.mo - 1, a.d, a.h, a.mi)) / 3600000;
+  };
+  const changed = zones.map(z => ({ z, d: off(z, addDaysIso(ws, 6)) - off(z, addDaysIso(ws, -1)) })).filter(x => x.d);
+  if (!changed.length) return '';
+  return `<div class="otb-notice"><b>Clocks change this week.</b> ${changed.map(x => `Classes held in ${esc(otbZoneName(x.z))} show ${Math.abs(x.d)} hour ${x.d > 0 ? 'later' : 'earlier'}`).join('; ')} here from the change onward.</div>`;
+}
+
+function otbDrawGrid(meetings, abbr) {
+  const body = document.getElementById('otb-body');
+  body.innerHTML = '<div class="otb-card" id="otb-card"></div>';
+  const card = document.getElementById('otb-card');
+  const colW = (card.clientWidth - 80) / 7;
+  const maxLanes = Math.max(2, Math.min(4, Math.floor(Math.max(colW, 160) / 86)));
+  const ROW = 72, PAD = 14;
+  const valid = meetings.filter(m => m.to > m.from);
+  let minH = 8, maxH = 18;
+  if (valid.length) { minH = Math.min(...valid.map(m => Math.floor(m.from / 60))); maxH = Math.max(...valid.map(m => Math.ceil(m.to / 60))); }
+  maxH = Math.min(24, Math.max(maxH, minH + 6));
+  const H = (maxH - minH) * ROW + PAD * 2;
+  const y = (min) => PAD + (min / 60 - minH) * ROW;
+  const today = otbTodayIso(otbState.tz);
+  otbMore = {};
+
+  let html = `<div class="otb-grid"><div class="otb-corner">${esc(abbr)}</div>`;
+  for (let i = 0; i < 7; i++) {
+    const iso = addDaysIso(otbState.weekStart, i);
+    const n = new Set(meetings.filter(m => m.iso === iso).map(m => m.c.id)).size;
+    html += `<div class="otb-head ${iso === today ? 'today' : ''}"><div class="otb-dn">${OTB_DAYS[i]}</div><div class="otb-dd">${+iso.slice(8)}</div><div class="otb-cnt">${n ? `${n} class${n > 1 ? 'es' : ''}` : '—'}</div></div>`;
+  }
+  html += `<div class="otb-hours" style="height:${H}px">`;
+  for (let h = minH; h <= maxH; h++) html += `<div class="otb-hour" style="top:${y(h * 60) - 9}px">${otbPad(h % 24)}:00</div>`;
+  html += '</div>';
+  for (let i = 0; i < 7; i++) {
+    const iso = addDaysIso(otbState.weekStart, i);
+    const items = valid.filter(m => m.iso === iso);
+    const overflow = otbLayoutDay(items, maxLanes);
+    html += `<div class="otb-col ${iso === today ? 'today' : ''}" style="height:${H}px">`;
+    for (let h = minH; h < maxH; h++) html += `<div class="otb-line" style="top:${y(h * 60)}px"></div><div class="otb-line half" style="top:${y(h * 60 + 30)}px"></div>`;
+    html += `<div class="otb-line" style="top:${y(maxH * 60)}px"></div>`;
+    if (iso === today) {
+      const p = utcMsInZone(Date.now(), otbState.tz), nm = p.h * 60 + p.mi;
+      if (nm >= minH * 60 && nm <= maxH * 60) html += `<div class="otb-now" style="top:${y(nm)}px"></div>`;
+    }
+    overflow.forEach((g, gi) => {
+      const w = 100 / g.lanes, top = y(g.from), ht = Math.max(y(g.to) - top - 2, 22);
+      const cols = [...new Set(g.items.map(m => otbColor(m.c).fg))];
+      const id = `${i}:${gi}`; otbMore[id] = g.items;
+      html += `<div class="otb-blk otb-more" data-more="${id}" style="top:${top}px;height:${ht}px;left:calc(${g.lane * w}% + 3px);width:calc(${w}% - 6px)">
+        <div class="otb-more-n">+${g.items.length}</div><div class="otb-more-l">more</div><div class="otb-more-dots">${cols.map(c => `<span style="background:${c}"></span>`).join('')}</div></div>`;
+    });
+    items.filter(m => !m.hidden).forEach(m => {
+      const col = otbColor(m.c), w = 100 / m.lanes, top = y(m.from), ht = Math.max(y(m.to) - top - 2, 22);
+      const mine = otbIsMine(m.c);
+      html += `<div class="otb-blk ${mine ? 'mine' : ''} ${m.contTop ? 'cont-top' : ''} ${m.contBot ? 'cont-bot' : ''} ${m.lanes > 1 ? 'narrow' : ''} ${otbState.selected === m.key ? 'sel' : ''}" data-k="${esc(m.key)}"
+        style="top:${top}px;height:${ht}px;left:calc(${m.lane * w}% + 3px);width:calc(${w}% - 6px);background:${col.bg};border-left-color:${col.fg};color:${col.fg}"
+        title="${esc(`${m.c.code} · ${m.c.title} · ${otbFmtMin(m.from)}–${otbFmtMin(m.to)}`)}">
+        <div class="otb-code">${mine && m.lanes === 1 ? '★ ' : ''}${esc(m.c.code)}</div>
+        ${ht > 40 ? `<div class="otb-tm">${m.contTop ? '…' : ''}${otbFmtMin(m.from)}${m.lanes > 1 ? '' : '–' + otbFmtMin(m.to)}${m.contBot ? '…' : ''}</div>` : ''}
+        ${ht > 66 && m.lanes === 1 ? `<div class="otb-ttl">${esc(m.c.title)}</div>` : ''}</div>`;
+    });
+    html += '</div>';
+  }
+  card.innerHTML = html + '</div>';
+  card.querySelectorAll('.otb-blk:not(.otb-more)').forEach(b => { b.onclick = () => otbOpenMeeting(b.dataset.k); });
+  card.querySelectorAll('.otb-more').forEach(b => { b.onclick = () => otbOpenMore(otbMore[b.dataset.more]); });
+}
+
+function otbDrawList(meetings) {
+  const today = otbTodayIso(otbState.tz);
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const iso = addDaysIso(otbState.weekStart, i);
+    const items = meetings.filter(m => m.iso === iso && !m.contTop).sort((a, b) => a.from - b.from || a.c.code.localeCompare(b.c.code));
+    if (!items.length) continue;
+    html += `<div class="otb-lday"><div class="otb-ctl-label">${otbFmtDate(iso, { weekday: 'long', month: 'short', day: 'numeric' })}${iso === today ? ' · today' : ''}</div><div class="list-card">`;
+    items.forEach(m => {
+      const e = utcMsInZone(m.endMs, otbState.tz);
+      html += `<div class="list-row" data-k="${esc(m.key)}">
+        <span class="otb-lr-time">${otbFmtMin(m.from)}–${otbFmtMin(e.h * 60 + e.mi)}</span>
+        <span class="lr-code" style="color:${otbColor(m.c).fg}">${esc(m.c.code)}</span>
+        <span class="lr-title">${otbIsMine(m.c) ? '★ ' : ''}${esc(m.c.title)}</span>
+        <span class="otb-lr-prof">${esc(m.c.professor)}</span></div>`;
+    });
+    html += '</div></div>';
+  }
+  const body = document.getElementById('otb-body');
+  body.innerHTML = html || '<div class="list-card"><div class="empty-row">No classes meet this week.</div></div>';
+  body.querySelectorAll('.list-row').forEach(r => { r.onclick = () => otbOpenMeeting(r.dataset.k); });
+}
+
+function otbOpenMeeting(key) {
+  const m = otbWeekMeetings.find(x => x.key === key);
+  if (!m) return;
+  otbState.selected = key;
+  document.querySelectorAll('.otb-blk').forEach(b => b.classList.toggle('sel', b.dataset.k === key));
+  const c = m.c, col = otbColor(c), myTz = otbMyTz();
+  const rows = [...new Set([m.d.timezone, otbState.tz, myTz])].map(z => {
+    const s = utcMsInZone(m.startMs, z), e = utcMsInZone(m.endMs, z);
+    const tags = [z === m.d.timezone ? 'class time' : '', z === myTz ? 'yours' : ''].filter(Boolean).join(', ');
+    return `<div class="otb-dr-row ${z === otbState.tz ? 'here' : ''}"><span>${esc(otbZoneName(z))}${tags ? ` <span class="otb-dr-tag">(${tags})</span>` : ''}</span><span>${s.weekday} ${otbPad(s.h)}:${otbPad(s.mi)}–${otbPad(e.h)}:${otbPad(e.mi)}</span></div>`;
+  }).join('');
+  const a = utcMsInZone(m.startMs, m.d.timezone), b = utcMsInZone(m.startMs, otbState.tz);
+  const periods = (periodsCache[c.id] || []).filter(p => p.startTime && Object.values(p.days).some(Boolean));
+  const fmtShort = (iso) => otbFmtDate(iso, { month: 'short', day: 'numeric' });
+  document.getElementById('otb-dr-body').innerHTML = `
+    <span class="chip-code" style="background:${col.bg};color:${col.fg}">${esc(c.code)}</span>
+    <div class="otb-dr-title">${esc(c.title)}</div>
+    <div class="otb-dr-prof">${esc(c.professor)}</div>
+    <div class="otb-dr-sec"><div class="otb-ctl-label">${otbFmtDate(m.d.isoDate, { weekday: 'long', month: 'short', day: 'numeric' })}${m.d.note ? ` · ${esc(m.d.note)}` : ''}</div>${rows}
+      ${otbIso(a) !== otbIso(b) ? '<div class="otb-dr-note">Here the class falls on a different day than in its own time zone.</div>' : ''}</div>
+    <div class="otb-dr-sec"><div class="otb-ctl-label">Meeting pattern</div>
+      ${periods.map(p => `<div class="otb-dr-row"><span>${FULL_DAY_ORDER.filter(d => p.days[d.toLowerCase()]).join('/')} ${esc(p.startTime)}–${esc(addMinutesToTimeStr(p.startTime, p.durationMin || DEFAULT_DURATION_MIN))} ${esc(otbZoneName(p.timezone))}</span><span>${p.validFrom && p.validTo ? `${fmtShort(p.validFrom)} – ${fmtShort(p.validTo)}` : ''}</span></div>`).join('')}</div>
+    <button class="btn btn-primary otb-dr-open" data-id="${esc(c.id)}">Open course page</button>`;
+  document.querySelector('.otb-dr-open').onclick = (e) => goToCourse(e.currentTarget.dataset.id);
+  document.getElementById('otb-drawer').classList.add('open');
+}
+
+function otbOpenMore(list) {
+  list = [...list].sort((a, b) => a.from - b.from || a.c.code.localeCompare(b.c.code));
+  document.getElementById('otb-dr-body').innerHTML = `
+    <div class="otb-ctl-label">${otbFmtDate(list[0].iso, { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+    <div class="otb-dr-title">${list.length} more classes at this time</div>
+    <div class="otb-dr-sec">${list.map(m => { const col = otbColor(m.c); return `<div class="otb-more-row" data-k="${esc(m.key)}">
+      <span class="chip-code" style="background:${col.bg};color:${col.fg}">${esc(m.c.code)}</span>
+      <span class="otb-mr-main"><span class="otb-mr-t">${otbIsMine(m.c) ? '★ ' : ''}${esc(m.c.title)}</span><span class="otb-mr-p">${esc(m.c.professor)}</span></span>
+      <span class="otb-mr-time">${m.contTop ? '…' : ''}${otbFmtMin(m.from)}</span></div>`; }).join('')}</div>`;
+  document.querySelectorAll('.otb-more-row').forEach(r => { r.onclick = () => otbOpenMeeting(r.dataset.k); });
+  document.getElementById('otb-drawer').classList.add('open');
+}
+let otbResizeTimer;
+window.addEventListener('resize', () => {
+  if (location.hash !== '#timetable' || otbState.view !== 'grid' || !document.getElementById('otb-card')) return;
+  clearTimeout(otbResizeTimer);
+  otbResizeTimer = setTimeout(() => otbDrawGrid(otbWeekMeetings, otbZoneAbbr(otbState.tz, otbState.weekStart)), 150);
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && location.hash === '#timetable') otbCloseDrawer(); });
 
 function finderHeaderHtml() {
   return `
