@@ -860,7 +860,10 @@ const CP_TABS = [
   { key: 'readings', label: 'Readings' },
   { key: 'activities', label: 'Learning Activities' },
   { key: 'lessonplans', label: 'Lesson Plans' },
+  { key: 'roster', label: 'Class Roster', isNew: true, when: c => semesterSortKey(c.semester) <= CURRENT_KEY },
 ];
+// The tabs this course shows: Class Roster only once the term has started (current or past).
+function cpTabsFor(c) { return CP_TABS.filter(t => !t.when || (c && t.when(c))); }
 
 // ── Unsaved-changes guard ──
 // editSnapshot is a JSON baseline taken right after each piece of edit data
@@ -1222,8 +1225,11 @@ function renderCoursePage() {
     loadAcademicCalendar().then(() => { if (String(currentCourseId) === String(c.id) && courseTab === 'schedule') renderCoursePage(); });
   }
 
+  if (!cpTabsFor(c).some(t => t.key === courseTab)) courseTab = 'main';
   let tabContent;
-  if (courseTab === 'lessonplans') {
+  if (courseTab === 'roster') {
+    tabContent = renderRosterTab(c);
+  } else if (courseTab === 'lessonplans') {
     tabContent = renderLessonPlansTab(c);
   } else if (courseTab === 'main') {
     tabContent = renderCpMainShared(c, editMode);
@@ -1284,7 +1290,7 @@ function renderCoursePage() {
       <p class="cp-meta">${esc(c.semester)} · ${creditsText(c.credits)} · ${esc(c.classification)}</p>
     </div>
     <div class="cp-tabs">
-      ${CP_TABS.map(t => `<button class="cp-tab ${courseTab === t.key ? 'active' : ''}" onclick="setCourseTab('${t.key}')">${esc(t.label)}${t.isNew && !tabSeen(t.key) ? '<span class="cp-tab-new">NEW</span>' : ''}</button>`).join('')}
+      ${cpTabsFor(c).map(t => `<button class="cp-tab ${courseTab === t.key ? 'active' : ''}" onclick="setCourseTab('${t.key}')">${esc(t.label)}${t.isNew && !tabSeen(t.key) ? '<span class="cp-tab-new">NEW</span>' : ''}</button>`).join('')}
     </div>
     <div id="cp-tab-body">${tabContent}</div>
     ${cpTabNavHtml()}
@@ -2907,13 +2913,14 @@ async function saveRubricsInner(c, d) {
 // ── App-wide UI (2026-10): Previous / Next bar under every course tab, and Excel export / import
 // for the spreadsheet-style tabs (Assessment, Communication, Schedule, Readings, T-Learning Activities).
 function cpTabNavHtml() {
-  const i = CP_TABS.findIndex(t => t.key === courseTab);
+  const tabs = cpTabsFor(findCourseById(currentCourseId));
+  const i = tabs.findIndex(t => t.key === courseTab);
   if (i < 0) return '';
-  const prev = CP_TABS[i - 1], next = CP_TABS[i + 1];
+  const prev = tabs[i - 1], next = tabs[i + 1];
   const go = t => `setCourseTab('${t.key}');window.scrollTo(0,0)`;
   return `<div class="cp-tab-nav">
     ${prev ? `<button class="btn" style="justify-self:start" onclick="${go(prev)}">&larr; Previous: ${esc(prev.label)}</button>` : '<span></span>'}
-    <span class="cp-tab-nav-here">${esc(CP_TABS[i].label)}</span>
+    <span class="cp-tab-nav-here">${esc(tabs[i].label)}</span>
     ${next ? `<button class="btn" style="justify-self:end" onclick="${go(next)}">Next: ${esc(next.label)} &rarr;</button>` : '<span></span>'}
   </div>`;
 }
@@ -3925,6 +3932,45 @@ async function makeSyllabusDocument(offeringId) {
   } finally {
     syllabusBusy = false;
   }
+}
+
+// ══ Class Roster tab ══════════════════════════════════════════════════════
+// Who took (or is taking) this offering, from student_course_history via the
+// taesylla_offering_roster() RPC (security definer; the offering's own
+// instructor only). Shown for the current term and past terms, not future ones.
+let rosterCache = {}; // { [offeringId]: 'loading' | rows[] | {error} }
+async function loadRoster(id) {
+  rosterCache[id] = 'loading';
+  try {
+    const rows = await sbWrite('POST', 'rpc/taesylla_offering_roster', '', { p_offering_id: Number(id) });
+    rosterCache[id] = (rows || []).slice().sort((a, b) => String(a.name_en || '').localeCompare(String(b.name_en || '')) || String(a.student_id).localeCompare(String(b.student_id)));
+  } catch (e) {
+    rosterCache[id] = { error: e.message || String(e) };
+  }
+  if (String(currentCourseId) === String(id) && courseTab === 'roster') renderCoursePage();
+}
+function rosterReload(id) { delete rosterCache[id]; renderCoursePage(); }
+function renderRosterTab(c) {
+  const owned = courses.some(x => String(x.id) === String(c.id));
+  const isCurrent = semesterSortKey(c.semester) === CURRENT_KEY;
+  const intro = `<div style="font-size:14px;color:var(--text3);line-height:1.55;margin-top:-12px;margin-bottom:18px;">${isCurrent ? 'Students enrolled' : 'Students who took this course'} in ${esc(c.semester)}${c.section ? `, section ${esc(String(c.section))}` : ''}.</div>`;
+  const shell = (inner, count) => `<div class="cp-card"><div class="cp-card-title">Class Roster${count != null ? ` <span style="font-weight:500;color:var(--text3);">· ${count} student${count === 1 ? '' : 's'}</span>` : ''}</div>${intro}${inner}</div>`;
+  if (!owned) return shell(`<div class="cp-empty">Available to the course instructor.</div>`);
+  const data = rosterCache[c.id];
+  if (!data) { loadRoster(c.id); return shell(`<div class="cp-empty">Loading…</div>`); }
+  if (data === 'loading') return shell(`<div class="cp-empty">Loading…</div>`);
+  if (data.error) return shell(`<div class="cp-empty">Couldn't load the roster: ${esc(data.error)}<div class="cp-empty-hint"><button class="btn" onclick="rosterReload(${Number(c.id)})">Retry</button></div></div>`);
+  if (!data.length) return shell(`<div class="cp-empty">No students are recorded for this offering.</div>`, 0);
+  const majors = r => [r.major1, r.major2].filter(Boolean).map(esc).join('<br>') || '<span class="muted">—</span>';
+  const rows = data.map((r, i) => [
+    String(i + 1),
+    `<span style="white-space:nowrap;">${esc(r.name_en || '—')}</span>`,
+    `<span style="font-family:'DM Mono',monospace;white-space:nowrap;">${esc(r.student_id)}</span>`,
+    majors(r),
+    esc(r.cohort || '—'),
+    r.source === 'graded' ? 'Graded' : 'Registered',
+  ]);
+  return shell(cpTable(['#', 'Name', 'Student ID', 'Major', 'Cohort', 'Status'], rows, ''), data.length);
 }
 
 // ══ Lesson Plans tab ══════════════════════════════════════════════════════
